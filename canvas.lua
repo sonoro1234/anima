@@ -465,7 +465,6 @@ function GLcanvas(GL)
 
 	GL.fps = GL.fps or 25
 	GL.FPScounter = newFPScounter(print,GL.fps)
-	--GL.FPScounter = newFPScounter(function(str) glfw.glfwSetWindowTitle(GL.window, str) end,GL.fps)
 	GL.globaltime = ffi.new"float[1]"
 	GL.save_image = pointer("")
 	GL.draw = function() end
@@ -1073,6 +1072,8 @@ function GLcanvas(GL)
 		gllib.set_loader(sdl)
 		gl, glc, glu, glext = gllib.libraries()
 		
+		self.FPScounter = newFPScounter(function(str) sdl.setWindowTitle(self.window, str) end,self.fps)
+		
 		if (sdl.init(sdl.INIT_VIDEO+sdl.INIT_TIMER) ~= 0) then
 			print(string.format("Error: %s\n", sdl.getError()));
 			error()
@@ -1115,7 +1116,8 @@ function GLcanvas(GL)
 		glfw.glfwSetErrorCallback(function(error,description)
 			print("GLFW error:",error,ffi.string(description));
 		end)
-	
+		self.FPScounter = newFPScounter(function(str) glfw.glfwSetWindowTitle(self.window, str) end,self.fps)
+		
 		lj_glfw.init()
 		--glfw.glfwWindowHint(glc.GLFW_CLIENT_API, glc.GLFW_OPENGL_ES_API)
 		
