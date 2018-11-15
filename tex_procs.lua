@@ -1,8 +1,17 @@
 require"anima"
 
+local function getctx()
+	local ctx
+	if glfw then
+		ctx = tostring(glfw.glfwGetCurrentContext())
+	else
+		ctx = tostring(sdl.gL_GetCurrentContext())
+	end
+	return ctx
+end
 local texcrops = {}
 local function make_texcrop_prog()
-	local ctx = tostring(glfw.glfwGetCurrentContext())
+	local ctx = getctx()
 	local prog = texcrops[ctx]
 	if prog then return prog end
 	
@@ -47,7 +56,7 @@ end
 
 local texflips = {}
 local function make_texflip_prog()
-	local ctx = tostring(glfw.glfwGetCurrentContext())
+	local ctx = getctx()
 	local prog = texflips[ctx]
 	if prog then return prog end
 	
@@ -98,7 +107,7 @@ end
 
 local texrotate = {}
 local function make_texrotate_prog()
-	local ctx = tostring(glfw.glfwGetCurrentContext())
+	local ctx = getctx()
 	local prog = texrotate[ctx]
 	if prog then return prog end
 	
