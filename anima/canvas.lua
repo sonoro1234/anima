@@ -1067,7 +1067,8 @@ function GLcanvas(GL)
 	
 	end
 	local function doinitSDL(self)
-		sdl = require"sdl2"
+		sdl = require"sdl2_ffi" 
+		--sdl = require"sdl2"
 		local gllib = require"gl"
 		gllib.set_loader(sdl)
 		gl, glc, glu, glext = gllib.libraries()
