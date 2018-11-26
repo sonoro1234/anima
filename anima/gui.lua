@@ -1025,9 +1025,9 @@ end
 
 function gui.SetImGui(GL)
 	if GL.SDL then
-		ig = require"imgui_sdl"
+		ig = require"imgui.sdl"
 	else
-		ig = require"imgui"
+		ig = require"imgui.glfw"
 	end
 	imgui = ig.lib
 	GL.imguimodals =  {}
@@ -1250,7 +1250,9 @@ function gui.SetImGui(GL)
 			totranges = totranges + rangescyr[i+1] - rangescyr[i] + 1
 		end
 		print("totranges",totranges)
-		local theFONT = FontsAt:AddFontFromFileTTF([[C:\luaGL\gitsources\luajit-imgui\cimgui\imgui\misc\fonts\ProggyTiny.ttf]], 10,fnt_cfg,rangescyr)
+		local path = require"anima.path"
+		local fontpath = path.chain(path.animapath(),"fonts","ProggyTiny.ttf")
+		local theFONT = FontsAt:AddFontFromFileTTF(fontpath, 10,fnt_cfg,rangescyr)
 		--local theFONT = FontsAt:AddFontFromFileTTF([[C:\luaGL\gitsources\Fonts\Anonymous-Pro\Anonymous_pro.ttf]],12,fnt_cfg,rangescyr)
 		assert(theFONT ~= nil)
 		--theFONT.DisplayOffset.y = theFONT.DisplayOffset.y +1

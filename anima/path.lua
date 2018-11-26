@@ -145,11 +145,7 @@ function M.funcdir(path, func, patt, recur, funcd, tree)
     end
 end
 
-function M.testcurdir()
-	local info = debug.getinfo(1,'S');
-	print("anima path in",info.source);
-	local info = debug.getinfo(2,'S');
-end
+
 M.splitpath = splitpath
 M.mkdir = mkdir
 M.ext = ext
@@ -163,6 +159,16 @@ M.main_scrip_path = M.this_script_path
 --path of file calling file_path
 function M.file_path()
 	local scpath = debug.getinfo(2,'S').source:match("@(.*)$") 
+	return splitpath(abspath(scpath)) --.. sep
+end
+function M.testcurdir()
+	local info = debug.getinfo(1,'S');
+	print("anima path in",info.source);
+	local info = debug.getinfo(2,'S');
+	print("anima path in",info.source);
+end
+function M.animapath()
+	local scpath = debug.getinfo(1,'S').source:match("@(.*)$") 
 	return splitpath(abspath(scpath)) --.. sep
 end
 function M.require_here()
