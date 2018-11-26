@@ -59,7 +59,7 @@ set(IMPL_SDL ON CACHE INTERNAL "imgui with sdl")
 set(IMPL_GLFW ON CACHE INTERNAL "imgui with glfw")
 set(IMPL_OPENGL2 ON CACHE INTERNAL "imgui for opengl2")
 set(IMPL_OPENGL3 ON CACHE INTERNAL "imgui with opengl3")
-add_subdirectory(luajit-imgui)
+add_subdirectory(LuaJIT-ImGui)
 
 
 #########install

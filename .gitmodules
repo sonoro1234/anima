@@ -1,0 +1,15 @@
+[submodule "luafilesystem"]
+	path = luafilesystem
+	url = https://github.com/sonoro1234/luafilesystem
+[submodule "LUAJIT-GLFW"]
+	path = LUAJIT-GLFW
+	url = https://github.com/sonoro1234/LuaJIT-GLFW
+[submodule "LUAJIT-SDL2"]
+	path = LUAJIT-SDL2
+	url = https://github.com/sonoro1234/LuaJIT-SDL2
+[submodule "LuaJIT-ImGui"]
+	path = LuaJIT-ImGui
+	url = https://github.com/sonoro1234/LuaJIT-ImGui
+[submodule "mirror-im"]
+	path = mirror-im
+	url = https://github.com/sonoro1234/mirror-im
