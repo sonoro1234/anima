@@ -25,9 +25,11 @@ GL:start()
 ```
 # compiling
 
-Started a building CMake system only needing -DLUAJIT_BIN="path where you desire installation"
-Most doubtfull is LuaJIT building.(You can disable it with -DANIMA_BUILD_LUAJIT=no)
-Some CMake option to allow-disable building are
+Started a building CMake system only needing -DLUAJIT_BIN="path where you desire installation".
+
+Most doubtful is LuaJIT building.(You can disable it with -DANIMA_BUILD_LUAJIT=no)
+
+Some CMake option to allow-disable building are:
 
 * ANIMA_BUILD_LUAJIT
 * ANIMA_BUILD_IM
