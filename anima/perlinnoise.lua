@@ -5,7 +5,7 @@ function Noise1(integer x, integer y)
 	return ( 1.0 - ( (n * (n * n * 15731 + 789221) + 1376312589) & 7fffffff) / 1073741824.0);    
 end
 --]]
-local simplexnoise = require"simplexnoise"
+
 if not bit32 then
 	if bit then
 		bit32 = bit
@@ -98,9 +98,15 @@ local function InterpolatedNoise2D( x,  y, InterpolateFunc , NoiseFunc)
 	
 	return InterpolateFunc(i1 , i2 , y - integer_Y)
 end
- 
-local raw_noise = simplexnoise.raw_noise
-local raw_noise2d = simplexnoise.raw_noise2d
+
+local simplexnoise = pcall(function() require"simplexnoise" end)
+--local raw_noise = simplexnoise.raw_noise
+local raw_noise2d 
+if simplexnoise then
+raw_noise2d = simplexnoise.raw_noise2d
+else
+raw_noise2d = function(x,y) return InterpolatedNoise2D(x,y,Cosine_Interpolate,Noise2D) end
+end
 
 function PerlinNoise_1D( x, n, p)
       local total = 0
