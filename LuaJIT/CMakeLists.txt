@@ -7,10 +7,13 @@ include(ExternalProject)
 #luajit project
 set(ljpre ${CMAKE_CURRENT_BINARY_DIR}/luajit-2.0.1)
 set(ljsrc ${ljpre}/src/project_luajit/src)
-
+#set(URLLUAJIT http://luajit.org/download/LuaJIT-2.0.1.tar.gz)
+set(URLLUAJIT https://github.com/LuaJIT/LuaJIT.git)
 if(UNIX)
     ExternalProject_Add(project_luajit
-      URL http://luajit.org/download/LuaJIT-2.0.1.tar.gz
+      #URL ${URLLUAJIT}
+	  GIT_REPOSITORY ${URLLUAJIT}
+	  GIT_TAG v2.1
       PREFIX ${ljpre}
       CONFIGURE_COMMAND ""
       BUILD_IN_SOURCE 1
@@ -24,7 +27,9 @@ if(UNIX)
 else(UNIX)
   if(MSVC)
     ExternalProject_Add(project_luajit
-      URL http://luajit.org/download/LuaJIT-2.0.1.tar.gz
+      #URL ${URLLUAJIT}
+	  GIT_REPOSITORY ${URLLUAJIT}
+	  GIT_TAG v2.1
       PREFIX ${ljpre}
       CONFIGURE_COMMAND ""
       BINARY_DIR ${ljsrc}
@@ -34,11 +39,13 @@ else(UNIX)
     set (ljname lua51.lib)
   else(MSVC) #mingw
       ExternalProject_Add(project_luajit
-      URL http://luajit.org/download/LuaJIT-2.0.1.tar.gz
+      #URL ${URLLUAJIT}
+	  GIT_REPOSITORY ${URLLUAJIT}
+	  GIT_TAG v2.1
       PREFIX ${ljpre}
       CONFIGURE_COMMAND ""
       BINARY_DIR ${ljsrc}
-      BUILD_COMMAND make
+      BUILD_COMMAND ${MAKE}
       INSTALL_COMMAND ""
     )
   endif(MSVC)
