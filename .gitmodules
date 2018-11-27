@@ -8,7 +8,7 @@
 	path = LuaJIT-SDL2
 	url = https://github.com/sonoro1234/LuaJIT-SDL2
 [submodule "LuaJIT-ImGui"]
-	path = LuaJIT-ImGui
+	path = luajit-imgui
 	url = https://github.com/sonoro1234/LuaJIT-ImGui
 [submodule "mirror-im"]
 	path = mirror-im
