@@ -99,10 +99,10 @@ local function InterpolatedNoise2D( x,  y, InterpolateFunc , NoiseFunc)
 	return InterpolateFunc(i1 , i2 , y - integer_Y)
 end
 
-local simplexnoise = pcall(function() require"simplexnoise" end)
---local raw_noise = simplexnoise.raw_noise
+local ok,simplexnoise = pcall(function() return require"simplexnoise" end)
+
 local raw_noise2d 
-if simplexnoise then
+if ok then
 raw_noise2d = simplexnoise.raw_noise2d
 else
 raw_noise2d = function(x,y) return InterpolatedNoise2D(x,y,Cosine_Interpolate,Noise2D) end

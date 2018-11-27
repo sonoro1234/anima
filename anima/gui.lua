@@ -910,7 +910,9 @@ function gui.DialogBox(name,autosaved)
 	return DB
 end
 function gui.FontIcons(GL,source,ranges,size)
-	source = source or [[C:\luaGL\sources\font-awesome-4.7.0\fonts\fontawesome-webfont.ttf]]
+	local path = require"anima.path"
+	local fontpath = path.chain(path.animapath(),"fonts","fontawesome-webfont.ttf")
+	source = source or fontpath
 	--ranges = ranges or ffi.new("ImWchar[3]",{0xf000,0xf2e0,0})
 	ranges = ranges or ffi.new("ImWchar[3]",{0xf000,0xf0a7,0})
 	size = size or 16
