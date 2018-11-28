@@ -2,6 +2,10 @@ PROJECT(anima)
 #to allow install from subdirectory
 cmake_minimum_required(VERSION 3.13)
 
+#if(MSVC) #to work as all the others
+set(CMAKE_SHARED_LIBRARY_PREFIX "")
+#endif(MSVC)
+
 option(ANIMA_BUILD_LUAJIT "Build LuaJIT" ON)
 option(ANIMA_BUILD_IM "Build im" ON)
 option(ANIMA_BUILD_GLFW "Build LuaJIT-GLFW" ON)
