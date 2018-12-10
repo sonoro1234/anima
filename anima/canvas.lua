@@ -72,6 +72,27 @@ function MakeRtaudioTimeProvider(GL,dac, totdur)
 	return tp
 end
 
+function MakeSDLAudioTimeProvider(GL,dac, totdur)
+	GL.dac = dac
+	local tp = {totdur = totdur }
+	function tp:get_time()
+		return dac:get_stream_time() 
+	end
+	function tp:set_time(val)
+		dac:set_stream_time(val)
+	end
+	function tp:stop()
+		dac:stop()
+		self.playing = false
+	end
+	function tp:start()
+		dac:start()
+		self.playing = true
+	end
+
+	return tp
+end
+
 local sndfile --anchor for not being freed
 function PrepareAudio(GL,soundfile,offset,args)--asio,dev_id)
 	args = args or {}
@@ -97,6 +118,37 @@ function PrepareAudio(GL,soundfile,offset,args)--asio,dev_id)
 	sndfile:play(dac,1,offset)
 	
 	GL.timeprovider = MakeRtaudioTimeProvider(GL,dac,DURAMUSICA + offset +5 + (args.extratime or 0) )
+end
+function PrepareAudioSDL(GL,soundfile,offset,args)--asio,dev_id)
+	args = args or {}
+	offset = offset or 0
+	local dev_id = args.dev_id or 0
+	local AudioPlayer = require("sdlAudioPlayer")
+	local sndf = require"sndfile_ffi"
+	local sdl = require"sdl2_ffi"
+	
+	if sdl.WasInit(sdl.INIT_AUDIO)==0 then
+		sdl.InitSubSystem(sdl.INIT_AUDIO)
+	end
+	
+	local info = sndf.get_info(soundfile)
+	local dac,err = AudioPlayer({
+    --device = device_name,
+    freq = info.samplerate, 
+    format = sdl.AUDIO_S16SYS,
+    channels = info.channels, 
+    samples = 1024})
+	
+	assert(dac,err)
+	
+	print("sdlAudioPlayer device info:")
+	dac.obtained_spec[0]:print()
+	
+	dac:insert(soundfile)
+	local DURAMUSICA = info.frames/info.samplerate
+	
+	
+	GL.timeprovider = MakeSDLAudioTimeProvider(GL,dac,DURAMUSICA + offset +5 + (args.extratime or 0) )
 end
 local function newFPScounter(printer,inifps)
 	printer = printer or print
