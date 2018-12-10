@@ -11,6 +11,7 @@ option(ANIMA_BUILD_IM "Build im" ON)
 option(ANIMA_BUILD_GLFW "Build LuaJIT-GLFW" ON)
 option(ANIMA_BUILD_SDL "Build LuaJIT-SDL2" ON)
 option(ANIMA_BUILD_IMGUI "Build LuaJIT-IMGUI" ON)
+option(ANIMA_BUILD_SNDFILE "Build LuaJIT-libsndfile" ON)
 
 #im modules
 if(ANIMA_BUILD_IM)
@@ -21,6 +22,10 @@ endif(ANIMA_BUILD_IM)
 if(ANIMA_BUILD_LUAJIT)
 add_subdirectory(LuaJIT)
 endif(ANIMA_BUILD_LUAJIT)
+
+if(ANIMA_BUILD_SNDFILE)
+add_subdirectory(LuaJIT-libsndfile)
+endif(ANIMA_BUILD_SNDFILE)
 
 
 set(CMAKE_INSTALL_PREFIX "./install")

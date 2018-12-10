@@ -10,6 +10,9 @@
 [submodule "LuaJIT-ImGui"]
 	path = luajit-imgui
 	url = https://github.com/sonoro1234/LuaJIT-ImGui
+[submodule "LuaJIT-libsndfile"]
+	path = luajit-libsndfile
+	url = https://github.com/sonoro1234/LuaJIT-libsndfile
 [submodule "mirror-im"]
 	path = mirror-im
 	url = https://github.com/sonoro1234/mirror-im
