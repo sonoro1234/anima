@@ -31,8 +31,9 @@ Most doubtful is LuaJIT building.(You can disable it with -DANIMA_BUILD_LUAJIT=n
 
 Some CMake option to allow-disable building are:
 
-* ANIMA_BUILD_LUAJIT
-* ANIMA_BUILD_IM
-* ANIMA_BUILD_GLFW
-* ANIMA_BUILD_SDL
-* ANIMA_BUILD_IMGUI (This needs ANIMA_BUILD_GLFW or ANIMA_BUILD_SDL)
+* ANIMA_BUILD_LUAJIT - Building of LuaJIT
+* ANIMA_BUILD_IM - Building of im
+* ANIMA_BUILD_GLFW - Building of GLFW
+* ANIMA_BUILD_SDL - Building of SDL2
+* ANIMA_BUILD_IMGUI - Building of ImGui (This needs ANIMA_BUILD_GLFW or ANIMA_BUILD_SDL)
+* ANIMA_BUILD_SNDFILE - Building of libsndfile and libsamplerate

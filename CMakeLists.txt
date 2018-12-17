@@ -28,7 +28,7 @@ add_subdirectory(LuaJIT-libsndfile)
 endif(ANIMA_BUILD_SNDFILE)
 
 
-set(CMAKE_INSTALL_PREFIX "./install")
+#set(CMAKE_INSTALL_PREFIX "./install")
 
 if(ANIMA_BUILD_GLFW)
 add_subdirectory(LuaJIT-GLFW)
