@@ -141,7 +141,7 @@ function M.make(GL)
 		self.vao:draw_elm()
 
 	end
-	GL:add_plugin(LM)
+	GL:add_plugin(LM, "liquid")
 	return LM
 end
 --alias

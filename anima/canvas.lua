@@ -695,19 +695,20 @@ function GLcanvas(GL)
 		end
 		formato = formato or "TIFF"
 		w,h = w or self.W, h or self.H
-		local pixelsUserData = ffi.new("short[?]",w*h*3)
+		local pixelsUserData = ffi.new("short[?]",w*h*4)
 		glext.glBindBuffer(glc.GL_PIXEL_PACK_BUFFER,0)
 		gl.glPixelStorei(glc.GL_PACK_ALIGNMENT, 1)
-		gl.glReadPixels(0,0, w, h, glc.GL_RGB, glc.GL_UNSIGNED_SHORT, pixelsUserData)
+		gl.glReadPixels(0,0, w, h, glc.GL_RGBA, glc.GL_UNSIGNED_SHORT, pixelsUserData)
 		
 		local err = ffi.new("int[1]")
-		local ifile = imffi.imFileNew(filename, formato,err);
+		local ifile = im.imffi.imFileNew(filename, formato,err);
 		checkError(err[0])
-		local err2 = imffi.imFileWriteImageInfo(ifile,w, h, im.RGB + im.PACKED, im.USHORT);
+		local err2 = im.imffi.imFileWriteImageInfo(ifile,w, h, im.RGB + im.ALPHA + im.PACKED, im.USHORT);
 		checkError(err2)
-		err2 = imffi.imFileWriteImageData(ifile, pixelsUserData);
+		err2 = im.imffi.imFileWriteImageData(ifile, pixelsUserData);
 		checkError(err2)
-		imffi.imFileClose(ifile); 
+		--im.imffi.imFileClose(ifile); 
+		ifile:Close()
 	end
 	
 	function GL:SaveImageVICIM(filename)
@@ -915,10 +916,16 @@ function GLcanvas(GL)
 				
 				if GL.SRGB then
 					gl.glEnable(glc.GL_FRAMEBUFFER_SRGB)
-					GL.fbo:GetTexture():drawpos(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
+					local tex = GL.fbo:GetTexture()
+					tex:gen_mipmap()
+					tex:drawpos(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
 					gl.glDisable(glc.GL_FRAMEBUFFER_SRGB)
 				else
-					GL.fbo:GetTexture():drawpos(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
+					local tex = GL.fbo:GetTexture()
+					tex:gen_mipmap()
+					--tex:mag_filter(glc.GL_NEAREST)
+					--tex:min_filter(glc.GL_NEAREST)
+					tex:drawpos(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
 				end
 				
 			end
@@ -1204,7 +1211,7 @@ function GLcanvas(GL)
 			plugin:init()
 			plugin.inited = true
 		end
-		print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxaddplugin: " .. (name or plugin.name or ""))
+		print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxaddplugin: " .. (name or plugin.name or ""),"NM",plugin.NM)
 		self.plugins = self.plugins or {}
 		self.plugins[#self.plugins + 1] = plugin --{plugin=plugin,name=name or ""}
 
@@ -1254,8 +1261,11 @@ function GLcanvas(GL)
 	-- because changed NM values or new texture provided
 	function GL:DirtyWrap()
 		for i,p in ipairs(self.plugins) do
+			print("GL:DirtyWrap",i,p,p.name)
+		end
+		for i,p in ipairs(self.plugins) do
 			--if not p.NM.isDBox then
-			print("DirtyWrap",p.NM,p.NM and p.NM.name or "unman")
+			print("DirtyWrap",p,p.NM,p.NM and p.NM.name or "unman")
 			--prtable(p)
 			p.oldprocess=p.process
 			p.NM.dirty = true

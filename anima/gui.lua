@@ -1158,8 +1158,10 @@ function gui.SetImGui(GL)
 				PresetLoader.draw()
 			end
 			local style = ig.GetStyle()
-			local window_visible_x2 = ig.GetWindowPos().x + ig.GetWindowContentRegionMax().x
+			--local window_visible_x2 = ig.GetWindowPos().x + ig.GetWindowContentRegionMax().x
+			local window_visible_x2 =   ig.GetIO().DisplaySize.x -- - ig.GetWindowPos().x
 			local last_button_x2 = 0
+			---[[
 			for i,v in ipairs(self.imguimodals) do
 				if not v.invisible then --and not v.dboxed then
 					local dopop = false
@@ -1180,7 +1182,18 @@ function gui.SetImGui(GL)
 			end
 			ig.Separator();
 			self.imguimodals[curr_notmodal]:draw()
-		
+			--]]
+			--[[ TabBar
+			if ig.BeginTabBar("MyTabBar",0) then
+				for i,v in ipairs(self.imguimodals) do
+					if ig.BeginTabItem(v.name) then
+						v:draw()
+						ig.EndTabItem()
+					end
+				end
+				ig.EndTabBar()
+			end
+			--]]
 		end
 		ig.End()
 	end

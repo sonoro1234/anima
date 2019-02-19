@@ -193,9 +193,9 @@ pl_mt.__index = {
 	
 function plugin.new(o,GL,NM)
 	o = o or {res={GL.W,GL.H}}
-	o.NM = NM
-	o.GL = GL
-	if NM then NM.plugin = o end
+	o.NM = o.NM or NM
+	o.GL = o.GL or GL
+	if o.NM then o.NM.plugin = o end
 	return setmetatable(o,pl_mt)
 end
 return plugin
