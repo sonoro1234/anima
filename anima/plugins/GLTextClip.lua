@@ -1,4 +1,4 @@
-local ut = require"glutils.common"
+
 
 local vert_shad = [[
 void main()
