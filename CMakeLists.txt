@@ -12,6 +12,7 @@ option(ANIMA_BUILD_GLFW "Build LuaJIT-GLFW" ON)
 option(ANIMA_BUILD_SDL "Build LuaJIT-SDL2" ON)
 option(ANIMA_BUILD_IMGUI "Build LuaJIT-IMGUI" ON)
 option(ANIMA_BUILD_SNDFILE "Build LuaJIT-libsndfile" ON)
+option(ANIMA_BUILD_RTAUDIO "Build LuaJIT-rtaudio" ON)
 
 #im modules
 if(ANIMA_BUILD_IM)
@@ -49,9 +50,16 @@ set(IMPL_OPENGL3 ON CACHE INTERNAL "imgui with opengl3")
 add_subdirectory(LuaJIT-ImGui)
 endif(ANIMA_BUILD_IMGUI)
 
+if(ANIMA_BUILD_RTAUDIO)
+add_subdirectory(LuaJIT-rtaudio)
+endif(ANIMA_BUILD_RTAUDIO)
+
+add_subdirectory(luajit-async)
 #########install
 
 install(DIRECTORY anima DESTINATION ${LUAJIT_BIN}/lua)
 install(FILES luafilesystem/lfs_ffi.lua DESTINATION ${LUAJIT_BIN}/lua)
+
+
 
 

@@ -16,3 +16,9 @@
 [submodule "mirror-im"]
 	path = mirror-im
 	url = https://github.com/sonoro1234/mirror-im
+[submodule "luajit-async"]
+	path = luajit-async
+	url = https://github.com/sonoro1234/luajit-async/
+[submodule "LuaJIT-rtaudio"]
+	path = LuaJIT-rtaudio
+	url = https://github.com/sonoro1234/LuaJIT-rtaudio.git
