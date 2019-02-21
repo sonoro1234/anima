@@ -37,3 +37,4 @@ Some CMake option to allow-disable building are:
 * ANIMA_BUILD_SDL - Building of SDL2
 * ANIMA_BUILD_IMGUI - Building of ImGui (This needs ANIMA_BUILD_GLFW or ANIMA_BUILD_SDL)
 * ANIMA_BUILD_SNDFILE - Building of libsndfile and libsamplerate
+* ANIMA_BUILD_RTAUDIO - Building of LuaJIT-rtaudio (defaults to OFF)

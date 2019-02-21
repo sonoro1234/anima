@@ -12,7 +12,7 @@ option(ANIMA_BUILD_GLFW "Build LuaJIT-GLFW" ON)
 option(ANIMA_BUILD_SDL "Build LuaJIT-SDL2" ON)
 option(ANIMA_BUILD_IMGUI "Build LuaJIT-IMGUI" ON)
 option(ANIMA_BUILD_SNDFILE "Build LuaJIT-libsndfile" ON)
-option(ANIMA_BUILD_RTAUDIO "Build LuaJIT-rtaudio" ON)
+option(ANIMA_BUILD_RTAUDIO "Build LuaJIT-rtaudio" OFF)
 
 #im modules
 if(ANIMA_BUILD_IM)
