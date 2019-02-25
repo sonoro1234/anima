@@ -1,4 +1,5 @@
-PROJECT(anima)
+PROJECT(anima) # VERSION 1)
+
 #to allow install from subdirectory
 cmake_minimum_required(VERSION 3.13)
 
@@ -17,7 +18,7 @@ option(ANIMA_BUILD_RTAUDIO "Build LuaJIT-rtaudio" OFF)
 # This function is used to force a build on a dependant project at cmake configuration phase.
 # 
 function (build_external_project target source_dir argn) #FOLLOWING ARGUMENTS are the CMAKE_ARGS of ExternalProject_Add
-
+message( "cmakeargs in are " ${argn})
     set(trigger_build_dir ${CMAKE_BINARY_DIR}/force_${target})
 
     #mktemp dir in build tree
@@ -29,7 +30,7 @@ function (build_external_project target source_dir argn) #FOLLOWING ARGUMENTS ar
 
         include(ExternalProject)
         ExternalProject_add(${target}
-			SOURCE_DIR ${source_dir}
+            SOURCE_DIR ${source_dir}
             CMAKE_ARGS ${argn}
             #INSTALL_COMMAND \"\"
             )
@@ -39,13 +40,15 @@ function (build_external_project target source_dir argn) #FOLLOWING ARGUMENTS ar
     ")
 
     file(WRITE ${trigger_build_dir}/CMakeLists.txt "${CMAKE_LIST_CONTENT}")
-
-    execute_process(COMMAND ${CMAKE_COMMAND}  -G ${CMAKE_GENERATOR} ..
+    message( "---------------------------configuring " ${target} "------------------------------")
+    execute_process(COMMAND ${CMAKE_COMMAND}  -G ${CMAKE_GENERATOR} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ..
         WORKING_DIRECTORY ${trigger_build_dir}/build
         )
+    message( "---------------------------building " ${target} "------------------------------")
     execute_process(COMMAND ${CMAKE_COMMAND} --build .
         WORKING_DIRECTORY ${trigger_build_dir}/build
         )
+    message( "---------------------------ended " ${target} "------------------------------")
 
 endfunction()
 
@@ -76,7 +79,7 @@ endif(ANIMA_BUILD_GLFW)
 if(ANIMA_BUILD_SDL)
 	#add_subdirectory(LuaJIT-SDL2)
 	set(IMPL_SDL ON CACHE INTERNAL "imgui with sdl")
-	build_external_project(luajit_sdl ${CMAKE_SOURCE_DIR}/LuaJIT-SDL2 -DLUAJIT_BIN=${LUAJIT_BIN})
+	build_external_project(luajit_sdl ${CMAKE_SOURCE_DIR}/LuaJIT-SDL2 "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DLUAJIT_BIN=${LUAJIT_BIN}")
 endif(ANIMA_BUILD_SDL)
 
 if(ANIMA_BUILD_IMGUI)
