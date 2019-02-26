@@ -54,13 +54,13 @@ endif(UNIX)
 
 
 #########install
-include (InstallRequiredSystemLibraries)
+
 if(UNIX)
 install(FILES ${ljsrc}/luajit ${ljsrc}/lua51.so DESTINATION ${LUAJIT_BIN})
 else(UNIX) #win
 install(FILES ${ljsrc}/luajit.exe ${ljsrc}/lua51.dll DESTINATION ${LUAJIT_BIN})
 endif(UNIX)
 install(DIRECTORY ${ljsrc}/jit DESTINATION ${LUAJIT_BIN}/lua/jit)
-INSTALL(FILES ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION ${LUAJIT_BIN})
+
 
 

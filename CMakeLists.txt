@@ -102,10 +102,23 @@ add_subdirectory(LuaJIT-rtaudio)
 endif(ANIMA_BUILD_RTAUDIO)
 
 add_subdirectory(luajit-async)
+
+
 #########install
 
 install(DIRECTORY anima DESTINATION ${LUAJIT_BIN}/lua)
 install(FILES luafilesystem/lfs_ffi.lua DESTINATION ${LUAJIT_BIN}/lua)
+##runtime libraries
+if( MINGW )
+    message( STATUS "    Installing system-libraries: MinGW DLLs." )
+    get_filename_component( Mingw_Path ${CMAKE_CXX_COMPILER} PATH )
+	file(GLOB libgcc LIST_DIRECTORIES false ${Mingw_Path}/libgcc*.dll)
+	#message("libgcc is " ${libgcc})
+    set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${Mingw_Path}/libwinpthread-1.dll ${libgcc} ${Mingw_Path}/libstdc++-6.dll )
+endif( MINGW )
+set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
+include (InstallRequiredSystemLibraries)
+INSTALL(FILES ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION ${LUAJIT_BIN})
 
 
 
