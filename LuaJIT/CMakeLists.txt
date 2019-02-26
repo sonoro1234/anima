@@ -40,11 +40,14 @@ else(UNIX)
   else(MSVC) #mingw
       ExternalProject_Add(project_luajit
       #URL ${URLLUAJIT}
-	  GIT_REPOSITORY ${URLLUAJIT}
-	  GIT_TAG v2.1
+	  #GIT_REPOSITORY ${URLLUAJIT}
+	  #GIT_TAG v2.1
       PREFIX ${ljpre}
-      CONFIGURE_COMMAND ""
+	  SOURCE_DIR ${CMAKE_SOURCE_DIR}/LuaJIT/LuaJIT
+      #CONFIGURE_COMMAND ""
+	  CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/LuaJIT/LuaJIT ${ljsrc}
       BINARY_DIR ${ljsrc}
+	  #BUILD_IN_SOURCE 1
       BUILD_COMMAND ${MAKE}
       INSTALL_COMMAND ""
     )
