@@ -52,7 +52,7 @@ install(FILES ${ljsrc}/luajit ${ljsrc}/lua51.so DESTINATION ${LUAJIT_BIN})
 else(UNIX) #win
 install(FILES ${ljsrc}/luajit.exe ${ljsrc}/lua51.dll DESTINATION ${LUAJIT_BIN})
 endif(UNIX)
-install(DIRECTORY ${ljsrc}/jit DESTINATION ${LUAJIT_BIN}/lua)
+install(DIRECTORY ${ljsrc}/jit DESTINATION ${LUAJIT_BIN}/lua FILES_MATCHING PATTERN "*.lua")
 
 
 
