@@ -67,6 +67,7 @@ endif(ANIMA_BUILD_LUAJIT)
 if(ANIMA_BUILD_SNDFILE)
 add_subdirectory(LuaJIT-libsndfile)
 set(REAL_HAVE_GETTIMEOFDAY HAVE_GETTIMEOFDAY)
+#message("LuaJIT-libsndfile HAVE_GETTIMEOFDAY " ${HAVE_GETTIMEOFDAY})
 endif(ANIMA_BUILD_SNDFILE)
 
 
@@ -101,10 +102,13 @@ endif(ANIMA_BUILD_IMGUI)
 if(ANIMA_BUILD_RTAUDIO)
 set(HAVE_GETTIMEOFDAY OFF)
 add_subdirectory(LuaJIT-rtaudio)
+#message("LuaJIT-rtaudio HAVE_GETTIMEOFDAY " ${HAVE_GETTIMEOFDAY})
 endif(ANIMA_BUILD_RTAUDIO)
 
 add_subdirectory(luajit-async)
 
+set(CMAKE_SHARED_LIBRARY_PREFIX "")
+add_subdirectory(LuaJIT-par)
 
 #########install
 

@@ -1,6 +1,4 @@
 local ffi = require"ffi"
-local mat = require"anima.matrixffi"
-local mesh = require"anima.mesh"
 
 ffi.cdef[[
 typedef uint32_t PAR_SHAPES_T ;
@@ -50,26 +48,9 @@ void par_shapes_remove_degenerate(par_shapes_mesh*, float minarea);
 
 local lib = ffi.load[[libshapes]]
 
-
 local par_shapes = {lib=lib}
 
 local mesh_mt = {
-	point = function(m,i)  return mat.vec3(m.points[i*3],m.points[i*3+1],m.points[i*3+2]) end,
-	tcoord = function(m,i)  return mat.vec2(m.tcoords[i*2],m.tcoords[i*2+1]) end,
-	triangle = function(m,i) return {m.triangles[i*3],m.triangles[i*3+1],m.triangles[i*3+2]} end,
-	normal = function(m,i)  return mat.vec3(m.normals[i*3],m.normals[i*3+1],m.normals[i*3+2]) end,
-	dump = function(m)
-		print"points"
-		for i=0,m.npoints - 1 do
-			print(i,m:point(i),m:tcoord(i),m:normal(i))
-		end
-		print"triangles"
-		for i=0,m.ntriangles- 1 do
-			print(i,unpack(m:triangle(i)))
-		end
-	end,
-	vao = function(m,prog) return mesh.par_shapes_vao(m,prog) end,
-	M4 = function(m,MM) return mesh.par_shapesM4(m,MM) end,
 	translate = function(...) return lib.par_shapes_translate(...) end,
 	rotate = function(...) return lib.par_shapes_rotate(...) end,
 	scale = function(...) return lib.par_shapes_scale(...) end,
@@ -84,11 +65,11 @@ local mesh_mt = {
 	remove_degenerate = function(...) return lib.par_shapes_remove_degenerate(...) end,
 	free = function(m) return lib.par_shapes_free_mesh(m) end,
 	__gc = function(m) print("__gc called"); 
-		return lib.par_shapes_free_mesh(m) 
+		--return lib.par_shapes_free_mesh(m) 
 	end
 }
 mesh_mt.__index = mesh_mt
-par_shapes.meshtype = ffi.metatype("par_shapes_mesh",mesh_mt)
+local meshtype = ffi.metatype("par_shapes_mesh",mesh_mt)
 
 local create_mt = {
 	__index = function(t,k)
@@ -101,32 +82,8 @@ local create_mt = {
 	end
 }
 par_shapes.create = setmetatable({},create_mt)
-local sin,cos = math.sin,math.cos
+
 --custom creations
-function par_shapes.create.quad_prism(b)
-	local radio = math.sqrt(2)/2 -- for quad width==1
-	return lib.par_shapes_create_parametric(function(inp,out,us) 
-		local u = math.pi * 2 * inp[1] - math.pi/4
-		out[0] = math.sin(u)*radio
-		out[1] = math.cos(u)*radio
-		out[2] = inp[0]
-	end,4,b,nil)
-end
-function par_shapes.create.quad_rprism(b)
-	local radio = math.sqrt(2)/2 -- for quad width==1
-	local width = 0.5 * 1.1
-	return lib.par_shapes_create_parametric(function(inp,out,us) 
-		local u = math.pi * 2 * inp[1] - math.pi/4
-		out[0] = math.sin(u)*radio
-		out[1] = math.cos(u)*radio
-		local maxi = math.max(math.abs(out[0]),math.abs(out[1]))
-		if maxi > width then
-			out[0] = out[0]*width/maxi
-			out[1] = out[1]*width/maxi
-		end
-		out[2] = inp[0]
-	end,4*30,b,nil)
-end
 local conefunc = ffi.cast("par_shapes_fn",function(inp,out,us) 
 		local u = math.pi * 2 * inp[1]
 		local v = 1 - inp[0]
@@ -145,16 +102,6 @@ function par_shapes.create.circle(a)
 		out[1] = math.cos(u)
 		out[2] = 0
 	end,a,0,nil)
-end
---without par_shapes_remove_degenerate 
-function par_shapes.create.parametric_sphere2(a,b)
-	return lib.par_shapes_create_parametric(function(inp,out,us) 
-		local phi = inp[0] * math.pi;
-		local theta = inp[1] * 2 * math.pi;
-		out[0] = cos(theta) * sin(phi);
-		out[1] = sin(theta) * sin(phi);
-		out[2] = cos(phi);
-	end,a,b,nil)
 end
 --local cone_tronco_func = ffi.cast("par_shapes_fn",
 function par_shapes.create.cone_tronco(a,b,r2,inv)

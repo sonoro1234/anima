@@ -26,3 +26,7 @@
 	path = LuaJIT/LuaJIT
 	url = https://github.com/LuaJIT/LuaJIT.git
 	branch = v2.1
+[submodule "par"]
+	path = LuaJIT-par/par
+	url = https://github.com/sonoro1234/par
+	branch = libgen2
