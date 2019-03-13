@@ -48,7 +48,7 @@ void par_shapes_merge_and_free(par_shapes_mesh* dst, par_shapes_mesh* src);
 void par_shapes_remove_degenerate(par_shapes_mesh*, float minarea);
 ]]
 
-local lib = ffi.load[[libshapes]]
+local lib = ffi.load[[shapes]]
 
 
 local par_shapes = {lib=lib}

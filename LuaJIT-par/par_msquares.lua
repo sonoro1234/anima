@@ -64,7 +64,7 @@ void par_msquares_free(par_msquares_meshlist*);
 par_msquares_boundary* par_msquares_extract_boundary(par_msquares_mesh const* );
 ]]
 
-local lib = ffi.load[[libmsquares]]
+local lib = ffi.load[[msquares]]
 ---[[
 local par_msquares = {lib=lib}
 -- Reverses the "insideness" test.
