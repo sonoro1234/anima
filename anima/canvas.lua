@@ -72,7 +72,7 @@ function MakeRtaudioTimeProvider(GL,dac, totdur)
 	return tp
 end
 
-function MakeSDLAudioTimeProvider(GL,dac, totdur)
+function MakeAudioPlayerTimeProvider(GL,dac, totdur)
 	GL.dac = dac
 	local tp = {totdur = totdur }
 	function tp:get_time()
@@ -119,6 +119,39 @@ function PrepareAudio(GL,soundfile,offset,args)--asio,dev_id)
 	
 	GL.timeprovider = MakeRtaudioTimeProvider(GL,dac,DURAMUSICA + offset +5 + (args.extratime or 0) )
 end
+function PrepareAudioRT(GL,soundfile,offset,args)--asio,dev_id)
+	args = args or {}
+	offset = offset or 0
+	local dev_id = args.dev_id or 0
+	local rt = require 'rtaudio_ffi'
+	local AudioPlayer = require("rtAudioPlayer")
+	local sndf = require"sndfile_ffi"
+	
+	local apis = rt.compiled_api()
+	local api = apis[0]
+	--local api = rt.API_WINDOWS_WASAPI
+	local dac = rt.create(api)
+	local device = rt.get_default_output_device(dac)
+	print("using",ffi.string(rt.api_name(api)))
+--copy specs from file
+	local info = sndf.get_info(soundfile)
+	local audioplayer,err = AudioPlayer({
+    dac = dac,
+    device = device,
+    freq = info.samplerate, 
+    format = rt.FORMAT_FLOAT32,
+    channels = info.channels, 
+    samples = 1024})
+	
+	assert(audioplayer,err)
+	
+	
+	audioplayer:insert(soundfile)
+	local DURAMUSICA = info.frames/info.samplerate
+	
+	
+	GL.timeprovider = MakeAudioPlayerTimeProvider(GL,audioplayer,DURAMUSICA + offset +5 + (args.extratime or 0) )
+end
 function PrepareAudioSDL(GL,soundfile,offset,args)--asio,dev_id)
 	args = args or {}
 	offset = offset or 0
@@ -148,7 +181,7 @@ function PrepareAudioSDL(GL,soundfile,offset,args)--asio,dev_id)
 	local DURAMUSICA = info.frames/info.samplerate
 	
 	
-	GL.timeprovider = MakeSDLAudioTimeProvider(GL,dac,DURAMUSICA + offset +5 + (args.extratime or 0) )
+	GL.timeprovider = MakeAudioPlayerTimeProvider(GL,dac,DURAMUSICA + offset +5 + (args.extratime or 0) )
 end
 local function newFPScounter(printer,inifps)
 	printer = printer or print
