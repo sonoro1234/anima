@@ -364,7 +364,7 @@ local function Histogram(nbins)
 	return hist
 end
 
----[=[
+--[=[
 require"anima"
 local GL = GLcanvas{H=800,aspect=1}
 local Histogram1 = Histogram(400)

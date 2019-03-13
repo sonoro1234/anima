@@ -599,7 +599,7 @@ function funcdirr(path, func, pat, recur, funcd, tree)
             assert (type(attr) == "table")
             if attr.mode == "directory" and recur then
 				if funcd then funcd(f,file,attr,tree) end
-                funcdirr(f, func,pat,recur,funcd,tree.."\\"..file)
+                funcdirr(f, func,pat,recur,funcd,tree..sep..file)
             elseif (not pat) or file:match(".+%."..pat.."$") then
 				func(f, file, attr, tree)
             end

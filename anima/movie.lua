@@ -31,7 +31,7 @@ end
 function movie:init()
 	if self.format == "AVI" then
 		if not self.avifile then
-			local fsavename = self.directory .. [[\avimoviee]] .. self.ext
+			local fsavename = self.directory .. [[/avimoviee]] .. self.ext
 			local err = ffi.new("int[1]")
 			self.avifile = imffi.imFileNew(fsavename, "AVI",err)
 			if (err[0] ~= im.ERR_NONE) then
@@ -46,7 +46,7 @@ function movie:init()
 			--imffi.imImageSetAttribReal(self.avifile,"FPS", im.FLOAT,GL.fps)			
 		end
 	else
-		local framesdir = self.directory .. [[\frames]]
+		local framesdir = self.directory .. [[/frames]]
 		local path = require"anima.path"
 		path.mkdir(framesdir)
 		--pbo stuff for async read
@@ -120,7 +120,7 @@ function movie:SaveFrame(GL,tim)
 	if self.format == "AVI" then
 		GL:SaveAVIImage(self.avifile)
 	else
-		local fsavename = self.directory .. [[\frames\frame]] .. string.format("%.4d",self.current_frame) .. self.ext
+		local fsavename = self.directory .. [[/frames/frame]] .. string.format("%.4d",self.current_frame) .. self.ext
 		if self.bits == 16 then
 			GL:SaveImage16(fsavename,self.format)
 		else
@@ -131,11 +131,11 @@ function movie:SaveFrame(GL,tim)
 
 end
 function movie:ClearFrames()
-	funcdir(self.directory .. "\\frames",function(f) os.remove(f) end)
+	funcdir(self.directory .. "/frames",function(f) os.remove(f) end)
 	self.current_frame = 0
 end
 function movie:MakeMovie(movie_name,fps)
-	local dir = self.directory .. "\\frames"
+	local dir = self.directory .. "/frames"
 	local counter = 0
 	local function ProcessFrame(file_name, ifile)
 		counter = (counter + 1)%10

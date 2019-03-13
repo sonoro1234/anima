@@ -300,7 +300,7 @@ function M.photofx(GL,args)
 end
 --alias
 M.make = M.photofx
----[=[
+--[=[
 require"anima"
 local GL = GLcanvas{H=800,aspect=3/2}
 local tex,slab,lch

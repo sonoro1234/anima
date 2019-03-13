@@ -206,7 +206,7 @@ end
 	return thisdraw
 end
 
----[=[
+--[=[
 
 GL = GLcanvas{H=1080,viewH=700,aspect=1.5}
 ext = make(GL)

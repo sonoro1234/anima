@@ -276,7 +276,7 @@ function layers_seq:folder_seq(carpetas,imagefiles,offset)
 		local fade2 = car.fade or 0 --frdur*(car.ga or 0.1)
 		--local imags = TA(imagefiles["\\"..car[1]])(car[3],car[4] or #imagefiles["\\"..car[1]])
 		local imags = {}
-		local imagsrc = imagefiles["\\"..car[1]]
+		local imagsrc = imagefiles[path.sep..car[1]]
 		if not imagsrc then error("cant find folder:"..car[1]) end
 		local inifr,endfr = (car[3] or 1),(car[4] or #imagsrc)
 		dur =  dur or ((endfr - inifr + 1)*frdur)
