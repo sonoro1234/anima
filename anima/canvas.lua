@@ -146,7 +146,7 @@ function PrepareAudioRT(GL,soundfile,offset,args)--asio,dev_id)
 	assert(audioplayer,err)
 	
 	
-	audioplayer:insert(soundfile)
+	audioplayer:insert(soundfile,1,offset)
 	local DURAMUSICA = info.frames/info.samplerate
 	
 	
@@ -177,7 +177,7 @@ function PrepareAudioSDL(GL,soundfile,offset,args)--asio,dev_id)
 	print("sdlAudioPlayer device info:")
 	dac.obtained_spec[0]:print()
 	
-	dac:insert(soundfile)
+	dac:insert(soundfile,1,offset)
 	local DURAMUSICA = info.frames/info.samplerate
 	
 	
