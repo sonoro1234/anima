@@ -12,6 +12,8 @@ add_library(msquares SHARED msquares.c)
 SET_TARGET_PROPERTIES(shapes PROPERTIES PREFIX "")
 SET_TARGET_PROPERTIES(msquares PROPERTIES PREFIX "")
 
-install(TARGETS shapes msquares DESTINATION ${LUAJIT_BIN})
+install(TARGETS shapes msquares RUNTIME DESTINATION ${LUAJIT_BIN}
+					LIBRARY DESTINATION ${LUAJIT_BIN}
+)
 INSTALL(FILES par_shapes.lua par_msquares.lua DESTINATION ${LUAJIT_BIN}/lua)
 
