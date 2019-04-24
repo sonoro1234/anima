@@ -48,7 +48,9 @@ endif(UNIX)
 #########install
 
 if(UNIX)
-install(FILES ${ljsrc}/luajit ${ljsrc}/lua51.so DESTINATION ${LUAJIT_BIN})
+install(FILES ${ljsrc}/luajit ${ljsrc}/libluajit.so 
+  PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+  DESTINATION ${LUAJIT_BIN})
 else(UNIX) #win
 install(FILES ${ljsrc}/luajit.exe ${ljsrc}/lua51.dll DESTINATION ${LUAJIT_BIN})
 endif(UNIX)
