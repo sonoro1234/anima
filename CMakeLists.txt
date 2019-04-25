@@ -114,6 +114,12 @@ add_subdirectory(LuaJIT-par)
 
 install(DIRECTORY anima DESTINATION ${LUAJIT_BIN}/lua)
 install(FILES luafilesystem/lfs_ffi.lua DESTINATION ${LUAJIT_BIN}/lua)
+#####linux luajit launcher
+if(UNIX)
+install(FILES anima_launcher 
+PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+DESTINATION ${LUAJIT_BIN})
+endif(UNIX)
 ##runtime libraries
 if( MINGW )
     message( STATUS "    Installing system-libraries: MinGW DLLs." )
