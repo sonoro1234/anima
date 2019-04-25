@@ -3,9 +3,9 @@ PROJECT(anima) # VERSION 1)
 #to allow install from subdirectory
 cmake_minimum_required(VERSION 3.13)
 
-#if(MSVC) #to work as all the others
+if(WIN32) #to mingw work as all the others
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
-#endif(MSVC)
+endif(WIN32)
 
 option(ANIMA_BUILD_LUAJIT "Build LuaJIT" ON)
 option(ANIMA_BUILD_IM "Build im" ON)
@@ -107,7 +107,7 @@ endif(ANIMA_BUILD_RTAUDIO)
 
 add_subdirectory(luajit-async)
 
-set(CMAKE_SHARED_LIBRARY_PREFIX "")
+
 add_subdirectory(LuaJIT-par)
 
 #########install

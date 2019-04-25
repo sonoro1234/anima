@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 2.8.7)
 project(libpar)
 
-#set(CMAKE_SHARED_LIBRARY_PREFIX "")
+if(WIN32) #to mingw work as all the others
+set(CMAKE_SHARED_LIBRARY_PREFIX "")
+endif(WIN32)
 # set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "-std=c11 -Wall")
 # set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wvla -Wall")
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS 1)
