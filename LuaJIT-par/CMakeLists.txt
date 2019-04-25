@@ -11,8 +11,7 @@ include_directories(par)
 
 add_library(shapes SHARED shapes.c)
 add_library(msquares SHARED msquares.c)
-SET_TARGET_PROPERTIES(shapes PROPERTIES PREFIX "")
-SET_TARGET_PROPERTIES(msquares PROPERTIES PREFIX "")
+
 
 install(TARGETS shapes msquares RUNTIME DESTINATION ${LUAJIT_BIN}
 					LIBRARY DESTINATION ${LUAJIT_BIN}
