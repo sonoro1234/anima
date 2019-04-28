@@ -23,7 +23,7 @@ function NotModal(...)
 	return GL:Dialog(...)
 end
 ----------------------------------
-
+require"anima.GLSL"
 require"anima.textures"
 --
 local function MakeDefaultTimeProvider(GL)
@@ -227,13 +227,17 @@ function ffistr(str)
 		return nil
 	end
 end
-function print_glinfo()
+function print_glinfo(self)
 	print("print_glinfo")
-
-
-	print("glu.VERSION ",ffistr(glu.gluGetString(glc.GLU_VERSION)))
-	print("glu.EXTENSIONS ",ffistr(glu.gluGetString(glc.GLU_EXTENSIONS)))
-	GetGLError("in EXTENSIONS 1",true)
+	--not glu in this:
+	if not self.restricted then
+		GetGLError("in EXTENSIONS 0")
+		print("glu.VERSION ",ffistr(glu.gluGetString(glc.GLU_VERSION)))
+		print("glu.EXTENSIONS ",ffistr(glu.gluGetString(glc.GLU_EXTENSIONS)))
+	else
+		print("GLU not usable in CORE and >=3.2")
+	end
+	GetGLError("in EXTENSIONS 1")
 	print("gl.VENDOR ",ffistr(gl.glGetString(glc.GL_VENDOR)))
 	print("gl.RENDERER ",ffistr(gl.glGetString(glc.GL_RENDERER)))
 	print("gl.VERSION ",ffistr(gl.glGetString(glc.GL_VERSION))) 
@@ -279,7 +283,7 @@ function GetGLError(str, donterror)
 		local err = gl.glGetError()
 		if err ~= glc.GL_NO_ERROR then
 			print(str,"GetGLError opengl error:",err)
-			print((glu.gluErrorString(err)==nil) and "unknown error" or ffi.string(glu.gluErrorString(err)))
+			--print((glu.gluErrorString(err)==nil) and "unknown error" or ffi.string(glu.gluErrorString(err)))
 			iserror = true 
 			if not donterror then error("opengl error",2) end
 		else
@@ -406,7 +410,7 @@ local function GuiInitGLFW(GL)
 	--GL.Impl = ig.ImplGlfwGL3()
 
 	print"imgui init"
-	GL.Impl:Init(GL.window, false)
+	GL.Impl:Init(GL.window, false,GL.glsl_version or "#version 130")
 	ig.GetIO().ConfigFlags = ig.GetIO().ConfigFlags + imgui.ImGuiConfigFlags_NavEnableKeyboard
 	print"imgui init done"
 	
@@ -578,13 +582,23 @@ function GLcanvas(GL)
 	--lj_glfw.init()
 	
 	GL.gl_version = GL.gl_version or {3,3} --{1,0}
+	GL.v3_2plus = (GL.gl_version[1]>3 or (GL.gl_version[1]==3 and GL.gl_version[2] >=2))
+	GL.v3_0plus = GL.gl_version[1]>=3
+	if (GL.profile == "CORE" and GL.v3_2plus) then
+		GL.restricted = true
+		GLSL.default_version = "#version 130\n"
+	end
 	
 	GL.postdraw = function() end
 	GL.keyframers = {}
 	GL.animated_keyframers = {}
 	if not GL.not_imgui then gui.SetImGui(GL) end
 
-
+	function GL:initFBO(args)
+		args = args or {}
+		args.GL = self
+		return initFBO(self.W,self.H,args)
+	end
 	
 	function GL:set_WH(W,H)
 		W = W or self.W
@@ -594,10 +608,10 @@ function GLcanvas(GL)
 		self.H = H 
 		self.aspect = W/H
 		if self.fbo then self.fbo:delete() end--TODO check _gc
-		self.fbo = initFBO(W,H) --,{SRGB=self.SRGB}) 
+		self.fbo = self:initFBO() --,{SRGB=self.SRGB}) 
 		if self.SRGB then
 			if self.srgb_fbo then self.srgb_fbo:delete() end--TODO check _gc
-			self.srgb_fbo = initFBO(W,H,{SRGB=true}) 
+			self.srgb_fbo = self:initFBO({SRGB=true}) 
 		end
 		self.OnResize(self.window,self:getWindowSize()) --calculate viewW etc
 		if self.plugins then
@@ -932,6 +946,7 @@ function GLcanvas(GL)
 		
 		if not (self.window:getAttrib( glfwc.GLFW_ICONIFIED)>0) then --iconif
 		--strange error on gl.ortho(0,0,0,0...
+			
 			if GL.use_fbo then
 				glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, 0);
 				gl.glClearColor(0.1,0.1,0.1,1)
@@ -955,6 +970,7 @@ function GLcanvas(GL)
 					gl.glDisable(glc.GL_FRAMEBUFFER_SRGB)
 				else
 					local tex = GL.fbo:GetTexture()
+					
 					tex:gen_mipmap()
 					--tex:mag_filter(glc.GL_NEAREST)
 					--tex:min_filter(glc.GL_NEAREST)
@@ -982,12 +998,20 @@ function GLcanvas(GL)
 	local function startSDL(self) 
 
 		self:doinit()
+		
+		local ev2ig
+		if self.not_imgui then
+			ev2ig = function() end
+		else
+			ev2ig = function(event) ig.lib.ImGui_ImplSDL2_ProcessEvent(event); end
+		end
+		
 		local done = false
 		while not done do
 
 			local event = ffi.new"SDL_Event"
 			while (sdl.pollEvent(event) ~=0) do
-				ig.lib.ImGui_ImplSDL2_ProcessEvent(event);
+				ev2ig(event);
 				if (event.type == sdl.QUIT) then
 					done = true;
 				end
@@ -1094,9 +1118,9 @@ function GLcanvas(GL)
 	end
 	
 	local function doinitCOMMON(self)
-		require"anima.GLSL"
+		--require"anima.GLSL"
 		-----------------------------------------------------------------------------------
-		print_glinfo()
+		print_glinfo(self)
 		if self.profile == "COMPAT" then
 
 			GetGLError"doinit 2"
@@ -1172,7 +1196,11 @@ function GLcanvas(GL)
 			error()
 		end
 		--sdl.gL_SetAttribute(sdl.GL_CONTEXT_FLAGS, sdl.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
+		if self.profile == "COMPAT" then
 		sdl.gL_SetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, sdl.GL_CONTEXT_PROFILE_COMPATIBILITY);
+		else --CORE
+		sdl.gL_SetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, sdl.GL_CONTEXT_PROFILE_CORE);
+		end
 		sdl.gL_SetAttribute(sdl.GL_DOUBLEBUFFER, 1);
 		sdl.gL_SetAttribute(sdl.GL_DEPTH_SIZE, 24);
 		sdl.gL_SetAttribute(sdl.GL_STENCIL_SIZE, 8);
@@ -1216,11 +1244,17 @@ function GLcanvas(GL)
 		
 		glfw.glfwWindowHint(glfwc.GLFW_CONTEXT_VERSION_MAJOR, self.gl_version[1]);
 		glfw.glfwWindowHint(glfwc.GLFW_CONTEXT_VERSION_MINOR, self.gl_version[2]);
-
+		
+		if self.v3_2plus then
 		glfw.glfwWindowHint(glfwc.GLFW_OPENGL_PROFILE, glfwc["GLFW_OPENGL_"..self.profile.."_PROFILE"]);
-
+		end
+		
+		if self.v3_0plus then
 		if jit.os == "OSX" then
 			glfw.glfwWindowHint(glfwc.GLFW_OPENGL_FORWARD_COMPAT, glc.GL_TRUE);
+		else
+			glfw.glfwWindowHint(glfwc.GLFW_OPENGL_FORWARD_COMPAT, self.forward and glc.GL_TRUE or glc.GL_FALSE);
+		end
 		end
 
 		local window = lj_glfw.Window(self.viewW, self.viewH, self.name or "")
@@ -1259,7 +1293,7 @@ function GLcanvas(GL)
 	GL.render_source = "master1080"
 	GL.comp_source = "compressed1080"
 	function GL:Texture()
-		local tex = Texture(self.W,self.H)
+		local tex = Texture(self.W,self.H,nil,nil,{GL=self})
 		tex.GL = self
 		local path = require"anima.path"
 		function tex:GLLoad(filename)
@@ -1282,7 +1316,7 @@ function GLcanvas(GL)
 			table.remove(self.fbo_pool,1)
 			return fbo
 		else
-			local fbo = initFBO(self.W,self.H,{no_depth=true})
+			local fbo = self:initFBO({no_depth=true})
 			fbo.release = function(self)
 						GL.fbo_pool[#GL.fbo_pool + 1] = self
 					end

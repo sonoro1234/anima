@@ -32,7 +32,11 @@ function M.Quad(left,top,right,bottom)
 end
 
 function M.quad(left,bottom,right,top)
-	--left = left or
+	left = left or -1
+	bottom = bottom or -1
+	right = right or 1
+	top = top or 1
+	
 	local m = {}
 	m.points = {
         left,bottom, 0,

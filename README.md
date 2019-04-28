@@ -27,7 +27,7 @@ GL:start()
 
 Started a building CMake system only needing -DLUAJIT_BIN="path where you desire installation".
 
-Most doubtful is LuaJIT building.(You can disable it with -DANIMA_BUILD_LUAJIT=no)
+CMake 3.13 is needed for installing git submodules. (If your system doesnt have it it can be downloaded from https://cmake.org/download/ and then used from a script that sets the PATH)
 
 Some CMake option to allow-disable building are:
 

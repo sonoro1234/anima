@@ -676,11 +676,13 @@ function Texture1D(w,formato,data,format,type)
 	end
 	return tex
 end
-function Texture(w,h,formato,pTexor)
+function Texture(w,h,formato,pTexor,args)
+	if not args then print("texture witout context") end
+	args = args or {GL={}}
 	w = w or 1
 	h = h or 1
 	formato = formato or glc.GL_RGBA
-	local tex = {aspect= w/h,width=w,height=h,isTex2D=true,instance=0,formato=formato}
+	local tex = {aspect= w/h,width=w,height=h,isTex2D=true,instance=0,formato=formato,GL=args.GL}
 	
 	if not pTexor then
 		tex.pTex = ffi.new("GLuint[?]",1)
@@ -728,17 +730,21 @@ function Texture(w,h,formato,pTexor)
 	end
 	function tex:mag_filter(mode)
 		self:Bind()
-		gl.glEnable(glc.GL_TEXTURE_2D) --ati bug
+		 --ati bug
+		if not self.GL.restricted then gl.glEnable( glc.GL_TEXTURE_2D ); end
 		gl.glTexParameteri(glc.GL_TEXTURE_2D,glc.GL_TEXTURE_MAG_FILTER,mode)
 	end
 	function tex:min_filter(mode)
 		self:Bind()
-		gl.glEnable(glc.GL_TEXTURE_2D) --ati bug
+		 --ati bug
+		if not self.GL.restricted then gl.glEnable( glc.GL_TEXTURE_2D ); end
 		gl.glTexParameteri(glc.GL_TEXTURE_2D,glc.GL_TEXTURE_MIN_FILTER,mode)
 	end
 	function tex:gen_mipmap(n)
 		self:Bind(n)
-		gl.glEnable(glc.GL_TEXTURE_2D) --ati bug
+		
+		 --ati bug
+		if not self.GL.restricted then gl.glEnable( glc.GL_TEXTURE_2D ); end
 		glext.glGenerateMipmap(glc.GL_TEXTURE_2D)
 		--gl.glTexParameteri(glc.GL_TEXTURE_2D,glc.GL_TEXTURE_MIN_FILTER,glc.GL_LINEAR_MIPMAP_LINEAR)
 		--gl.glTexParameteri(glc.GL_TEXTURE_2D,glc.GL_TEXTURE_MIN_FILTER,glc.GL_NEAREST_MIPMAP_LINEAR)
@@ -751,7 +757,7 @@ function Texture(w,h,formato,pTexor)
 		n = n or 0
 		--local modewrap = glc.GL_MIRRORED_REPEAT --glc.GL_CLAMP --glc.GL_REPEAT --glc.GL_MIRRORED_REPEAT
 		glext.glActiveTexture(glc.GL_TEXTURE0 + n);
-		gl.glEnable( glc.GL_TEXTURE_2D );
+		if not self.GL.restricted then gl.glEnable( glc.GL_TEXTURE_2D ); end
 		gl.glBindTexture(glc.GL_TEXTURE_2D, self.tex)
 		--gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_WRAP_S, modewrap); 
 		--gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_WRAP_T, modewrap);

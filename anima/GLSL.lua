@@ -445,6 +445,8 @@ function printFramebufferInfo(target, fbo)
 end
 
 function initFBO(wFBO,hFBO,args)
+	assert(args.GL)
+
 	if type(wFBO)=="table" then hFBO = wFBO.H; wFBO=wFBO.W end
 	print("initFBO",wFBO,hFBO)
 	wFBO = math.max(1,wFBO)
@@ -459,7 +461,7 @@ function initFBO(wFBO,hFBO,args)
 	local old_framebuffer = ffi.new("GLint[1]",0)
 	gl.glGetIntegerv(glc.GL_FRAMEBUFFER_BINDING, old_framebuffer)
 	--the fbo
-	local thefbo = {w = wFBO, h = hFBO}
+	local thefbo = {w = wFBO, h = hFBO, GL=args.GL}
 	thefbo.fb = ffi.new("GLuint[1]")
 	glext.glGenFramebuffers(1, thefbo.fb);
 	glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, thefbo.fb[0]);
@@ -552,14 +554,14 @@ function initFBO(wFBO,hFBO,args)
    local depth_tex 
    function thefbo:GetDepthTexture()
 		if depth_tex then return depth_tex end
-		depth_tex = Texture(wFBO,hFBO,glc.GL_RGBA,self.depth_rb )
+		depth_tex = Texture(wFBO,hFBO,glc.GL_RGBA,self.depth_rb,{GL=self.GL}  )
 		return depth_tex
    end
    local textures = {}
    function thefbo:GetTexture(i)
 		i = i or 0
 		if textures[i] then return textures[i] end
-		textures[i] = Texture(wFBO,hFBO,glc.GL_RGBA,self.color_tex + i )
+		textures[i] = Texture(wFBO,hFBO,glc.GL_RGBA,self.color_tex + i,{GL=self.GL} )
 		return textures[i]
    end
    thefbo.tex = thefbo.GetTexture --alias

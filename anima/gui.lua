@@ -1202,17 +1202,21 @@ function gui.SetImGui(GL)
 		if GL.show_imgui then
 
 			self.Impl:NewFrame()
-			
+
 			if self.Log then self.Log:Draw() end
 			
 			self:draw_imgui_not_modal()
-				
+
 			if self.imgui then self:imgui() end
-			
+
 			self.transport:draw()
-			
+
 			self.Impl:Render()
+			
+			gl.glGetError() --TODO: REMOVE after Ati Radeon bug is solved https://github.com/ocornut/imgui/issues/2519
+
 			if self.postimgui then self.postimgui() end
+
 --[[
 			--viewport branch
 			local igio = ig.GetIO()
