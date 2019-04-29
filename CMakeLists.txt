@@ -7,6 +7,16 @@ if(WIN32) #to mingw work as all the others
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
 endif(WIN32)
 
+############ set RPATH still not tested
+#[[if (APPLE)
+    set(CMAKE_INSTALL_RPATH "@executable_path/")
+else()
+    set(CMAKE_INSTALL_RPATH "$ORIGIN/")
+endif()
+
+set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
+]]
+
 option(ANIMA_BUILD_LUAJIT "Build LuaJIT" ON)
 option(ANIMA_BUILD_IM "Build im" ON)
 option(ANIMA_BUILD_GLFW "Build LuaJIT-GLFW" ON)
@@ -114,6 +124,7 @@ add_subdirectory(LuaJIT-par)
 
 install(DIRECTORY anima DESTINATION ${LUAJIT_BIN}/lua)
 install(FILES luafilesystem/lfs_ffi.lua DESTINATION ${LUAJIT_BIN}/lua)
+install(DIRECTORY examples DESTINATION ${LUAJIT_BIN})
 #####linux luajit launcher
 if(UNIX)
 install(FILES anima_launcher 
