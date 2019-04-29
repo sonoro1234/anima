@@ -1,20 +1,21 @@
 
 local vert_shad = [[
+
 in vec3 position;
-in vec2 texcoords;
 void main()
 {
-	gl_TexCoord[0] = vec4(texcoords,0,1);
+
 	gl_Position = vec4(position,1);
 }
 ]]
 
 local colors = require"anima.GLSL.GLSL_color"
 
-local frag_shad = colors..[[
+local frag_shad = "#version 420\n"..colors..[[
 uniform float L;
 uniform vec2 size;
 uniform bool out_color;
+out vec4 FragColor;
 void main()
 {
 	vec2 pos = gl_FragCoord.xy/size;
@@ -29,14 +30,14 @@ void main()
 		if (any(greaterThan(color,vec3(1.0))) || any(lessThan(color,vec3(0.0))))
 			color = vec3(0.0);
 	}		
-	gl_FragColor = vec4(color,1);
+	FragColor = vec4(color,1);
 }
 
 ]]
 
 require"anima"
 
-GL = GLcanvas{H=800,aspect=1,profile="CORE",SDL=false}
+GL = GLcanvas{H=800,aspect=1,profile="CORE",SDL=false} --SDL=true to change GLFW for SDL
 
 NM = GL:Dialog("lab_viewer",
 {
