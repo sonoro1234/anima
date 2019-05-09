@@ -1,0 +1,19 @@
+PROJECT(simplexnoise CXX)
+cmake_minimum_required(VERSION 2.8)
+set(simplex_src
+    simplexnoise.cpp
+)
+add_definitions(-DLUA_BUILD_AS_DLL -DLUA_LIB)
+INCLUDE_DIRECTORIES(${LUA_INCLUDE_DIR})
+add_library(simplexnoisecpp STATIC ${simplex_src})
+ADD_LIBRARY(simplexnoise SHARED luasimplexnoise.cpp)
+set_target_properties(simplexnoise PROPERTIES PREFIX "")
+if(WIN32)
+	set(LUA_LIBRARY_L ${LUA_LIBRARY})
+else()
+	set(LUA_LIBRARY_L "")
+endif()
+TARGET_LINK_LIBRARIES(simplexnoise ${LUA_LIBRARY} simplexnoisecpp)
+
+INSTALL (TARGETS simplexnoise RUNTIME DESTINATION ${LUAJIT_BIN} LIBRARY DESTINATION ${LUAJIT_BIN})
+install(FILES perlinnoise.lua DESTINATION ${LUAJIT_BIN}/lua)

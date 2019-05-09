@@ -16,6 +16,7 @@ endif()
 
 set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 ]]
+######################################
 
 option(ANIMA_BUILD_LUAJIT "Build LuaJIT" ON)
 option(ANIMA_BUILD_IM "Build im" ON)
@@ -106,6 +107,7 @@ if(ANIMA_BUILD_IMGUI)
 	endif(NOT ANIMA_BUILD_GLFW AND NOT ANIMA_BUILD_SDL)
 	set(IMPL_OPENGL2 ON CACHE INTERNAL "imgui for opengl2")
 	set(IMPL_OPENGL3 ON CACHE INTERNAL "imgui with opengl3")
+	set(IMPL_EXTRAS ON)
 	add_subdirectory(LuaJIT-ImGui)
 endif(ANIMA_BUILD_IMGUI)
 
@@ -117,8 +119,14 @@ endif(ANIMA_BUILD_RTAUDIO)
 
 add_subdirectory(luajit-async)
 
-
 add_subdirectory(LuaJIT-par)
+
+if(WIN32)
+set(LUA_LIBRARY ${CMAKE_BINARY_DIR}/LuaJIT/luajit-2.1/project_luajit/src/lua51.dll)
+endif()
+set(LUA_INCLUDE_DIR ${CMAKE_BINARY_DIR}/LuaJIT/luajit-2.1/project_luajit/src)
+
+add_subdirectory(luanoise)
 
 #########install
 
