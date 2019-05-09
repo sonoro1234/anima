@@ -132,7 +132,7 @@ void main(void)
 ]]
 
 local function BlurClipMaker(GL)
-	local ANCHO,ALTO = GL.W,GL.H
+
 	local Clip = {}
 	local programH, programV,programstd
 	local mixfbos = {}
@@ -147,8 +147,8 @@ local function BlurClipMaker(GL)
 		programH = GLSL:new():compile(nil,fragH2);
 		programV = GLSL:new():compile(nil,fragV2);
 		programstd = GLSL:new():compile(vert_std,frag_std);
-		mixfbos[0] = initFBO(ANCHO,ALTO)
-		mixfbos[1] = initFBO(ANCHO,ALTO)
+		mixfbos[0] = GL:initFBO()
+		mixfbos[1] = GL:initFBO()
 		Clip.inited = true
 	end
 

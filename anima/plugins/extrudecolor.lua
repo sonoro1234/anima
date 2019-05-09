@@ -82,7 +82,7 @@ function M.make(GL)
 	P.camera = newCamera(GL,true,"extrude")
 	P.NM = NM 
 	function P:init()
-		self.fbo = initFBO(GL.W,GL.H)
+		self.fbo = GL:initFBO()
 		
 		self.program = GLSL:new()
 		self.program:compile(vert_shada,frag_shada);

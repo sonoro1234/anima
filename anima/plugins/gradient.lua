@@ -114,7 +114,7 @@ function M.make(GL,name)
 	end
 	
 	function LM:draw(t,w,h,args)
-		if not self.fbo then self.fbo = initFBO(GL.W,GL.H) end
+		if not self.fbo then self.fbo = GL:initFBO() end
 		
 		local clip = args.clip
 		self.fbo:Bind()

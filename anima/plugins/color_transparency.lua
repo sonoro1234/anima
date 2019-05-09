@@ -120,7 +120,7 @@ end},
 	local fbo, programfx, progrgb,proglab
 	local lapse,oldtime,lapsesum = 0,0,0
 	function LM:init()
-		fbo = initFBO(GL.W, GL.H)
+		fbo = GL:initFBO()
 		proglab = GLSL:new():compile(vert_shad,frag_shad_Lab)
 
 		progrgb = GLSL:new():compile(vert_shad,frag_shad)

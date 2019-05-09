@@ -9,7 +9,7 @@ local function MM_Maker(GL, fac)
 	local old_framebuffer = ffi.new("GLint[1]",0)
 	
 	function Clip.init()
-		msfbo = initFBO(GL.W*fac, GL.H*fac)
+		msfbo = GL:initFBO(nil,GL.W*fac, GL.H*fac)
 	end
 
 	local function get_args(t, timev)

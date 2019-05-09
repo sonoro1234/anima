@@ -203,7 +203,7 @@ function M.photofx(GL,args)
 	
 	function LM.init()
 		if args.use_fbo then
-			fbo = initFBO(GL.W,GL.H)
+			fbo = GL:initFBO()
 		end
 		programfx = GLSL:new():compile(vert_shad,frag_shad)
 		

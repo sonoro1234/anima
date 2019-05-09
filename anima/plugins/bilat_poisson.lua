@@ -111,7 +111,7 @@ local function make(GL)
 			here = path.table2path(here)
 			
 			-- texsamp = Texture():Load(here..[[/samples64_quad.png]])
-			texsamp = vicim.vicimag2tex(here..[[/poisson.dat]])
+			texsamp = vicim.vicimag2tex(here..[[/poisson.dat]],GL)
 		end
 
 	end
@@ -215,8 +215,8 @@ function GL.init()
 	
 	bilat = make(GL)
 	require"anima.plugins.plugin".serializer(bilat)
-	--fbos[0] = initFBO(GL.W,GL.H,{no_depth=true})
-	--fbos[1] = initFBO(GL.W,GL.H,{no_depth=true})
+	--fbos[0] = GL:initFBO({no_depth=true})
+	--fbos[1] = GL:initFBO({no_depth=true})
 	GL:DirtyWrap()
 end
 

@@ -43,8 +43,8 @@ local function BlurClipMaker(GL,args)
 		print"gaussianblur2 init"
 		Clip:compile()
 		programstd = GLSL:new():compile(vert_std,frag_std);
-		mixfbos[0] = initFBO(ANCHO,ALTO)
-		mixfbos[1] = initFBO(ANCHO,ALTO)
+		mixfbos[0] = GL:initFBO()
+		mixfbos[1] = GL:initFBO()
 		Clip.inited = true
 	end
 	function Clip:Setsize(n)

@@ -71,7 +71,7 @@ function M.make(GL)
 	local lapse,oldtime,lapsesum = 0,0,0
 	function LM.init()
 		--if not GL.PPFBO then GL:init_PPFBO() end
-		fbo = initFBO(GL.W,GL.H)
+		fbo = GL:initFBO()
 		programfx = GLSL:new():compile(vert_shad,frag_shad)
 		local m = mesh.Quad(-1,-1,1,1)
 		LM.vao = VAO({Position=m.points,texcoords = m.texcoords},programfx,m.indexes)

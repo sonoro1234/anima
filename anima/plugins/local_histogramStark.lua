@@ -1,6 +1,5 @@
 
 
-local initFBO_X = function(w,h) return initFBO(w,h,{no_depth=true}) end
 
 local vert_shad = [[
 #version 130
@@ -540,8 +539,8 @@ local NMamp = GL:Dialog("stark local hist",
 		pr_finish = GLSL:new():compile(vert_cum,frag_finish)
 		pr_stdev = GLSL:new():compile(vert_cum,frag_stdev)
 		pr_he = GLSL:new():compile(vert_he,frag_he)
-		fbohist = initFBO_X(nbins,maxposbins)
-		fbohist0 = initFBO_X(nbins,maxposbins)
+		fbohist = GL:initFBO({no_depth=true},nbins,maxposbins)
+		fbohist0 = GL:initFBO({no_depth=true},nbins,maxposbins)
 		inited = true
 	end
 	function hist:Getcumhist()
@@ -577,7 +576,7 @@ local NMamp = GL:Dialog("stark local hist",
 	end
 	function hist:stdev_calc(fb,fbcum)
 		if not fbostdev then
-			fbostdev = initFBO_X(1,maxposbins)
+			fbostdev = GL:initFBO({no_depth=true},1,maxposbins)
 		end
 		fb = fb or fbohist
 		fbcum = fbcum or fbostdev
@@ -612,7 +611,7 @@ local NMamp = GL:Dialog("stark local hist",
 	function hist:cum_calc(args)
 		args = args or NMamp
 		if not fbocumhist then
-			fbocumhist = initFBO_X(nbins,maxposbins)
+			fbocumhist = GL:initFBO({no_depth=true},nbins,maxposbins)
 		end
 		local fb = fbohist
 		local fbcum = fbocumhist

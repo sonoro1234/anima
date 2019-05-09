@@ -30,7 +30,7 @@ local function BlurClipMaker(GL)
 	local fbo 
 	function Clip.init()
 		programstd = GLSL:new():compile(vert_std,frag_std);
-		fbo = initFBO(ANCHO,ALTO)
+		fbo = GL:initFBO()
 		Clip.inited = true
 	end
 

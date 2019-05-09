@@ -201,7 +201,7 @@ local function make(GL)
 		if not program then
 			program = GLSL:new():compile(ut.vert_std,frag_unif..frag_sh..frag_main)
 		end
-		fbo = initFBO(GL.W,GL.H)
+		fbo = GL:initFBO()
 	end
 	function M:draw(t,w,h,args)
 		local theclip = args.clip

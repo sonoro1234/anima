@@ -515,11 +515,11 @@ function gui.ImGui_Transport(GL)
 	local HoverAction = HoverActionFactory(0.5,0.0001,1)
 
 	function transport:draw()
-		
+
 		--local height = ig.GetFrameHeightWithSpacing() + ig.GetStyle().WindowPadding.y*2
 		ig.SetNextWindowPos(ig.ImVec2(0.0, ig.GetIO().DisplaySize.y), 0, ig.ImVec2(0.0, 1.0));
 		--ig.SetNextWindowPos(ig.ImVec2(0, ig.GetIO().DisplaySize.y - height));
-		--ig.SetNextWindowSize(ig.ImVec2(ig.GetIO().DisplaySize.x,height));
+		ig.SetNextWindowSize(ig.ImVec2(ig.GetIO().DisplaySize.x,0))--height));
 		
 		ig.PushStyleVarFloat(imgui.ImGuiStyleVar_Alpha,0.0001)
 		
@@ -557,7 +557,8 @@ function gui.ImGui_Transport(GL)
 			ig.SameLine()
 			
 			ig.PushItemWidth(-1)
-			if ig.SliderFloat("", GL.globaltime, 0, GL.timeprovider.totdur, "%.3f", 1.0) then
+			--print("slider", GL.globaltime[0], 0, tonumber(GL.timeprovider.totdur), "%.3f", 1.0)
+			if ig.SliderFloat("", GL.globaltime, 0, tonumber(GL.timeprovider.totdur), "%.3f", 1.0) then
 				GL.timeprovider:set_time(GL.globaltime[0])
 			end
 			ig.PopItemWidth()

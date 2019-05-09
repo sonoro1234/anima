@@ -9,7 +9,7 @@ void main()
 }
 
 ]]
-local frag_shad = require"glutils.GLSL_color"..[[
+local frag_shad = require"anima.GLSL.GLSL_color"..[[
 uniform sampler2D tex0;
 uniform float ampL;
 uniform float ampR;
@@ -86,7 +86,7 @@ function M.photofx(GL)
 
 	function LM.init()
 		--if not GL.PPFBO then GL:init_PPFBO() end
-		fbo = initFBO(GL.W,GL.H)
+		fbo = GL:initFBO()
 		programfx = GLSL:new():compile(vert_shad,frag_shad)
 		--program2 = GLSL:new():compile(nil,frag_shad2)
 		LM.inited = true

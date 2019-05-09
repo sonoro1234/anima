@@ -226,7 +226,7 @@ function M.flip(tex,flip,mirror)
 	return ret
 end
 function M.crop(tex,x,y,w,h)
-	local fbo = initFBO(w,h,{no_depth=true})
+	local fbo = tex.GL:initFBO({no_depth=true},w,h)
 	local pp = make_texcrop_prog()
 	fbo:Bind()
 	tex:Bind()
@@ -260,8 +260,8 @@ function M.fusion(A,B,C,D)
 	fbo:delete(true)
 	return ret
 end
-function M.color(t,w,h)
-	local fbo = initFBO(w,h,{no_depth=true})
+function M.color(t,w,h,GL)
+	local fbo = GL:initFBO({no_depth=true},w,h)
 	fbo:Bind()
 	gl.glClearColor(unpack(t))
 	ut.Clear()

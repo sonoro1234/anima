@@ -99,7 +99,7 @@ function M.photofx(GL)
 
 	function LM.init()
 		--if not GL.PPFBO then GL:init_PPFBO() end
-		fbo = initFBO(GL.W,GL.H)
+		fbo = GL:initFBO()
 		programfx = GLSL:new():compile(vert_shad,frag_shad)
 		
 		local mesh = require"anima.mesh"

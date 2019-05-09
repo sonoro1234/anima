@@ -66,11 +66,11 @@ function M.layers_mixer(GL, post)
 	function LM:init()
 
 		if usemsaa then
-			mixfbo = initFBOMultiSample(ANCHO, ALTO)
-			fbo = initFBOMultiSample(ANCHO, ALTO)
+			mixfbo = GL:initFBOMultiSample()
+			fbo = GL:initFBOMultiSample()
 		else
-			mixfbo = initFBO(ANCHO,ALTO)
-			fbo = initFBO(ANCHO,ALTO)
+			mixfbo = GL:initFBO()
+			fbo = GL:initFBO()
 		end
 		programmix = GLSL:new():compile(vert_shad2,frag_shadmix)
 		program2 = GLSL:new():compile(vert_shad2,frag_shad2)

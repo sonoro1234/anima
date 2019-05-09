@@ -58,8 +58,8 @@ local function flow_player(GL)
 	
 	function fplay:init()
 		self.program = GLSL:new():compile(vert_shad,frag_shad)
-		self.tex1 = Texture()
-		self.tex2 = Texture()
+		self.tex1 = GL:Texture()
+		self.tex2 = GL:Texture()
 		local texc = make_points(GL.W,GL.H)
 		self.vao = VAO({position=texc},self.program)
 	end
@@ -87,8 +87,8 @@ local function flow_player(GL)
 			self.oldT1 = images[T1]
 			--glext.glActiveTexture(glc.GL_TEXTURE1);
 			self.tex2:Load(images[T2])
-			self.flow = vicim.vicimag2tex(fflows[T1],self.flow)
-			self.bflow = vicim.vicimag2tex(bflows[T1],self.bflow)
+			self.flow = vicim.vicimag2tex(fflows[T1],GL,self.flow)
+			self.bflow = vicim.vicimag2tex(bflows[T1],GL,self.bflow)
 		end
 		
 		gl.glPointSize(args.pointsize or 1)

@@ -151,7 +151,7 @@ function ES.make(GL)
 })
 	function Clip:init()
 		--textura = Texture():Load[[C:\luajitbin2.0.2-copia\animacion\resonator6\resonator-038.jpg]]
-		self.fbo = initFBO(GL.W,GL.H)
+		self.fbo = GL:initFBO()
 		self.camera = newCamera(GL,true,"sphere ")
 		-- program = GLSL:new():compile(vert_shadrefr,frag_shadrefr);
 		program = GLSL:new():compile(vert_shadrefr2,frag_shadrefr);

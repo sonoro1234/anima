@@ -20,7 +20,7 @@ local function make(GL)
 	
 	local fbo
 	function M:init()
-		fbo = initFBO(GL.W,GL.H,{no_depth=true})
+		fbo = GL:initFBO({no_depth=true})
 
 		texproc:set_process(require"anima.GLSL.GLSL_color"..[[
 		vec4 process(vec2 pos){

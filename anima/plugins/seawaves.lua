@@ -154,7 +154,7 @@ local NM = GL:Dialog(name or "seawaves",
 		Clip.camera = argsmake.camera or newCamera(GL,argsmake.camtype,"seawaves")
 		--Clip.camera.NMC.vars.ortho:setval(1)
 		Clip.meshList = CreateMesh(aspect_ratio,1,pieces*aspect_ratio,pieces)
-		fbo = initFBO(GL.W,GL.H)
+		fbo = GL:initFBO()
 		Clip.inited = true
 	end
 	local function get_args(t, timev)

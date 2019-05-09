@@ -20,7 +20,7 @@ local function make(GL)
 	
 	local fbo
 	function M:init()
-		fbo = initFBO(GL.W,GL.H,{no_depth=true})
+		fbo = GL:initFBO({no_depth=true})
 		texproc:set_process[[
 		vec4 process(vec2 pos){
 			//return c1*alpha1 + (vec4(1)-c2)*alpha2;

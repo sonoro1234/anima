@@ -1,6 +1,5 @@
 
 
-local initFBO_X = function(w,h) return initFBO(w,h,{no_depth=true}) end
 
 local vert_shad = [[
 #version 130
@@ -203,13 +202,13 @@ local function Histogram(nbins)
 		programtexshow = GLSL:new():compile(vert_texshow,frag_texshow)
 		pr_cum = GLSL:new():compile(vert_cum,frag_cum)
 		pr_he = GLSL:new():compile(vert_he,frag_he)
-		fbohist = initFBO_X(nbins,1)
+		fbohist = GL:initFBO({no_depth=true},nbins,1)
 		self.fbohist = fbohist
 		inited = true
 		
 	end
 	function hist:newhist()
-		return initFBO_X(nbins,1)
+		return GL:initFBO({no_depth=true},nbins,1)
 	end
 	function hist:Getcumhist()
 		return fbocumhist
@@ -228,7 +227,7 @@ local function Histogram(nbins)
 	end
 	function hist:cum_calc(fb,fbcum)
 		if not fbocumhist then
-			fbocumhist = initFBO_X(nbins,1)
+			fbocumhist = GL:initFBO({no_depth=true},nbins,1)
 		end
 		local old_framebuffer = ffi.new("GLint[1]",0)
 		gl.glGetIntegerv(glc.GL_FRAMEBUFFER_BINDING, old_framebuffer)

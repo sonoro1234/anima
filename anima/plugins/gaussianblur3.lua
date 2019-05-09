@@ -127,8 +127,8 @@ local function BlurClipMaker(GL)
 		programH = GLSL:new():compile(nil,fragH2);
 		programV = GLSL:new():compile(nil,fragV2);
 		programstd = GLSL:new():compile(vert_std,frag_std);
-		mixfbos[0] = initFBO(ANCHO,ALTO)
-		mixfbos[1] = initFBO(ANCHO,ALTO)
+		mixfbos[0] = GL:initFBO()
+		mixfbos[1] = GL:initFBO()
 		--kernel,offs = genlinearkernel(NM.radio,NM.stdevs)
 		Clip:update()
 		-- old_radio = NM.radio

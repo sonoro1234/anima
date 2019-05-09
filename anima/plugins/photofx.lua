@@ -198,7 +198,7 @@ function M.photofx(GL,args)
 	
 	function LM.init()
 	
-		--fbo = initFBO(GL.W,GL.H)
+
 		programfx = GLSL:new():compile(vert_shad,frag_shad)
 		
 		imgui.CurveGetData(pointsx, numpoints,LUTdatax, LUTsize )

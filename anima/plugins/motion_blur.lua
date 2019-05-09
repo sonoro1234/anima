@@ -80,9 +80,9 @@ function M.make(GL)
 	local FBOrep
 	function Clip:init()
 
-		fbo = initFBO(GL.W, GL.H)
-		mixfbos[0] = initFBO(GL.W, GL.H)
-		mixfbos[1] = initFBO(GL.W, GL.H)
+		fbo = GL:initFBO()
+		mixfbos[0] = GL:initFBO()
+		mixfbos[1] = GL:initFBO()
 		program = {}
 		program[1] = GLSL:new():compile(vert_shad,frag_shad);
 		program[2] = GLSL:new():compile(vert_shad,frag_shad2);

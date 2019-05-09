@@ -400,13 +400,13 @@ function GLSL:set_unif(D)
 	end
 end
 
-function pingpongFBO(w,h,num)
+function pingpongFBO(w,h,num,GL)
 	num = num or 2
 	assert(w)
 	assert(h)
 	local PP = {}
 	for i=0,num-1 do
-		PP[i] = initFBO(w,h)
+		PP[i] = GL:initFBO(nil,w,h)
 	end
 	local curr_rend = 0
 	function PP:getDRAW()
@@ -452,7 +452,8 @@ function initFBO(wFBO,hFBO,args)
 	wFBO = math.max(1,wFBO)
 	hFBO = math.max(1,hFBO)
 	GetGLError"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxinitFBO ini"
-	args = args or {}
+	--args = args or {}
+	--args.GL = args.GL or GL or {} --for compability
 	args.num_tex = args.num_tex or 1
 	args.wrap = args.wrap or glc.GL_MIRRORED_REPEAT
 	args.filter = args.filter or glc.GL_LINEAR
@@ -652,11 +653,11 @@ fbostatus = {[[GL_FRAMEBUFFER_UNDEFINED]],
 [[GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE]],
 [[GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS]]}
 
-function MakeSlab(w,h,args)
+function MakeSlab(w,h,args,GL)
 	args = args or {no_depth=true}
 	local slab = {isSlab=true}
-	slab.ping = initFBO(w,h,args)
-	slab.pong = initFBO(w,h,args)
+	slab.ping = GL:initFBO(args,w,h)
+	slab.pong = GL:initFBO(args,w,h)
 	function slab:swapt()
 		self.ping,self.pong = self.pong,self.ping
 	end
@@ -673,8 +674,9 @@ function MakeSlab(w,h,args)
 end
 
 
-function initFBOMultiSample(wFBO,hFBO)
-	if type(wFBO)=="table" then hFBO = wFBO.H; wFBO=wFBO.W end
+function initFBOMultiSample(GL,wFBO,hFBO)
+	assert(GL)
+	hFBO = hFBO or GL.H; wFBO=wFBO or GL.W
 	local old_framebuffer = ffi.new("GLint[1]",0)
 	gl.glGetIntegerv(glc.GL_DRAW_FRAMEBUFFER_BINDING, old_framebuffer)
 	
@@ -716,7 +718,7 @@ function initFBOMultiSample(wFBO,hFBO)
 	end
 	glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, old_framebuffer[0]); 
 	print("MultiSample fbo",NumOfSamples[0],g_MultiSampleFrameBufferObject_ID[0],g_MultiSampleTexture_ID[0])
-	local ret = {color_tex = g_MultiSampleTexture_ID ,fb = g_MultiSampleFrameBufferObject_ID}
+	local ret = {color_tex = g_MultiSampleTexture_ID ,fb = g_MultiSampleFrameBufferObject_ID,GL=GL}
 	
 	function ret:Bind(val)
 		gl.glEnable(glc.GL_MULTISAMPLE);

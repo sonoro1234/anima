@@ -143,9 +143,9 @@ function M.make(GL)
 
 	local blurer
 	function bloomer:init()
-		self.clipfbo = initFBO(GL.W,GL.H)
-		self.light_fbo = initFBO(GL.W,GL.H)
-		self.bloom_fbo = initFBO(GL.W,GL.H)
+		self.clipfbo = GL:initFBO()
+		self.light_fbo = GL:initFBO()
+		self.bloom_fbo = GL:initFBO()
 		blurer = blurmaker(GL,{size=NM.bloom_size})--,0.5)
 		self.program = GLSL:new()
 		self.program:compile(vert_std,frag_lights);

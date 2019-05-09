@@ -124,8 +124,8 @@ function M.make(GL,name)
 	
 	function LM:draw(t,w,h,args)
 		if not self.fbo then 
-			self.msfbo = initFBOMultiSample(GL.W,GL.H) 
-			self.fbo = initFBO(GL.W,GL.H)
+			self.msfbo = GL:initFBOMultiSample() 
+			self.fbo = GL:initFBO()
 		end
 		
 		local clip = args.clip

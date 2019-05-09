@@ -677,8 +677,9 @@ function Texture1D(w,formato,data,format,type)
 	return tex
 end
 function Texture(w,h,formato,pTexor,args)
+	assert(args)
 	if not args then print("texture witout context") end
-	args = args or {GL={}}
+	--args = args or {GL={}}
 	w = w or 1
 	h = h or 1
 	formato = formato or glc.GL_RGBA
@@ -785,8 +786,8 @@ function Texture(w,h,formato,pTexor,args)
 	end
 	function tex:make_slab()
 		local slab = {isSlab=true}
-		slab.ping = initFBO(self.width, self.height,{no_depth=true})--,color_tex = self.pTex})
-		slab.pong = initFBO(self.width, self.height,{no_depth=true})
+		slab.ping = self.GL:initFBO({no_depth=true},self.width, self.height)--,color_tex = self.pTex})
+		slab.pong = self.GL:initFBO({no_depth=true},self.width, self.height)
 		function slab:init() --copy tex to ping
 			self.ping:Bind()
 			tex:blit()
@@ -799,8 +800,8 @@ function Texture(w,h,formato,pTexor,args)
 	end
 	function tex:make_slabMS()
 		local slab = {isSlab=true}
-		slab.pong = initFBOMultiSample(self.width, self.height)--,color_tex = self.pTex})
-		slab.ping = initFBO(self.width, self.height,{no_depth=true})
+		slab.pong = GL:initFBOMultiSample(self.width, self.height)--,color_tex = self.pTex})
+		slab.ping = self.GL:initFBO({no_depth=true},self.width, self.height)
 		function slab:swapt()
 			slab.pong:Dump(slab.ping.fb[0])
 			--self.ping,self.pong = self.pong,self.ping
@@ -808,7 +809,7 @@ function Texture(w,h,formato,pTexor,args)
 		return slab
 	end
 	function tex:make_fbo()
-		return initFBO(self.width, self.height,{no_depth=true})
+		return self.GL:initFBO({no_depth=true},self.width, self.height)
 	end
 	-- tostring for using cdata as key
 	local ctx
@@ -870,7 +871,7 @@ function Texture(w,h,formato,pTexor,args)
 	end
 	--TODO delete all but texture
 	function tex:resample(w,h)
-		local resfbo = initFBO(w,h,{no_depth=true})
+		local resfbo = self.GL:initFBO({no_depth=true},w,h)
 		resfbo:Bind()
 		self:drawcenter(resfbo.w,resfbo.h)
 		resfbo:UnBind()

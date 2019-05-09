@@ -594,10 +594,14 @@ function GLcanvas(GL)
 	GL.animated_keyframers = {}
 	if not GL.not_imgui then gui.SetImGui(GL) end
 
-	function GL:initFBO(args)
+	function GL:initFBO(args,w,h)
 		args = args or {}
 		args.GL = self
-		return initFBO(self.W,self.H,args)
+		return initFBO(w or self.W,h or self.H, args)
+	end
+	
+	function GL:initFBOMultiSample(w,h)
+		return initFBOMultiSample(GL,w,h)
 	end
 	
 	function GL:set_WH(W,H)
@@ -1292,8 +1296,8 @@ function GLcanvas(GL)
 	end
 	GL.render_source = "master1080"
 	GL.comp_source = "compressed1080"
-	function GL:Texture()
-		local tex = Texture(self.W,self.H,nil,nil,{GL=self})
+	function GL:Texture(w,h,form,texor)
+		local tex = Texture(w,h,form,texor,{GL=self})
 		tex.GL = self
 		local path = require"anima.path"
 		function tex:GLLoad(filename)
@@ -1305,7 +1309,7 @@ function GLcanvas(GL)
 		return tex
 	end
 	function GL:make_slab()
-		return MakeSlab(self.W,self.H)
+		return MakeSlab(self.W,self.H,nil,self)
 	end
 	---------
 	GL.fbo_pool = {}

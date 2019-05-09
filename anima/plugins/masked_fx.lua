@@ -26,8 +26,8 @@ local function Masked_fx(GL,fx)
 	MM.ps = plugin.serializer(MM)
 	
 	function MM:init()
-		fbofx = initFBO(GL.W,GL.H,{no_depth=true})
-		fbomask = initFBO(GL.W,GL.H,{no_depth=true})
+		fbofx = GL:initFBO({no_depth=true})
+		fbomask = GL:initFBO({no_depth=true})
 		--tex = GL:Texture():Load[[c:\luagl\media\estanque3.jpg]]
 		tproc = require"anima.plugins.texture_processor"(GL,3,NM)
 		

@@ -211,7 +211,7 @@ local function Editor(GL)
 			program = GLSL:new():compile(vert_sh,frag_sh)
 		end
 		initVaos()
-		blurfbo = initFBO(GL.W,GL.H,{no_depth=true})
+		blurfbo = GL:initFBO({no_depth=true})
 		self:newshape()
 	end
 	M.sccoors = {}
@@ -422,8 +422,8 @@ DBox:add_dialog(blur.NM)
 DBox:add_dialog(NM)
 
 function GL.init()
-	fboblur = initFBO(GL.W,GL.H,{no_depth=true})
-	fbomask = initFBO(GL.W,GL.H,{no_depth=true})
+	fboblur = GL:initFBO({no_depth=true})
+	fbomask = GL:initFBO({no_depth=true})
 	tex = GL:Texture():Load[[c:\luagl\media\estanque3.jpg]]
 	tproc = require"anima.plugins.texture_processor"(GL,3,NM)
 	tproc:set_textures{tex,fboblur:GetTexture(),fbomask:GetTexture()}

@@ -161,7 +161,7 @@ function thisdraw:init()
 	self.vao = VAO({position=self.texc},self.program)
 	self.camara = newCamera(GL,true)
 	
-	self.fbo = initFBO(GL.W,GL.H)
+	self.fbo = GL:initFBO()
 	--prtable(frclip)
 end
 

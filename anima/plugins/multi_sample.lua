@@ -8,7 +8,7 @@ local function MM_Maker(GL)
 	--local FBOrep
 	
 	function Clip.init()
-		msfbo = initFBOMultiSample(GL.W,GL.H)
+		msfbo = GL:initFBOMultiSample()
 		print("msaa fbo is ",msfbo.fb[0])
 		--FBOrep = ut.FBOReplicator()
 		Clip.inited = true

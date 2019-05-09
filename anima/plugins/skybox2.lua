@@ -79,7 +79,7 @@ SK.NM = NM
 function SK:init(args)
 	args = args or {}
 	local slices = 30
-	self.fbo = initFBO(GL.W,GL.H)
+	self.fbo = GL:initFBO()
 	self.camera = args.camera or newCamera(GL,true)
 	local mesh1 = par_shapes.create.plane(slices,slices)
 	self.program = GLSL:new():compile(vert_sh,frag_sh)

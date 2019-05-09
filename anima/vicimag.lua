@@ -144,11 +144,11 @@ function M.pixel_data(data,w,h,p)
 		local dat = M.flip_vertical(self.data,w,h,p)
 		self.data = dat
 	end
-	function pdat:totex()
+	function pdat:totex(GL)
 		local pData,width,height,bitplanes = self.data,w,h,p
 		local formats = { glc.GL_RED, glc.GL_RG, glc.GL_RGB, glc.GL_RGBA}
 		local int_formats = { glc.GL_R32F, glc.GL_RG32F, glc.GL_RGB32F, glc.GL_RGBA32F}
-		local tex = Texture(width,height)
+		local tex = GL:Texture(width,height)
 	
 		gl.glBindTexture(glc.GL_TEXTURE_2D, tex.tex)
 		gl.glTexImage2D(glc.GL_TEXTURE_2D,0, int_formats[bitplanes], width,height, 0, formats[bitplanes], glc.GL_FLOAT, pData)
@@ -162,7 +162,7 @@ function M.load_im(fname,unpacked)
 	return M.pixel_data(M.tofloat(imag,unpacked))
 end
 
-function M.vicimag2tex(filename,tex,GL)
+function M.vicimag2tex(filename,GL,tex)
 
 	local pData,width,height,bitplanes = M.load(filename)
 	local formats = { glc.GL_RED, glc.GL_RG, glc.GL_RGB, glc.GL_RGBA}
@@ -226,7 +226,7 @@ function GL.init()
 	prtable(pd)
 	local pdf = pd:flipV()
 	prtable(pdf)
-	tex = pdf:totex()
+	tex = pdf:totex(GL)
 end
 function GL.draw(t,w,h)
 	ut.Clear()
