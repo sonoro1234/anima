@@ -1065,7 +1065,7 @@ function ConvertToCompressed(fileName,pathSave)
 	if image:Width()~=w4 or image:Height()~=h4 then
 		print("resize",image:Width(),image:Height(),"to",w4,h4)
 		local im2 = im.ImageCreateBased(image,w4,h4)
-		imffi.ProcessResize(image,im2,3)
+		im.ProcessResize(image,im2,3)
 		image:Destroy()
 		image = im2
 	end
