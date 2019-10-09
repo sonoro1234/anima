@@ -1,12 +1,18 @@
 require"anima"
 local vicim = require"anima.vicimag"
+local mat = require"anima.matrixffi"
+local mesh = require"anima.mesh"
 
 local vert_shad = [[
-
+uniform mat4 MVP;
+uniform mat4 TM;
+in vec3 position;
+in vec2 texcoords;
 void main()
 {
-	gl_TexCoord[0] = gl_TextureMatrix[0]*gl_MultiTexCoord0;
-	gl_Position = ftransform();
+
+	gl_TexCoord[0] = TM*vec4(texcoords,0,1);
+	gl_Position = MVP*vec4(position,1);
 }
 
 ]]
@@ -95,6 +101,7 @@ local function flow_player(GL)
 		self.program = GLSL:new():compile(vert_shad,frag_shad)
 		self.tex1 = GL:Texture()
 		self.tex2 = GL:Texture()
+		self.vao = mesh.quad():vao(self.program)
 	end
 	
 	local function get_args(t,timev)
@@ -156,13 +163,34 @@ local function flow_player(GL)
 		self.bflow:Bind(3)
 		--gl.glClearColor(0.0, 0.0, 0.0, 0)
 		ut.Clear()
-		ut.project(w,h)
+
+		---[[
+		local MP = mat.ortho(-1, 1, -1, 1, -1, 1);
+		U.MVP:set(MP.gl)
+		gl.glViewport(0, 0, w, h)
 		
+		local TM = self:SetTM(w,h)
+		U.TM:set(TM.gl)
+		self.vao:draw_elm()
+		--]]
+		--[[
+		ut.project(w,h)
 		self:SetTextureMatrixes(w,h)
 		ut.DoQuad(w,h)
 		self:UnsetTextureMatrixes()
+		--]]
 	end
+	function fplay:SetTM(w,h)
+		local aspect = w/h
+		if aspect >= self.tex1.aspect then
+			local rat = aspect/self.tex1.aspect
+			return mat.scale(rat,1,1)*mat.translate(-0.5*(rat-1)/rat,0, 0)
+		else
+			local rat = self.tex1.aspect/aspect
+			return mat.scale(1,rat,1)*mat.translate(0,-0.5*(rat-1)/rat, 0)
+		end
 	
+	end
 	function fplay:SetTextureMatrixes(w,h)
 		local aspect = w/h
 		glext.glActiveTexture(glc.GL_TEXTURE0);
@@ -190,14 +218,12 @@ local function flow_player(GL)
 end
 
 --[=[
-
-
 GL = GLcanvas{fps=25,H=1080,viewH=700,aspect=3/2}
 
 fpl = flow_player(GL)
 --args = {images=images,fflows=fflows,bflows=bflows,frame= AN({1,80,80*1})}
 
-local args = fpl:loadimages("lotomask","lotomask_tvl1",[[G:\VICTOR\pelis\caprichos]])
+local args = fpl:loadimages("lotomask","lotomask_tvl1",[[D:\VICTOR\pelis\caprichos]])
 args.frame = AN({8,8,18},{8,9,4},{9,20+16,40*2})
 args.doclamp = true
 function GL.init()
