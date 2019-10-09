@@ -1,18 +1,17 @@
 
-local lfs = require"lfs"
+local lfs = require"lfs_ffi"
 local function funcdir(path, func, pat, recur, funcd, tree)
 	--pat = pat or "" -- ".-"
 	--if #pat > 0 then pat = "%." .. pat end
 	tree = tree or ""
     for file in lfs.dir(path) do
         if file ~= "." and file ~= ".." then
-            local f = path..'\\'..file
-           -- print ("\t "..f,pat)
+            local f = path..'/'..file
             local attr = lfs.attributes (f)
             assert (type(attr) == "table")
             if attr.mode == "directory" and recur then
 				if funcd then funcd(f,file,attr,tree) end
-                funcdir(f, func,pat,recur,funcd,tree.."\\"..file)
+                funcdir(f, func,pat,recur,funcd,tree.."/"..file)
             elseif (not pat) or file:match(".+%."..pat.."$") then
 				func(f, file, attr, tree)
             end
@@ -54,18 +53,18 @@ function M.Synchronize(srcdir, dstdir , ext , ext2, copyprocess, ...)
 							else
 								name2 = name
 							end
-							local attr2 = lfs.attributes(dstdir..tree.."\\"..name2)
+							local attr2 = lfs.attributes(dstdir..tree.."/"..name2)
 							--printdate(attr2)
 							if attr2==nil or attr.modification > attr2.modification then
 								copyprocess( f, name, dstdir..tree, unpack(varargs))
 							end
 						end,
-						ext, true, function(f, dir,at,tree) lfs.mkdir(dstdir..tree.."\\"..dir) end)
+						ext, true, function(f, dir,at,tree) lfs.mkdir(dstdir..tree.."/"..dir) end)
 	local deletedirs = {}
 	--delete from dstdir not in srcdir
 	funcdir(dstdir, function(f, name, attr, tree)
 							if ext and ext2 then name = string.gsub(name , ext2 .. "$", ext) end
-							local attr2 = lfs.attributes(srcdir..tree.."\\"..name)
+							local attr2 = lfs.attributes(srcdir..tree.."/"..name)
 							if attr2 == nil then
 								print("deleting:",f)
 								os.remove (f)
@@ -73,7 +72,7 @@ function M.Synchronize(srcdir, dstdir , ext , ext2, copyprocess, ...)
 						end,
 						ext2, true, 
 						function(f, dir,at,tree)
-							local attr2 = lfs.attributes(srcdir..tree.."\\"..dir)
+							local attr2 = lfs.attributes(srcdir..tree.."/"..dir)
 							if attr2 == nil then
 								deletedirs[#deletedirs + 1] = f
 							end 
@@ -104,14 +103,14 @@ function M.Synchronize1(srcdir, dstdir , ext , ext2, copyprocess, ...)
 							else
 								name2 = name
 							end
-							local attr2 = lfs.attributes(dstdir..tree.."\\"..name2)
-							print("looking for:",dstdir..tree.."\\"..name2)
+							local attr2 = lfs.attributes(dstdir..tree.."/"..name2)
+							print("looking for:",dstdir..tree.."/"..name2)
 							--printdate(attr2)
 							if attr2==nil or attr.modification > attr2.modification then
 								copyprocess( f, name, dstdir..tree, unpack(varargs))
 							end
 						end,
-						ext, true, function(f, dir,at,tree) lfs.mkdir(dstdir..tree.."\\"..dir) end)
+						ext, true, function(f, dir,at,tree) lfs.mkdir(dstdir..tree.."/"..dir) end)
 	
 end
 
