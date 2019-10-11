@@ -189,7 +189,7 @@ local function SetSRGB(srgb)
 		gl.glEnable(glc.GL_FRAMEBUFFER_SRGB)
 	end
 end
-local function Histogram(nbins)
+local function Histogram(GL,nbins)
 	local hist = {}
 
 	local fbohist, programfx,programhistoshow,programtexshow,pr_cum,pr_he

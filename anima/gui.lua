@@ -1328,7 +1328,7 @@ function gui.SetImGui(GL)
 end --SetImGui
 
 function gui.Histogram(GL,bins,linear)
-	local Histogram1 = require"anima.plugins.histogram"(bins)
+	local Histogram1 = require"anima.plugins.histogram"(GL,bins)
 	local histovalues = ffi.new("float[?]",bins)
 	local linearhistovalues = ffi.new("float[?]",bins)
 	local maxval = ffi.new("float[1]",1)
