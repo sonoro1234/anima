@@ -100,7 +100,8 @@ function LoadTextures(fileNames,GLparams,mipmaps)
 	return aspect_ratio
 end
 
-function CubeTexture()
+function CubeTexture(GL)
+	assert(GL)
 	local cubesides = { -- faces of cube texture
         glc.GL_TEXTURE_CUBE_MAP_POSITIVE_X,
         glc.GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
@@ -109,19 +110,19 @@ function CubeTexture()
         glc.GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
         glc.GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
     }
-	
+	GetGLError"cubetexture ini"
 	local pTex = ffi.new("GLuint[?]",1)
 	gl.glGenTextures(1, pTex);
-    gl.glEnable(glc.GL_TEXTURE_CUBE_MAP);
+    if not GL.restricted then gl.glEnable(glc.GL_TEXTURE_CUBE_MAP); end
     gl.glBindTexture(glc.GL_TEXTURE_CUBE_MAP, pTex[0]);
     gl.glTexParameteri(glc.GL_TEXTURE_CUBE_MAP, glc.GL_TEXTURE_WRAP_S,glc.GL_CLAMP_TO_EDGE);
     gl.glTexParameteri(glc.GL_TEXTURE_CUBE_MAP, glc.GL_TEXTURE_WRAP_T,glc.GL_CLAMP_TO_EDGE);
     gl.glTexParameteri(glc.GL_TEXTURE_CUBE_MAP, glc.GL_TEXTURE_WRAP_R,glc.GL_CLAMP_TO_EDGE);
     gl.glTexParameteri(glc.GL_TEXTURE_CUBE_MAP, glc.GL_TEXTURE_MIN_FILTER, glc.GL_LINEAR);
     gl.glTexParameteri(glc.GL_TEXTURE_CUBE_MAP, glc.GL_TEXTURE_MAG_FILTER, glc.GL_LINEAR);
-    gl.glTexParameteri(glc.GL_TEXTURE_CUBE_MAP, glc.GL_GENERATE_MIPMAP, glc.GL_TRUE);
+    --gl.glTexParameteri(glc.GL_TEXTURE_CUBE_MAP, glc.GL_GENERATE_MIPMAP, glc.GL_TRUE);
 	gl.glBindTexture(glc.GL_TEXTURE_CUBE_MAP, 0);
-	
+	GetGLError"cubetexture end"
 	local ctex = {tex=pTex[0],pTex=pTex}
 	
 	
