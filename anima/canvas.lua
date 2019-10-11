@@ -1270,6 +1270,11 @@ function GLcanvas(GL)
 		gllib.set_loader(sdl)
 		gl, glc, glu, glext = gllib.libraries()
 		
+		if self.DEBUG then
+			gl = gllib.glErrorWrap(gl)
+			glext = gllib.glErrorWrap(glext)
+		end
+		
 		self.FPScounter = newFPScounter(function(str) sdl.setWindowTitle(self.window, str) end,self.fps)
 		
 		if (sdl.init(sdl.INIT_VIDEO+sdl.INIT_TIMER) ~= 0) then
@@ -1313,6 +1318,11 @@ function GLcanvas(GL)
 		gl, glc, glu, glext = gllib.libraries()
 		glfw = lj_glfw.glfw
 		glfwc = lj_glfw.glfwc
+		
+		if self.DEBUG then
+			gl = gllib.glErrorWrap(gl)
+			glext = gllib.glErrorWrap(glext)
+		end
 
 		swapped_glc = swap_keyvalue(glc)
 		glfw.glfwSetErrorCallback(function(error,description)
