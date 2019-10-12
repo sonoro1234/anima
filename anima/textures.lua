@@ -510,19 +510,21 @@ local function make_tex_prog()
 		local vert_shad = [[
 	in vec3 Position;
 	in vec2 texcoord;
+	out vec2 texcoordf;
 	void main()
 	{
-		gl_TexCoord[0] = vec4(texcoord,0,1);
+		texcoordf = texcoord;
 		gl_Position = vec4(Position,1);
 	}
 	
 	]]
 	local frag_shad = [[
 	uniform sampler2D tex0;
+	in vec2 texcoordf;
 	void main()
 	{
 
-		gl_FragColor = texture2D(tex0,gl_TexCoord[0].st);
+		gl_FragColor = texture(tex0,texcoordf);
 	}
 	]]
 	
@@ -560,19 +562,20 @@ local function make_tex_progSRGB()
 		local vert_shad = [[
 	in vec3 Position;
 	in vec2 texcoord;
+	out vec2 texcoordf;
 	void main()
 	{
-		gl_TexCoord[0] = vec4(texcoord,0,1);
+		texcoordf = texcoord;
 		gl_Position = vec4(Position,1);
 	}
 	
 	]]
 	local frag_shad = require"anima.GLSL.GLSL_color"..[[
-
+	in vec2 texcoordf;
 	uniform sampler2D tex0;
 	void main()
 	{
-		vec4 color = texture2D(tex0,gl_TexCoord[0].st);
+		vec4 color = texture2D(tex0,texcoordf);
 		gl_FragColor = vec4(RGB2sRGB(color.rgb),color.a);
 	}
 	]]
@@ -608,9 +611,10 @@ local function make_tex_greyprog()
 		local vert_shad = [[
 	in vec3 Position;
 	in vec2 texcoord;
+	out vec2 texcoordf;
 	void main()
 	{
-		gl_TexCoord[0] = vec4(texcoord,0,1);
+		texcoordf = texcoord;
 		gl_Position = vec4(Position,1);
 	}
 	
@@ -619,9 +623,10 @@ local function make_tex_greyprog()
 
 	uniform sampler2D tex0;
 	uniform vec4 mask = vec4( 0.30, 0.59, 0.11,0.0);
+	in vec2 texcoordf;
 	void main()
 	{
-		vec4 color = texture2D(tex0,gl_TexCoord[0].st);
+		vec4 color = texture2D(tex0,texcoordf);
 		float lum = dot(color,mask);
 		gl_FragColor = vec4(vec3(lum),color.a);
 	}
