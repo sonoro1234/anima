@@ -1,6 +1,6 @@
 local ffi = require"ffi"
 local mat = require"anima.matrixffi"
-local mesh = require"anima.mesh"
+--local mesh = require"anima.mesh"
 
 ffi.cdef[[
 typedef uint32_t PAR_SHAPES_T ;
@@ -53,11 +53,49 @@ local lib = ffi.load[[shapes]]
 
 local par_shapes = {lib=lib}
 
+local function par_shapes_vao(mesh,program)
+	local vao =  VAO({position=mesh.points,normal=mesh.normals,texcoords=mesh.tcoords},program, mesh.triangles,{position=mesh.npoints*3,normal=mesh.npoints*3,texcoords=mesh.npoints*2},mesh.ntriangles*3)
+	vao:check_counts()
+	--prtable(vao)
+	function vao:reset_mesh(mesh1)
+		self:set_buffer("position",mesh1.points,mesh1.npoints*3)
+		self:set_buffer("normal",mesh1.normals,mesh1.npoints*3)
+		self:set_buffer("texcoords",mesh1.tcoords,mesh1.npoints*2)
+		self:set_indexes(mesh1.triangles,mesh1.ntriangles*3)
+		--prtable(vao)
+		vao:check_counts()
+	end
+	return vao
+end
+
+--faltan las normales con inversa transpuesta
+local function par_shapesM4(m,MM)
+	for i=0,m.npoints-1 do
+		local vec = mat.vec4(m.points[i*3],m.points[i*3+1],m.points[i*3+2],1)
+		local pR = MM * vec
+		pR = pR/pR.w
+		m.points[i*3],m.points[i*3+1],m.points[i*3+2] = pR.x,pR.y,pR.z
+	end
+	return m
+end
+
 local mesh_mt = {
 	point = function(m,i)  return mat.vec3(m.points[i*3],m.points[i*3+1],m.points[i*3+2]) end,
-	tcoord = function(m,i)  return mat.vec2(m.tcoords[i*2],m.tcoords[i*2+1]) end,
+	tcoord = function(m,i)  
+				if m.tcoords~=nil then 
+					return mat.vec2(m.tcoords[i*2],m.tcoords[i*2+1])
+				else
+					return nil
+				end
+			end,
 	triangle = function(m,i) return {m.triangles[i*3],m.triangles[i*3+1],m.triangles[i*3+2]} end,
-	normal = function(m,i)  return mat.vec3(m.normals[i*3],m.normals[i*3+1],m.normals[i*3+2]) end,
+	normal = function(m,i)  
+				if m.normals~=nil then 
+					return mat.vec3(m.normals[i*3],m.normals[i*3+1],m.normals[i*3+2])
+				else
+					return nil
+				end
+			end,
 	dump = function(m)
 		print"points"
 		for i=0,m.npoints - 1 do
@@ -68,8 +106,8 @@ local mesh_mt = {
 			print(i,unpack(m:triangle(i)))
 		end
 	end,
-	vao = function(m,prog) return mesh.par_shapes_vao(m,prog) end,
-	M4 = function(m,MM) return mesh.par_shapesM4(m,MM) end,
+	vao = function(m,prog) return par_shapes_vao(m,prog) end,
+	M4 = function(m,MM) return par_shapesM4(m,MM) end,
 	translate = function(...) return lib.par_shapes_translate(...) end,
 	rotate = function(...) return lib.par_shapes_rotate(...) end,
 	scale = function(...) return lib.par_shapes_scale(...) end,
@@ -83,9 +121,7 @@ local mesh_mt = {
 	clone = function(...) return lib.par_shapes_clone(...) end,
 	remove_degenerate = function(...) return lib.par_shapes_remove_degenerate(...) end,
 	free = function(m) return lib.par_shapes_free_mesh(m) end,
-	__gc = function(m) print("__gc called"); 
-		return lib.par_shapes_free_mesh(m) 
-	end
+	__gc = function(m) print("__gc called"); return lib.par_shapes_free_mesh(m) end
 }
 mesh_mt.__index = mesh_mt
 par_shapes.meshtype = ffi.metatype("par_shapes_mesh",mesh_mt)
@@ -173,28 +209,12 @@ function par_shapes.create.cone_tronco(a,b,r2,inv)
 	end,a,b,nil)
 end
 --[[
-aa = par_shapes.create.circle(32)
-
-print(collectgarbage("count"),"created")
-aa = par_shapes.create.cylinder(32,32)
-bb = ffi.new"par_shapes_mesh"
-print(collectgarbage("count"),"created",aa,bb)
-io.read"*l"
-print(collectgarbage("count"),"created")
-io.read"*l"
-collectgarbage()
-print(collectgarbage("count"),"created")
-lib.par_shapes_free_mesh(aa)
-aa = nil
-bb=nil
-io.read"*l"
-collectgarbage()
-print(collectgarbage("count"),"created")
-
-io.read"*l"
-collectgarbage()
-print(collectgarbage("count"),"created")
-print"done"
+		--local mesh = require"anima.mesh"
+		local meshesfere = par_shapes.create.cube()
+		print(meshesfere.npoints, meshesfere.ntriangles)
+		meshesfere:dump()
+		--local mesh1 = mesh.par_shapes2mesh(meshesfere)
+		meshesfere:free()
 --]]
 return par_shapes
 

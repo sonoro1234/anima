@@ -1,6 +1,8 @@
 local M = {}
 --local par_shapes = require"anima.par_shapes"
+local ffi = require"ffi"
 local mat = require"anima.matrixffi"
+
 
 function M.Quad(left,top,right,bottom)
 	--left = left or
@@ -239,31 +241,7 @@ function M.par_shapes_program()
 	]]
 	return GLSL:new():compile(vert,frag)
 end
-function M.par_shapes_vao(mesh,program)
-	local vao =  VAO({position=mesh.points,normal=mesh.normals,texcoords=mesh.tcoords},program, mesh.triangles,{position=mesh.npoints*3,normal=mesh.npoints*3,texcoords=mesh.npoints*2},mesh.ntriangles*3)
-	vao:check_counts()
-	--prtable(vao)
-	function vao:reset_mesh(mesh1)
-		self:set_buffer("position",mesh1.points,mesh1.npoints*3)
-		self:set_buffer("normal",mesh1.normals,mesh1.npoints*3)
-		self:set_buffer("texcoords",mesh1.tcoords,mesh1.npoints*2)
-		self:set_indexes(mesh1.triangles,mesh1.ntriangles*3)
-		--prtable(vao)
-		vao:check_counts()
-	end
-	return vao
-end
 
---faltan las normales con inversa transpuesta
-function M.par_shapesM4(m,MM)
-	for i=0,m.npoints-1 do
-		local vec = mat.vec4(m.points[i*3],m.points[i*3+1],m.points[i*3+2],1)
-		local pR = MM * vec
-		pR = pR/pR.w
-		m.points[i*3],m.points[i*3+1],m.points[i*3+2] = pR.x,pR.y,pR.z
-	end
-	return m
-end
 
 function M.mesh(t)
 	t = t or {}
@@ -295,6 +273,34 @@ function M.mesh(t)
 		for i=1,self.ntriangles do
 			print(i,unpack(self:triangle(i)))
 		end
+	end
+	function mesh:compute_normals()
+		local normals = {}
+		local zerovec = mat.vec3(0,0,0)
+		--local alltris = {}
+		for i=1,self.ntriangles do
+			local tri = self:triangle(i)
+			local pa = self:point(tri[1])
+			local pb = self:point(tri[2])
+			local pc = self:point(tri[3])
+			if not(pa and pb and pc) then print(i,pa,pb,pc,tri[1],tri[2],tri[3]); error"  " end
+			local nor = (pb - pa):cross(pc - pa)
+			normals[tri[1]] = nor + (normals[tri[1]] or zerovec)
+			local nor = (pc - pb):cross(pa - pb)
+			normals[tri[2]] = nor + (normals[tri[2]] or zerovec)
+			local nor = (pa - pc):cross(pb - pc)
+			normals[tri[3]] = nor + (normals[tri[3]] or zerovec)
+			--alltris[tri[1]]=true;alltris[tri[2]]=true;alltris[tri[3]]=true
+		end
+		for i=1,#self.points do
+			-- if not normals[i] then 
+				-- print(normals[i],#normals,i) 
+				-- assert(not alltris[i])
+			-- end
+			normals[i] = normals[i] and normals[i].normalize or zerovec
+		end
+		--assert(#normals == #self.points)
+		self.normals = normals
 	end
 	function mesh:clone()
 		local points = {}
@@ -365,7 +371,7 @@ function M.par_shapes2mesh(pm)
 		mesh.triangles[i*3 +1],mesh.triangles[i*3+2],mesh.triangles[i*3+3] = unpack(pm:triangle(i))
 	end
 	mesh.ntriangles = #mesh.triangles/3
-	print("ntriangles",pm.ntriangles,mesh.ntriangles , #mesh.triangles/3)
+	--print("ntriangles",pm.ntriangles,mesh.ntriangles , #mesh.triangles/3)
 	return mesh
 end
 
