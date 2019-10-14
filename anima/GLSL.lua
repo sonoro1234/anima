@@ -794,6 +794,9 @@ function VBO()
 		self:Bind(kind)
 		glext.glBufferData(kind,ffi.sizeof(values),values, glc.GL_DYNAMIC_DRAW);
 	end
+	function tVbo:delete()
+		glext.glDeleteBuffers(1,tVbo.vbo)
+	end
 	local btex
 	local tbo_unit
 	local tbo_type
@@ -825,7 +828,7 @@ function VBO()
 end
 --vao for sending GL_FLOAT
 function VAO(t,program,indices,tsize,isize)
-	local tVao = {}
+	local tVao = {program=program}
 	local attribs = {}
 	local att_names = {}
 	
@@ -925,7 +928,12 @@ function VAO(t,program,indices,tsize,isize)
 		tVao.ebo = ebo
 		
 	end
-	
+	--
+	function tVao:delete()
+		for i,v in ipairs(vbos) do v:delete() end
+		if self.ebo then glext.glDeleteBuffers(1,self.ebo) end
+		glext.glDeleteVertexArrays(1,vao)
+	end
 	--same vbos with other program
 	function tVao:clone(prog)
 		local tt = {}
