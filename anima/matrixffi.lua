@@ -553,6 +553,26 @@ function M.vec2vao(t,n)
 	return lp
 end
 
+function M.vao2vec(arr,size,n)
+	assert(size%n==0)
+	local vecs = {}
+	if n==3 then
+		for i=0,size-1,3 do
+			vecs[#vecs+1] = vec3(arr[i],arr[i+1],arr[i+2])
+		end
+	elseif n==2 then
+		for i=0,size-1,2 do
+			vecs[#vecs+1] = vec2(arr[i],arr[i+1])
+		end
+	elseif n==1 then
+		for i=0,size-1 do
+			vecs[#vecs+1] = arr[i]
+		end
+	else
+		error("n should be 1 or 2 or 3")
+	end
+	return vecs
+end
 --aa = mat4()
 --print(aa.t.gl, type(aa.t.gl))
 --[[
