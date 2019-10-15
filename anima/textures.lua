@@ -503,6 +503,7 @@ local function ReLoadTexture(fileName,texture,srgb,mipmaps)
 end
 
 local tex_progs = {}
+local mesh = require"anima.mesh"
 --makes a context dependent prog for show textures
 local function make_tex_prog()
 	local P3 = {}
