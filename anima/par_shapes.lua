@@ -46,6 +46,8 @@ void par_shapes_rotate(par_shapes_mesh*, float radians, float const* axis);
 void par_shapes_scale(par_shapes_mesh*, float x, float y, float z);
 void par_shapes_merge_and_free(par_shapes_mesh* dst, par_shapes_mesh* src);
 void par_shapes_remove_degenerate(par_shapes_mesh*, float minarea);
+void par_shapes_set_epsilon_welded_normals(float epsilon);
+void par_shapes_set_epsilon_degenerate_sphere(float epsilon);
 ]]
 
 local lib = ffi.load[[shapes]]

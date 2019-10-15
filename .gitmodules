@@ -29,4 +29,3 @@
 [submodule "par"]
 	path = LuaJIT-par/par
 	url = https://github.com/sonoro1234/par
-	branch = libgen2
