@@ -63,7 +63,7 @@ local mesh_mt = {
 	unweld = function(m) return lib.par_shapes_unweld(m,true) end,
 	clone = function(...) return lib.par_shapes_clone(...) end,
 	remove_degenerate = function(...) return lib.par_shapes_remove_degenerate(...) end,
-	free = function(m) return lib.par_shapes_free_mesh(m) end,
+	free = function(m) ffi.gc(m,nil);return lib.par_shapes_free_mesh(m) end,
 	__gc = function(m) print("__gc called"); 
 		--return lib.par_shapes_free_mesh(m) 
 	end
@@ -76,7 +76,11 @@ local create_mt = {
 		local fname = string.format("par_shapes_create_%s", k)
 		local ok,ret = pcall(function() return lib[fname] end)
 		if not ok then error("Couldn't find pointer type for "..fname.." (are you accessing the right function?)",2) end
-		local ret2 = function(...) local rr = ret(...);assert(rr~=nil,"par_shapes returning nil");return rr end
+		local ret2 = function(...) 
+			local rr = ret(...);
+			assert(rr~=nil,"par_shapes returning nil");
+			return ffi.gc(rr, lib.par_shapes_free_mesh) 
+		end
 		rawset(par_shapes.create, k,ret2 )
 		return ret2
 	end
