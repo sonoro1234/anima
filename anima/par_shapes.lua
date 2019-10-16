@@ -18,13 +18,14 @@ typedef void (*par_shapes_fn)(float const*, float*, void*);
 
 void par_shapes_free_mesh(par_shapes_mesh* mesh);
 
-par_shapes_mesh* par_shapes_create_octohedron();
+par_shapes_mesh* par_shapes_create_octahedron();
 par_shapes_mesh* par_shapes_create_tetrahedron();
 par_shapes_mesh* par_shapes_create_cube();
 
 par_shapes_mesh* par_shapes_create_parametric_sphere(int slices, int stacks);
 par_shapes_mesh* par_shapes_create_subdivided_sphere(int nsubdivisions);
 par_shapes_mesh* par_shapes_create_cylinder(int slices, int stacks);
+par_shapes_mesh* par_shapes_create_cone(int slices, int stacks);
 par_shapes_mesh* par_shapes_create_plane(int slices, int stacks);
 par_shapes_mesh* par_shapes_create_empty();
 par_shapes_mesh* par_shapes_create_lsystem(char const* text, int slices,int maxdepth);
@@ -165,16 +166,7 @@ function par_shapes.create.quad_rprism(b)
 		out[2] = inp[0]
 	end,4*30,b,nil)
 end
-local conefunc = ffi.cast("par_shapes_fn",function(inp,out,us) 
-		local u = math.pi * 2 * inp[1]
-		local v = 1 - inp[0]
-		out[0] = v * math.sin(u)
-		out[1] = v * math.cos(u)
-		out[2] = inp[0]
-	end)
-function par_shapes.create.cone(a,b)
-	return lib.par_shapes_create_parametric(conefunc,a,b,nil)
-end
+
 function par_shapes.create.circle(a)
 	return lib.par_shapes_create_parametric(function(inp,out,us) 
 		local u = math.pi * 2 * inp[1]
