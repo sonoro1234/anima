@@ -82,6 +82,53 @@ local function par_shapesM4(m,MM)
 	return m
 end
 
+local function connectA(scene, cyl, slices)
+    local stacks = 1;
+    local npoints = (slices + 1) * (stacks + 1);
+    assert(scene.npoints >= npoints , "Cannot connect to empty scene.");
+
+    -- Create the new point list.
+    npoints = scene.npoints + (slices + 1);
+    local points = ffi.cast("float*",ffi.C.malloc(ffi.sizeof"float"*npoints*3)) --PAR_MALLOC(float, npoints * 3);
+    --memcpy(points, scene->points, sizeof(float) * scene->npoints * 3);
+	ffi.copy(points, scene.points, ffi.sizeof"float"*npoints*3)
+    local newpts = points + scene.npoints * 3
+    --memcpy(newpts, cylinder->points + (slices + 1) * 3,sizeof(float) * (slices + 1) * 3);
+	--ffi.copy(newpts,cyl.points + (slices + 1) * 3, ffi.sizeof("float") * (slices + 1) * 3)
+	ffi.copy(newpts,cyl.points, ffi.sizeof("float") * (slices + 1) * 3)
+    --PAR_FREE(scene->points);
+	ffi.C.free(scene.points)
+    scene.points = points;
+
+    -- Create the new triangle list.
+    local ntriangles = scene.ntriangles + 2 * slices * stacks;
+    local triangles = ffi.cast("PAR_SHAPES_T*",ffi.C.malloc(ffi.sizeof"PAR_SHAPES_T"*ntriangles * 3) )--PAR_MALLOC(PAR_SHAPES_T, ntriangles * 3);
+    --memcpy(triangles, scene->triangles,sizeof(PAR_SHAPES_T) * scene->ntriangles * 3);
+	ffi.copy(triangles, scene.triangles,ffi.sizeof("PAR_SHAPES_T") * scene.ntriangles * 3);
+    local v = scene.npoints - (slices + 1);
+    local face = triangles + scene.ntriangles * 3;
+    --for (int stack = 0; stack < stacks; stack++) {
+        --for (int slice = 0; slice < slices; slice++) {
+	for stack=0, stacks-1 do
+		for slice =0, slices-1 do
+            local next = slice + 1;
+            face[0] = v + slice + slices + 1;
+            face[1] = v + next;
+            face[2] = v + slice;
+            face[3] = v + slice + slices + 1;
+            face[4] = v + next + slices + 1;
+            face[5] = v + next;
+			face = face + 6
+        end
+        v = v + slices + 1;
+    end
+    ffi.C.free(scene.triangles);
+    scene.triangles = triangles;
+
+    scene.npoints = npoints;
+    scene.ntriangles = ntriangles;
+end
+
 local mesh_mt = {
 	point = function(m,i)  return mat.vec3(m.points[i*3],m.points[i*3+1],m.points[i*3+2]) end,
 	tcoord = function(m,i)  
@@ -116,7 +163,8 @@ local mesh_mt = {
 	scale = function(...) return lib.par_shapes_scale(...) end,
 	merge = function(...) return lib.par_shapes_merge(...) end,
 	merge_and_free = function(...) return lib.par_shapes_merge_and_free(...) end,
-	connect = function(...) return lib.par_shapes__connect(...) end,
+	--connect = function(...) return lib.par_shapes__connect(...) end,
+	connect = function(...) return connectA(...) end,
 	compute_normals = function(...) return lib.par_shapes_compute_normals(...) end,
 	compute_welded_normals = function(...) return lib.par_shapes__compute_welded_normals(...) end,
 	weld = function(...) return lib.par_shapes_weld(...) end,
