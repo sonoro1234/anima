@@ -1226,6 +1226,8 @@ function GLcanvas(GL)
 				gl.glFog(glc.GL_FOG_DENSITY, 0);
 				gl.glHint(glc.GL_FOG_HINT,glc.GL_NICEST) --gl.DONT_CARE);
 			end
+		else
+			gl.glEnable(glc.GL_DEPTH_TEST);
 		end
 		
 		GL.animation:animate(GL.RENDERINI or 0)
