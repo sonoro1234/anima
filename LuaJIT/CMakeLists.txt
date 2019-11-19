@@ -16,18 +16,18 @@ if(UNIX)
       SOURCE_DIR ${CMAKE_SOURCE_DIR}/LuaJIT/LuaJIT
 	  CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/LuaJIT/LuaJIT ${ljdir}
       BINARY_DIR ${ljdir}
-      BUILD_COMMAND make 
+      BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} CCOPT="-DLUAJIT_ENABLE_LUA52COMPAT"
       INSTALL_COMMAND ""
     )
     set (ljname libluajit.a)
 else(UNIX)
   if(MSVC)
-    ExternalProject_Add(project_luaji
+    ExternalProject_Add(project_luajit
       PREFIX ${ljpre}
 	  SOURCE_DIR ${CMAKE_SOURCE_DIR}/LuaJIT/LuaJIT
 	  CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/LuaJIT/LuaJIT ${ljdir}
       BINARY_DIR ${ljsrc}
-      BUILD_COMMAND ${ljsrc}/msvcbuild.bat
+      BUILD_COMMAND ${ljsrc}/msvcbuild.bat #dont know how to set DLUAJIT_ENABLE_LUA52COMPAT
       INSTALL_COMMAND ""
     )
     set (ljname lua51.lib)
@@ -37,7 +37,7 @@ else(UNIX)
 	  SOURCE_DIR ${CMAKE_SOURCE_DIR}/LuaJIT/LuaJIT
 	  CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/LuaJIT/LuaJIT ${ljdir}
       BINARY_DIR ${ljsrc}
-      BUILD_COMMAND ${MAKE}
+      BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} CCOPT="-DLUAJIT_ENABLE_LUA52COMPAT"
       INSTALL_COMMAND ""
     )
   endif(MSVC)
