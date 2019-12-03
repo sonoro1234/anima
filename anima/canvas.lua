@@ -8,7 +8,7 @@ bit = require "bit"
 local gllib = require"gl"
 gl, glc, glu, _ = gllib.libraries()
 
-local lfs = require"lfs_ffi"
+local lfs = require"lfs"
 
 im = require"imffi"
 -- lfs.chdir([[C:\luaGL\iupdlls\]])

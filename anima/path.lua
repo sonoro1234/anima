@@ -1,6 +1,6 @@
 -----------------extracted from penligth (Steve Donovan)
 local M = {}
-local lfs = require"lfs_ffi"
+local lfs = require"lfs"
 local is_windows = package.config:sub(1,1) == '\\'
 local function isabs(P)
 	if is_windows then

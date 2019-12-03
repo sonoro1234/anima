@@ -131,7 +131,7 @@ add_subdirectory(luanoise)
 #########install
 
 install(DIRECTORY anima DESTINATION ${LUAJIT_BIN}/lua)
-install(FILES luafilesystem/lfs_ffi.lua DESTINATION ${LUAJIT_BIN}/lua)
+install(FILES luafilesystem/lfs_ffi.lua luafilesystem/lfs.lua DESTINATION ${LUAJIT_BIN}/lua)
 install(DIRECTORY examples DESTINATION ${LUAJIT_BIN})
 #####linux luajit launcher
 if(UNIX)

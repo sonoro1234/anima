@@ -227,7 +227,7 @@ function gui.FileBrowser(filename_p, args, funcOK)
 	local curr_dir_dirs = {}
 	local fullname
 	
-	local lfs = require"lfs_ffi"
+	local lfs = require"lfs"
 	local function funcdir(path, patt)
 		for file in lfs.dir(path) do
 			if file ~= "."  then --and file ~= ".." then

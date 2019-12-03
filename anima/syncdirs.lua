@@ -1,5 +1,5 @@
 
-local lfs = require"lfs_ffi"
+local lfs = require"lfs"
 local function funcdir(path, func, pat, recur, funcd, tree)
 	--pat = pat or "" -- ".-"
 	--if #pat > 0 then pat = "%." .. pat end

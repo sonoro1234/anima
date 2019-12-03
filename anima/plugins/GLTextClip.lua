@@ -128,7 +128,7 @@ TA = require"anima.TA"
 chartable = TA():range(211,255)
 chartable = chartable:Do(function(v) return string.char(v) end)
 alltext = table.concat(chartable)
---local lfs = require"lfs_ffi"
+--local lfs = require"lfs"
 texto = [[Música]] --lfs.win_utf8_to_acp("MÃºsica")
 for i=1,#texto do
 	print(i,texto:sub(i,i))
