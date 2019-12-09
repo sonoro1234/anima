@@ -205,9 +205,9 @@ function M.photofx(GL,args)
 		imgui.CurveGetData(pointsy, numpoints,LUTdatay, LUTsize )
 		imgui.CurveGetData(pointsz, numpoints,LUTdataz, LUTsize )
 			
-		LUTx = Texture1D(LUTsize,glc.GL_R32F,LUTdatax,glc.GL_RED)
-		LUTy = Texture1D(LUTsize,glc.GL_R32F,LUTdatay,glc.GL_RED)
-		LUTz = Texture1D(LUTsize,glc.GL_R32F,LUTdataz,glc.GL_RED)
+		LUTx = Texture1D(LUTsize,glc.GL_R32F,LUTdatax,glc.GL_RED,nil,{GL=GL})
+		LUTy = Texture1D(LUTsize,glc.GL_R32F,LUTdatay,glc.GL_RED,nil,{GL=GL})
+		LUTz = Texture1D(LUTsize,glc.GL_R32F,LUTdataz,glc.GL_RED,nil,{GL=GL})
 		Luts = {LUTx,LUTy,LUTz}
 		
 		local mesh = require"anima.mesh"
@@ -254,7 +254,7 @@ function M.photofx(GL,args)
 		local theclip = args.clip
 		
 		if theclip[1].isTex2D then
-			theclip[1]:set_wrap(glc.GL_CLAMP)
+			theclip[1]:set_wrap(glc.GL_CLAMP_TO_EDGE)
 			theclip[1]:Bind()
 		elseif theclip[1].isSlab then
 			theclip[1].ping:GetTexture():Bind()

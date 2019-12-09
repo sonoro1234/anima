@@ -653,13 +653,13 @@ local function make_tex_greyprog()
 	return P3
 end
 
-function Texture1D(w,formato,data,format,type)
-	
+function Texture1D(w,formato,data,format,type,args)
+	assert(args.GL)
 	formato = formato or glc.GL_RGB
 	format = format or formato
 	type = type or glc.GL_FLOAT
 	
-	local tex = {width=w,internal_format= formato}
+	local tex = {width=w,internal_format= formato,GL=args.GL}
 	tex.pTex = ffi.new("GLuint[?]",1)
 	gl.glGenTextures(1,tex.pTex) 
 	gl.glBindTexture(glc.GL_TEXTURE_1D, tex.pTex[0])
@@ -671,7 +671,7 @@ function Texture1D(w,formato,data,format,type)
 	function tex:Bind(n)
 		n = n or 0
 		glext.glActiveTexture(glc.GL_TEXTURE0 + n);
-		gl.glEnable( glc.GL_TEXTURE_1D );
+		if not self.GL.restricted then gl.glEnable( glc.GL_TEXTURE_1D ); end
 		gl.glBindTexture(glc.GL_TEXTURE_1D, self.tex)
 	end
 	function tex:set_data(data, format,type)
