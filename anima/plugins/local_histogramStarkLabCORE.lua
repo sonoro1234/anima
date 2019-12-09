@@ -1,6 +1,4 @@
 
-
-
 local vert_shad = [[
 #version 130
 ]]..require"anima.GLSL.GLSL_color"..[[
@@ -102,87 +100,6 @@ void main(){
 }
 ]]
 
-local frag_histoshowBAK = [[
-#version 130
-uniform sampler2D tex0,hist;
-uniform float nposbins;
-uniform float nbins;
-float scale =100.0;
-void main(){
-	float hh;
-	vec2 pos = gl_TexCoord[0].st;
-	//ivec2 sz = textureSize(tex0, 0);
-	
-	//vec4 colh = texture2D(tex0,vec2(pos.s,0));
-	//vec4 colh = texelFetch(tex0, ivec2(floor(pos.s*nbins),floor(0.96*sz.t)),0);//floor(pos.t*sz.t)), 0);
-	vec4 colh = vec4(0.0);
-	for (int i=0;i<nbins;i++)
-		colh += texelFetch(tex0, ivec2(i,floor(pos.t*nposbins)), 0);
-	gl_FragColor = colh;//*scale;//vec4(hh,0,0,1);//col;
-}
-]]
-
-local vert_texshow = [[
-#version 130
-uniform sampler2D hist;
-uniform int nbins;
-uniform float squaresz;
-uniform float nposbinsX;
-uniform float nposbins;
-uniform float fac;
-//noperspective varying float mini;
-//noperspective varying float maxi;
- out float mini;
- out float maxi;
-//flat out vec4 gl_FrontColor;
-void main()
-{
-	float posbin = floor(gl_Vertex.y/squaresz)*nposbinsX + floor(gl_Vertex.x/squaresz);
-	vec4 scol = vec4(0.0);
-	for(int i=0;i<nbins; i++){
-		scol += texelFetch(hist, ivec2(i,posbin), 0);
-		if (scol.r >= fac){
-			mini = float(i)/float(nbins-1);
-			break;
-		}
-	}
-	scol = vec4(0.0);
-	for(int i=nbins-1;i>=0; i--){
-		scol += texelFetch(hist, ivec2(i,posbin), 0);
-		if (scol.r >= fac){
-			maxi = float(i)/float(nbins-1);
-			break;
-		}
-	}
-	gl_TexCoord[0] = gl_MultiTexCoord0;
-	gl_Position = ftransform();
-	float gg =posbin/nposbins; 
-	//gl_FrontColor = gl_Color;//vec4(vec3(posbin/nposbins),1);
-	//gl_FrontColor = vec4(vec3(gg),1);
-}
-
-]]
-
-local frag_texshow = [[
-#version 130
-uniform sampler2D tex0;
- in float mini;
- in float maxi;
-//flat in vec4 gl_Color;
-void main(){
-	float hh;
-	vec2 pos = gl_TexCoord[0].st;
-	vec3 col;
-
-	col = (texture2D(tex0,pos).xyz - mini)/(maxi - mini);
-		//col = (texture2D(tex0,pos).xyz )/(maxi);
-	col = clamp(col,0.0,1.0);
-	//gl_FragColor = gl_Color;
-	//gl_FragColor = vec4(vec3(maxi),1);//,,0,1);//col;
-	//gl_FragColor = vec4(vec3(maxi-mini),1);
-	gl_FragColor = vec4(col,1.0);
-}
-]]
 
 local vert_cum = [[
 uniform mat4 MVP;
@@ -194,27 +111,7 @@ void main()
 }
 ]]
 
-local frag_cum = [[
-uniform sampler2D hist;
 
-void main()
-{
-	ivec2 sz = textureSize(hist, 0);
-	vec4 tot = vec4(0.0);
-	for(int i=0;i<sz.s;i++)
-		tot += texelFetch(hist,ivec2(i,gl_FragCoord.t),0);
-	vec4 acum = vec4(0.0);
-	for(int i=0;i<=gl_FragCoord.s;i++)
-		acum += texelFetch(hist,ivec2(i,gl_FragCoord.t),0);
-	//acum /= tot;
-	if(acum.r > 1.0){
-		acum = vec4(1.0,acum.r - 1.0,1.0,1);
-	}
-	gl_FragColor = acum;
-	//gl_FragColor = vec4(1.0); //texelFetch(hist,ivec2(gl_FragCoord.s,0),0);
-}
-
-]]
 --with alfa an beta from Starks
 local frag_cum2 = [[
 uniform sampler2D hist;
@@ -490,26 +387,6 @@ end
 --for computing histo
 local function DoMESH(w, h,prog)
 	local zplane = 0
---[[
-	
-	gl.glBegin(glc.GL_POINTS)
-	for i=0,w-1,1 do
-		for j=0,h-1,1 do
-		gl.glVertex3f(i,j,zplane)
-	end
-	end
-	gl.glEnd()
-	--]]
-	--[[
-	local Pos = {}
-	for i=0,w-1,1 do
-		for j=0,h-1,1 do
-		Pos[#Pos+1] = i
-		Pos[#Pos+1] = j
-		Pos[#Pos+1] = zplane
-	end
-	end
-	--]]
 	local Pos = ffi.new("float[?]",w*h*3)
 	local ind = 0
 		for i=0,w-1,1 do
@@ -522,33 +399,7 @@ local function DoMESH(w, h,prog)
 	end
 	return VAO({position=Pos},prog)
 end
---for showing image
-local function DoMESHShow(w, h,step)
 
-	local zplane = 0
-	local wfac = 1/w
-	local hfac = 1/h
-	--gl.glPointSize(10)
-	for j=0,h,step do
-		--gl.glBegin(glc.GL_POINTS)--GL_TRIANGLE_STRIP)
-		gl.glBegin(glc.GL_TRIANGLE_STRIP)
-		--for i=0,w,step do
-		local i = 0
-		local last = false
-		repeat
-			if i==w then last = true end
-			gl.glColor3f(i*wfac, j*hfac,0)
-			gl.glTexCoord2f(i*wfac, j*hfac);
-			gl.glVertex3f(i,j,zplane)
-			gl.glColor3f(i*wfac, (j+step)*hfac,0)
-			gl.glTexCoord2f(i*wfac, (j+step)*hfac);
-			gl.glVertex3f(i,j+step,zplane)
-			i = math.min(w,i + step)
-		until last
-		gl.glEnd()
-	end
-	
-end
 local function Clear()
 	gl.glClear(bit.bor(glc.GL_COLOR_BUFFER_BIT,glc.GL_DEPTH_BUFFER_BIT))
 end
@@ -618,12 +469,8 @@ end},
 	hist.save = function() return NMamp:GetValues() end
 	hist.load = function(self,vv) alfabetadirty= true;return NMamp:SetValues(vv) end
 	
-
-
-
-		
 	local fbohist,fbohist0,fbocumhist,fbostdev, programfx,programhistoshow
-	local pr_tex_show,pr_cum,pr_stdev,pr_he
+	local pr_cum,pr_stdev,pr_he
 	local quad_list
 	local textura = false
 	local inited = false
@@ -634,7 +481,6 @@ end},
 		if inited then return end
 		programfx = GLSL:new():compile(vert_shad,frag_shad)
 		programhistoshow = GLSL:new():compile(vert_histoshow,frag_histoshow)
-		pr_tex_show = GLSL:new():compile(vert_texshow,frag_texshow)
 		pr_cum = GLSL:new():compile(vert_cum,frag_cum2)
 		pr_finish = GLSL:new():compile(vert_cum,frag_finish)
 		pr_stdev = GLSL:new():compile(vert_cum,frag_stdev)
@@ -669,10 +515,7 @@ end},
 			-- creates a gl list for a basic quad GPGPU 
 			print"create new mesh"
 			if quad_list then quad_list:delete() end
-			--quad_list = gl.glGenLists(1);
-			--gl.glNewList(quad_list, glc.GL_COMPILE);
 			quad_list = DoMESH(text.width, text.height,programfx);
-			--gl.glEndList(); 
 		end
 		textura = text
 	end
@@ -691,11 +534,6 @@ end},
 		glext.glActiveTexture(glc.GL_TEXTURE0);
 		gl.glBindTexture(glc.GL_TEXTURE_2D, fb.color_tex[0])
 		
-		-- gl.glMatrixMode(glc.GL_PROJECTION)
-		-- gl.glLoadIdentity()
-		-- gl.glOrtho(0.0, 1, 0.0, posbins, -1, 1);
-		-- gl.glMatrixMode(glc.GL_MODELVIEW)
-		-- gl.glLoadIdentity();
 		gl.glViewport(0, 0, 1, posbins)
 		
 		gl.glDisable(glc.GL_DEPTH_TEST);
@@ -727,11 +565,6 @@ end},
 		glext.glActiveTexture(glc.GL_TEXTURE0);
 		gl.glBindTexture(glc.GL_TEXTURE_2D, fb.color_tex[0])
 		
-		-- gl.glMatrixMode(glc.GL_PROJECTION)
-		-- gl.glLoadIdentity()
-		-- gl.glOrtho(0.0, nbins, 0.0, posbins, -1, 1);
-		-- gl.glMatrixMode(glc.GL_MODELVIEW)
-		-- gl.glLoadIdentity();
 		gl.glViewport(0, 0, nbins, posbins)
 		
 		gl.glDisable(glc.GL_DEPTH_TEST);
@@ -759,11 +592,6 @@ end},
 		glext.glActiveTexture(glc.GL_TEXTURE0);
 		gl.glBindTexture(glc.GL_TEXTURE_2D, fbohist0.color_tex[0])
 		
-		-- gl.glMatrixMode(glc.GL_PROJECTION)
-		-- gl.glLoadIdentity()
-		-- gl.glOrtho(0.0, nbins, 0.0, posbins, -1, 1);
-		-- gl.glMatrixMode(glc.GL_MODELVIEW)
-		-- gl.glLoadIdentity();
 		gl.glViewport(0, 0, nbins, posbins)
 		
 		gl.glDisable(glc.GL_DEPTH_TEST);
@@ -800,11 +628,6 @@ end},
 		programfx.unif.posbins:set{posbins}
 		programfx.unif.color_mode:set{NMamp.color_mode}
 		
-		--gl.glMatrixMode(glc.GL_PROJECTION)
-		--gl.glLoadIdentity()
-		-- --gl.glOrtho(0.0, w, 0.0, h, -1, 1);
-		--gl.glMatrixMode(glc.GL_MODELVIEW)
-		--gl.glLoadIdentity();
 		gl.glViewport(0, 0, nbins, posbins)
 		
 		gl.glClearColor(0.0, 0.0, 0.0, 0)
@@ -815,7 +638,6 @@ end},
 		glext.glBlendEquation(glc.GL_FUNC_ADD)
 		gl.glDisable(glc.GL_DEPTH_TEST);
 		
-		--gl.glCallList(quad_list)
 		quad_list:draw(glc.GL_POINTS)
 
 		gl.glDisable(glc.GL_BLEND)
@@ -842,45 +664,7 @@ end},
 		ShowTex(fbo.color_tex[0],w,h,programhistoshow)
 		gl.glDisable(glc.GL_BLEND)
 	end
-	function hist:ShowTex(w,h,fac,srgb)
-		if squareszdirty then self:calc() end
-		glext.glUseProgram(pr_tex_show.program);
-		--glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, 0);
-		-------------------
-		gl.glMatrixMode(glc.GL_PROJECTION)
-		gl.glLoadIdentity()
-		gl.glOrtho(0.0, w, 0.0, h, -1, 1);
-		gl.glMatrixMode(glc.GL_MODELVIEW)
-		gl.glLoadIdentity();
-		gl.glViewport(0, 0, w, h)
-		-----------------------------
-		gl.glClear(glc.GL_COLOR_BUFFER_BIT)
-		gl.glClear(glc.GL_DEPTH_BUFFER_BIT)
-		glext.glActiveTexture(glc.GL_TEXTURE0);
-		gl.glEnable( glc.GL_TEXTURE_2D );
-		gl.glBindTexture(glc.GL_TEXTURE_2D, textura.tex)
-		local modewrap = glc.GL_MIRRORED_REPEAT --glc.GL_CLAMP --glc.GL_REPEAT --glc.GL_MIRRORED_REPEAT
-		gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_WRAP_S, modewrap); 
-		gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_WRAP_T, modewrap);
-		
-		glext.glActiveTexture(glc.GL_TEXTURE1);
-		gl.glEnable( glc.GL_TEXTURE_2D );
-		gl.glBindTexture(glc.GL_TEXTURE_2D, fbohist.color_tex[0])
-		pr_tex_show.unif.hist:set{1}
-		pr_tex_show.unif.nbins:set{nbins}
-		pr_tex_show.unif.fac:set{fac}
-		
-		pr_tex_show.unif.tex0:set{0}
-		local sqsz = squaresz*h/textura.height
-		pr_tex_show.unif.squaresz:set{sqsz}
-		pr_tex_show.unif.nposbinsX:set{nposbinsX}
-		pr_tex_show.unif.nposbins:set{posbins}
-		if srgb then
-			gl.glEnable(glc.GL_FRAMEBUFFER_SRGB)
-		end
-		DoMESHShow(w,h,sqsz)
-		gl.glDisable(glc.GL_FRAMEBUFFER_SRGB)
-	end
+
 	function hist:HEq(srgb,args)
 		args = args or NMamp
 		if alfabetadirty then self:cum_calc(); end
