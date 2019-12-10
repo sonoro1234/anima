@@ -40,13 +40,13 @@ local t =
 }
 
 
-print"making uniform_types -------------------------------"
+--print"making uniform_types -------------------------------"
 local uniform_types = {}
 for k,v in pairs(t) do
 	uniform_types[glc[k]] = {name = k, nvalues = v[1], fname = v[2], matrix = k:match"MAT" and true}
 	local a = uniform_types[glc[k]]
 	a.isint = k:match"INT" or k:match"BOOL" or k:match"SAMPLER" or k:match"IMAGE"
-	print(a.name,a.nvalues,a.fname,a.matrix,a.isint)
+	--print(a.name,a.nvalues,a.fname,a.matrix,a.isint)
 end
 
 
