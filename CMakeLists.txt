@@ -127,7 +127,7 @@ endif()
 set(LUA_INCLUDE_DIR ${CMAKE_BINARY_DIR}/LuaJIT/luajit-2.1/project_luajit/src)
 
 add_subdirectory(luanoise)
-
+add_subdirectory(LuaJIT-IPOL)
 #########install
 
 install(DIRECTORY anima DESTINATION ${LUAJIT_BIN}/lua)
