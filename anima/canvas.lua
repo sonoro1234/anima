@@ -1450,15 +1450,27 @@ function GLcanvas(GL)
 	end
 	GL.timeprovider = MakeDefaultTimeProvider(GL)
 	GL.animation = Animation:new({fps = GL.fps})
+	
+	local function QuitGLFW(GL)
+		GL.window:setShouldClose(glfwc.GLFW_TRUE)
+	end
+	
+	local function QuitSDL(GL)
+		local event = ffi.new"SDL_Event"
+		event.type = sdl.QUIT
+		sdl.pushEvent(event)
+	end
 	----------------------
 	if not GL.SDL then 
 		GL.doinit = doinitGLFW
 		GL.action = actionGLFW
 		GL.start = startGLFW
+		GL.quit = QuitGLFW
 	else
 		GL.doinit = doinitSDL
 		GL.action = actionSDL
 		GL.start = startSDL
+		GL.quit = QuitSDL
 	end
 	---------------------
 	return GL
