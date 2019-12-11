@@ -1,8 +1,14 @@
 #include <stdbool.h>
 #include <algorithm>
 
+#if defined _WIN32 || defined __CYGWIN__
+    #define EXPORT __declspec(dllexport)
+#else
+    #define EXPORT
+#endif
+
 extern "C"{
-__declspec(dllexport) void brox_optic_flow(
+EXPORT void brox_optic_flow(
     const float *I1,         //first image
     const float *I2,         //second image
     float *u, 		      //x component of the optical flow

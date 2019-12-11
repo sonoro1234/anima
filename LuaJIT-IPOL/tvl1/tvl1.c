@@ -1,5 +1,12 @@
 #include <stdbool.h>
-__declspec(dllexport) void Dual_TVL1_optic_flow_multiscale(
+
+#if defined _WIN32 || defined __CYGWIN__
+    #define EXPORT __declspec(dllexport)
+#else
+    #define EXPORT
+#endif
+
+EXPORT void Dual_TVL1_optic_flow_multiscale(
 		float *I0,           // source image
 		float *I1,           // target image
 		float *u1,           // x component of the optical flow

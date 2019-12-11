@@ -1,5 +1,12 @@
 #include <stdbool.h>
-__declspec(dllexport) void horn_schunck_pyramidal(
+
+#if defined _WIN32 || defined __CYGWIN__
+    #define EXPORT __declspec(dllexport)
+#else
+    #define EXPORT
+#endif
+
+EXPORT void horn_schunck_pyramidal(
 	const float *I1,              // source image
 	const float *I2,              // target image
 	float       *u,               // x component of optical flow
