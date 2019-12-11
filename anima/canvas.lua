@@ -1295,7 +1295,9 @@ function GLcanvas(GL)
 		sdl.gL_SetAttribute(sdl.GL_CONTEXT_MAJOR_VERSION, self.gl_version[1]);
 		sdl.gL_SetAttribute(sdl.GL_CONTEXT_MINOR_VERSION, self.gl_version[2]);
 		
-		local window = sdl.createWindow(self.name or "", sdl.WINDOWPOS_CENTERED, sdl.WINDOWPOS_CENTERED, self.viewW, self.viewH, sdl.WINDOW_OPENGL+sdl.WINDOW_RESIZABLE); 
+		local extraflags = 0
+		if self.invisible then extraflags = sdl.SDL_WINDOW_HIDDEN end
+		local window = sdl.createWindow(self.name or "", sdl.WINDOWPOS_CENTERED, sdl.WINDOWPOS_CENTERED, self.viewW, self.viewH, sdl.WINDOW_OPENGL+sdl.WINDOW_RESIZABLE+extraflags); 
 
 		self.window = window
 		local gl_context = sdl.gL_CreateContext(window);
@@ -1349,7 +1351,9 @@ function GLcanvas(GL)
 			glfw.glfwWindowHint(glfwc.GLFW_OPENGL_FORWARD_COMPAT, self.forward and glc.GL_TRUE or glc.GL_FALSE);
 		end
 		end
-
+		
+		if self.invisible then glfw.glfwWindowHint(glfwc.GLFW_VISIBLE, glfwc.GLFW_FALSE) end
+		
 		local window = lj_glfw.Window(self.viewW, self.viewH, self.name or "")
 		self.window = window
 		function self:makeContextCurrent() self.window:makeContextCurrent() end
