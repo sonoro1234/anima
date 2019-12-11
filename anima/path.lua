@@ -54,7 +54,8 @@ local function mkdir(P)
 	for w in rr:gmatch("([^"..sep.."]+)") do
 		dirs[#dirs + 1] = w
 	end
-	local current = dirs[1]
+	local inisep = rr:match("^"..sep) or ""
+	local current = inisep..dirs[1]
 	for i=2,#dirs do
 		current = current .. sep .. dirs[i]
 		if nil == lfs.attributes(current) then
