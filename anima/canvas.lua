@@ -1201,7 +1201,7 @@ function GLcanvas(GL)
 	local function doinitCOMMON(self)
 		--require"anima.GLSL"
 		-----------------------------------------------------------------------------------
-		print_glinfo(self)
+		--print_glinfo(self)
 		if self.profile == "COMPAT" then
 
 			GetGLError"doinit 2"
