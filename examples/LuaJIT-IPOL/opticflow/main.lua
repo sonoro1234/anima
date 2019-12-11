@@ -2,16 +2,14 @@ local lfs=require"lfs"
 local path = require"anima.path"
 local script_path = path.this_script_path()
 --first resize photos
-if not lfs.attributes(path.chain(script_path,"master1080")) then
-	print"resizing originals-------------"
-	dofile(path.chain(script_path,"syncdirs.lua"))
-end
+print"resizing originals-------------"
+dofile(path.chain(script_path,"syncdirs.lua"))
+
 --make compressed images
-if not lfs.attributes(path.chain(script_path,"compressed1080")) then
-	print"saving compressed images -------------"
-	dofile(path.chain(script_path,"savecompresseddir.lua"))
-end
---calculate flows
+print"saving compressed images -------------"
+dofile(path.chain(script_path,"savecompresseddir.lua"))
+
+--calculate flows if flow dir is not present
 if not lfs.attributes(path.chain(script_path,"flow")) then
 	print"calculating flows ------------------------------------------"
 	local brox = require"IPOL.brox"

@@ -5,7 +5,7 @@ local script_path = path.this_script_path()
 local rootdir = script_path
 
 
-local GL = GLcanvas{fps=25,ortho=1,fog=false,H=500,aspect = 1.5,profile="CORE"}
+local GL = GLcanvas{fps=25,ortho=1,fog=false,H=500,aspect = 1.5,profile="CORE",invisible=true}
 
 
 function copyprocess(src, name, dstdir, w,h)
