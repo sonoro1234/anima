@@ -14,7 +14,7 @@ function M.flip_vertical(data,w,h,p)
 	return rdata
 end
 
-local nplanes = {[glc.GL_RGB] = 3,[glc.GL_RGBA] = 4}
+local nplanes = {[glc.GL_RGB] = 3,[glc.GL_RGBA] = 4,[glc.GL_RED]=1,[glc.GL_LUMINANCE]=1}
 function M.togrey(image)
 	local nx,ny = image:Width(),image:Height()
 	local gldata, glformat = image:GetOpenGLData()
