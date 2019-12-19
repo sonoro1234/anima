@@ -42,7 +42,7 @@ end
 local function imgui_cameraDialog(name,zforh,GL, invisible,cam)
 		local NMC =GL:Dialog(name .."_cam",
 		{
-		{"printMV",0,guitypes.button,function() print(cam:MV());print(cam:MP()) end},
+		{"printMV",0,guitypes.button,function() print(cam:MV());print();print(cam:MP()) end},
 		{"azimuth",0,guitypes.dial},
 		{"elevation",0,guitypes.dial},
 		{"twist",0,guitypes.dial},
@@ -52,16 +52,16 @@ local function imgui_cameraDialog(name,zforh,GL, invisible,cam)
 							GL.mouse_pick = nil
 						end}
 		end},
-		{"distfac",1,guitypes.val,{min=0.01,max=1000}},
-		{"dist",zforh,guitypes.val,{min=0,max=zforh*5}},
-		{"xcamL",0,guitypes.val,{min=-5,max=5}},
-		{"ycamL",0,guitypes.val,{min=-5,max=5}},
-		--{"zcamL",0,guitypes.val,{min=-5*zforh,max=5*zforh}},
+		{"distfac",1,guitypes.drag,{min=0.01,max=1000,precission=0.1}},
+		{"dist",zforh,guitypes.drag,{min=0,max=zforh*5,precission=0.1}},
+		{"xcamL",0,guitypes.drag,{min=-5,max=5,precission=0.1}},
+		{"ycamL",0,guitypes.drag,{min=-5,max=5,precission=0.1}},
+		--{"zcamL",0,guitypes.drag,{min=-5*zforh,max=5*zforh}},
 		{"zcamL",0,guitypes.dial,{min=-5*zforh,max=5*zforh}},
-		{"focal",35,guitypes.val,{min=0,max=180}},
-		{"focal_fac",1,guitypes.val,{min=0.01,max=5}},
-		{"nearZ",0.1,guitypes.val,{min=0.01,max=1}},
-		{"farZ",1000,guitypes.val,{min=1,max=1000}},
+		{"focal",35,guitypes.drag,{min=0,max=180,precission=0.1}},
+		{"focal_fac",1,guitypes.drag,{min=0.01,max=5,precission=0.1}},
+		{"nearZ",0.1,guitypes.drag,{min=0.01,max=1,precission=0.1}},
+		{"farZ",1000,guitypes.drag,{min=1,max=1000,precission=0.1}},
 		{"ortho",0,guitypes.toggle}}
 		,nil,invisible)
 		return NMC
