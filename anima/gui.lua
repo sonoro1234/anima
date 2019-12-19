@@ -731,8 +731,9 @@ function gui.Dialog(name,vars,func, invisible)
 					end
 				end
 			elseif v[3] == guitypes.drag then
+				local vspeed = v[4].precission or 1
 				if defs[v[1]].size > 1 then
-				if imgui["igDragFloat"..defs[v[1]].sizeN](v[1], pointers[v[1]].data,1, v[4].min or ig.FLT_MAX , v[4].max or ig.FLT_MAX , "%.3f", 1.0) then
+				if imgui["igDragFloat"..defs[v[1]].sizeN](v[1], pointers[v[1]].data,vspeed, v[4].min or ig.FLT_MAX , v[4].max or ig.FLT_MAX , "%.3f", 1.0) then
 					self.dirty = true
 					namevar = v[1]
 					if v[5] then 
@@ -740,7 +741,7 @@ function gui.Dialog(name,vars,func, invisible)
 					end
 				end
 				else
-					if imgui.igDragFloat(v[1], pointers[v[1]],1, v[4].min, v[4].max, "%.3f", 1.0) then
+					if imgui.igDragFloat(v[1], pointers[v[1]],vspeed, v[4].min, v[4].max, "%.3f", 1.0) then
 					self.dirty = true
 					namevar = v[1]
 					if v[5] then 
@@ -1137,7 +1138,7 @@ function gui.SetImGui(GL)
 	function GL:draw_imgui_not_modal()
 		maxx_needed = math.max(300,math.min(ig.GetIO().DisplaySize.x,maxx_needed))
 		if #self.imguimodals < 1 then return end
-		ig.SetNextWindowSize(ig.ImVec2(maxx_needed,0))--, imgui.ImGuiCond_Once)
+		--ig.SetNextWindowSize(ig.ImVec2(maxx_needed,0))--, imgui.ImGuiCond_Once)
 		maxx_needed = 0
 		--ig.SetNextWindowSizeConstraints(ig.ImVec2(200,200),ig.ImVec2(ig.GetIO().DisplaySize.x,-1))
 		--if ig.Begin("params",nil,bit.bor(imgui.ImGuiWindowFlags_AlwaysAutoResize,imgui.ImGuiWindowFlags_HorizontalScrollbar)) then
