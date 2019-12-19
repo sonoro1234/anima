@@ -1,6 +1,7 @@
 local ffi = require"ffi"
 
 ffi.cdef[[
+typedef uint32_t PAR_MSQUARES_T;
 typedef uint8_t par_byte;
 typedef struct par_msquares_meshlist_s par_msquares_meshlist;
 
@@ -8,14 +9,14 @@ typedef struct par_msquares_meshlist_s par_msquares_meshlist;
 typedef struct {
     float* points;        // pointer to XY (or XYZ) vertex coordinates
     int npoints;          // number of vertex coordinates
-    uint16_t* triangles;  // pointer to 3-tuples of vertex indices
+    PAR_MSQUARES_T* triangles;  // pointer to 3-tuples of vertex indices
     int ntriangles;       // number of 3-tuples
     int dim;              // number of floats per point (either 2 or 3)
     uint32_t color;       // used only with par_msquares_color_multi
 } par_msquares_mesh;
 
 typedef struct {
-    uint16_t* values;
+    PAR_MSQUARES_T* values;
     size_t count;
     size_t capacity;
 } par__uint16list;
@@ -23,12 +24,12 @@ typedef struct {
 typedef struct {
     float* points;
     int npoints;
-    uint16_t* triangles;
+    PAR_MSQUARES_T* triangles;
     int ntriangles;
     int dim;
     uint32_t color;
     int nconntriangles;
-    uint16_t* conntri;
+    PAR_MSQUARES_T* conntri;
     par__uint16list* tjunctions;
 } par_msquares__mesh;
 
@@ -45,7 +46,7 @@ typedef struct {
     float* points;        // list of XY vertex coordinates
     int npoints;          // number of vertex coordinates
     float** chains;       // list of pointers to the start of each chain
-    uint16_t* lengths;    // list of chain lengths
+    PAR_MSQUARES_T* lengths;    // list of chain lengths
     int nchains;          // number of chains
 } par_msquares_boundary;
 
