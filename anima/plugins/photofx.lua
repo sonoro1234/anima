@@ -205,9 +205,9 @@ function M.photofx(GL,args)
 		imgui.CurveGetData(pointsy, numpoints,LUTdatay, LUTsize )
 		imgui.CurveGetData(pointsz, numpoints,LUTdataz, LUTsize )
 			
-		LUTx = Texture1D(LUTsize,glc.GL_R32F,LUTdatax,glc.GL_RED,nil,{GL=GL})
-		LUTy = Texture1D(LUTsize,glc.GL_R32F,LUTdatay,glc.GL_RED,nil,{GL=GL})
-		LUTz = Texture1D(LUTsize,glc.GL_R32F,LUTdataz,glc.GL_RED,nil,{GL=GL})
+		LUTx = GL:Texture1D(LUTsize,glc.GL_R32F,LUTdatax,glc.GL_RED,nil,{GL=GL})
+		LUTy = GL:Texture1D(LUTsize,glc.GL_R32F,LUTdatay,glc.GL_RED,nil,{GL=GL})
+		LUTz = GL:Texture1D(LUTsize,glc.GL_R32F,LUTdataz,glc.GL_RED,nil,{GL=GL})
 		Luts = {LUTx,LUTy,LUTz}
 		
 		local mesh = require"anima.mesh"
@@ -312,7 +312,7 @@ function GL.draw(t,w,h)
 	-- lch:process(slab,tex)
 	-- slab.ping:GetTexture():draw(t,w,h)
 	gl.glGetBooleanv(glc.GL_DEPTH_TEST,enadt)
-	print("DT",enadt[0])
+	--print("DT",enadt[0])
 	lch:draw(t,w,h,{clip={tex}})
 end
 GL:start()

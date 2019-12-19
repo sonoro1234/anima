@@ -1401,6 +1401,9 @@ function GLcanvas(GL)
 		end
 		return tex
 	end
+	function GL:Texture1D(w,formato,data,format,type)
+		return Texture1D(w,formato,data,format,type,{GL=self})
+	end
 	function GL:make_slab()
 		return MakeSlab(self.W,self.H,nil,self)
 	end
