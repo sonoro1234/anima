@@ -968,10 +968,24 @@ function GLcanvas(GL)
 				
 				if GL.SRGB then
 					gl.glEnable(glc.GL_FRAMEBUFFER_SRGB)
-					GL.fbo:GetTexture():drawpos(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
+					local tex = GL.fbo:GetTexture()
+					if GL.fbo_nearest then
+						tex:mag_filter(glc.GL_NEAREST)
+						tex:min_filter(glc.GL_NEAREST)
+					else
+						tex:gen_mipmap()
+					end
+					tex:drawpos(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
 					gl.glDisable(glc.GL_FRAMEBUFFER_SRGB)
 				else
-					GL.fbo:GetTexture():drawpos(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
+					local tex = GL.fbo:GetTexture()
+					if GL.fbo_nearest then
+						tex:mag_filter(glc.GL_NEAREST)
+						tex:min_filter(glc.GL_NEAREST)
+					else
+						tex:gen_mipmap()
+					end
+					tex:drawpos(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
 				end
 				
 			end
@@ -1046,15 +1060,22 @@ function GLcanvas(GL)
 				if GL.SRGB then
 					gl.glEnable(glc.GL_FRAMEBUFFER_SRGB)
 					local tex = GL.fbo:GetTexture()
-					tex:gen_mipmap()
+					if GL.fbo_nearest then
+						tex:mag_filter(glc.GL_NEAREST)
+						tex:min_filter(glc.GL_NEAREST)
+					else
+						tex:gen_mipmap()
+					end
 					tex:drawpos(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
 					gl.glDisable(glc.GL_FRAMEBUFFER_SRGB)
 				else
 					local tex = GL.fbo:GetTexture()
-					
-					tex:gen_mipmap()
-					--tex:mag_filter(glc.GL_NEAREST)
-					--tex:min_filter(glc.GL_NEAREST)
+					if GL.fbo_nearest then
+						tex:mag_filter(glc.GL_NEAREST)
+						tex:min_filter(glc.GL_NEAREST)
+					else
+						tex:gen_mipmap()
+					end
 					tex:drawpos(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
 				end
 				
