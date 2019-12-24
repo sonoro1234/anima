@@ -169,7 +169,7 @@ require"anima"
 GL = GLcanvas{H=700,aspect = 1.5}
 mask = M.make(GL)
 function GL:init()
-	textura = Texture():Load[[G:\VICTOR\montajes_seleccion\_MG_6429.tif]]
+	textura = GL:Texture():Load[[D:\VICTOR\montajes_seleccion\_MG_6429.tif]]
 end
 function GL.draw(t,w,h)
 	ut.Clear()

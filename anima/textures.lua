@@ -456,7 +456,7 @@ local function ReLoadTexture(fileName,texture,srgb,mipmaps)
 		image = nil
 		gldata, glformat = LoadGL16(fileName)
 	else
-		assert(image:DataType()==im.BYTE)
+		assert(image:DataType()==im.BYTE,image:DataType())
 		datatype = glc.GL_UNSIGNED_BYTE
 		gldata, glformat = image:GetOpenGLData()
 	end
