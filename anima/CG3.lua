@@ -127,11 +127,166 @@ function M.IsPointInPoly(P, p)
     return c;
 end
 local function IsConvex(a,b,c)
-	return Sign(a,b,c) < 0
+	return Sign(a,b,c) <=0
 end
 --triangulation of polygon as a table of vertices
-local function EarClip(poly)
+--EarClip helpers
+--find intersection of c+(1,0) with a-b
+local function intersectSegmentX(p0, p1, c)
+	local y = c.y
+    if p0.y == p1.y then return mat.vec2(p0.x,y) end 
+    if p0.y < p1.y then
+      local t = (y - p0.y) / (p1.y - p0.y)
+      return mat.vec2(p0.x + t * (p1.x - p0.x),y)
+    else
+      local t = (y - p1.y) / (p0.y - p1.y)
+      return mat.vec2(p1.x + t * (p0.x - p1.x),y)
+	end
+end
+local function EarClipH(poly, holes)
+	holes = holes or {}
+	--first fusion holes with poly
+	--find hole with max X point
+	while #holes>0 do
+	--print("#holes",#holes)
+	local maxx = -math.huge
+	local maxhole, maxholevert
+	for i=1,#holes do
+		local hole = holes[i]
+		for j=1,#hole do
+			if hole[j].x > maxx then
+				maxx = hole[j].x
+				maxhole = i
+				maxholevert = j
+			end
+		end
+	end
+	--find segment maxholevert-outer not intersecting outer
+	local Mp = holes[maxhole][maxholevert]
+	local I = Mp + mat.vec3(math.huge, 0,0)
+	local edge
+	for i=1,#poly do
+		local a,b = poly[i],poly[mod(i+1,#poly)]
+		if (a.x < Mp.x and b.x < Mp.x) then goto CONTINUE end
+		if a.x > I.x and b.x > I.x then goto CONTINUE end
+		if (a.y <= Mp.y and Mp.y <= b.y) or (b.y <= Mp.y and Mp.y <= a.y) then
+			local Ite = intersectSegmentX(a,b,Mp)
+			if Ite.x < I.x then
+				edge = i
+				I = Ite
+			end
+		end
+		::CONTINUE::
+	end
 
+	assert(edge)
+	if edge then
+	--if I is edge or edge+1 this is visible point
+	local VV
+	local a,b = poly[edge],poly[mod(edge+1,#poly)]
+	if I==a then
+		VV = edge
+	elseif I==b then
+		VV = mod(edge+1,#poly)
+	elseif a.x < b.x then
+		VV = mod(edge+1,#poly)
+	else
+		VV = edge
+	end
+	local P = poly[VV]
+	--print("Rayintersec",a,b,Mp,P)
+	--check all reflex (not convex) poly vertex are outside triangle MIP
+	local mintan = math.huge
+	local Ri
+	for i=1,#poly do
+		local a,b,c = poly[mod(i-1,#poly)],poly[i],poly[mod(i+1,#poly)]
+		if IsConvex(a,b,c) then
+			if M.IsPointInTri(b,Mp,I,P) then
+				--keep angle
+				local MR = b-Mp
+				local tan = math.abs(math.atan2(MR.y,MR.x))
+				if tan < mintan then
+					Ri = i
+					mintan = tan
+				end
+			end
+		end
+	end
+	if Ri then VV=Ri end
+	--create segment Mp-VV merging hole in poly
+	local newpoly = {}
+	for i=1,VV do
+		newpoly[i] = poly[i]
+	end
+	local hole = holes[maxhole]
+	for i=0,#hole-1 do
+		newpoly[#newpoly+1] = hole[mod(i+maxholevert,#hole)]
+	end
+	newpoly[#newpoly+1] = hole[maxholevert]
+	--newpoly[#newpoly+1] = poly[VV]
+	for i=VV,#poly do
+		newpoly[#newpoly+1] = poly[i]
+	end
+	poly = newpoly
+	--delete hole
+	end --no edge
+	table.remove(holes,maxhole)
+	end --holes
+	
+	
+	--prtable(poly)
+	local ind = {}
+	local tr = {}
+	for i,v in ipairs(poly) do ind[i] = i end
+	--ind[#ind] = nil --delete repeated
+	--finc ear_tip
+	while #ind > 2 do
+	--print("EarClip",#ind)
+	local initind = #ind
+	for i,v in ipairs(ind) do
+		--is convex?
+		local a,b,c = ind[mod(i-1,#ind)],ind[i],ind[mod(i+1,#ind)]
+		if IsConvex(poly[a],poly[b],poly[c]) then
+			--test empty
+			local empty = true
+			local jlimit = mod(i-1,#ind)
+			local j = mod(i+2,#ind)
+			while j~=jlimit do
+				if M.IsPointInTri(poly[ind[j]],poly[a],poly[b],poly[c]) then
+					empty = false
+					break
+				end
+				j = mod(j+1,#ind)
+			end
+			
+			if empty then
+				table.remove(ind,i)
+				table.insert(tr,a-1)
+				table.insert(tr,b-1)
+				table.insert(tr,c-1)
+				break
+			end
+		end
+	end
+	local function isreflexangle(a,b,c)
+		local ab = b-a
+		local ac = c-a
+		return ac:cross(ab).z -->= 0
+	end
+	if (initind == #ind) then
+		print("no convex----------",#ind)
+		for i,v in ipairs(ind) do
+			local a,b,c = ind[mod(i-1,#ind)],ind[i],ind[mod(i+1,#ind)]
+			print(poly[a],poly[b],poly[c],IsConvex(poly[a],poly[b],poly[c]),isreflexangle(poly[a],poly[b],poly[c]))
+		end
+		print("end no convex --------")
+		return poly,tr,false
+	end
+	end
+	return poly,tr,true
+end
+M.EarClipH = EarClipH
+local function EarClip(poly, holes)
 	--prtable(poly)
 	local ind = {}
 	local tr = {}
