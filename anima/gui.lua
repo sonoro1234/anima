@@ -571,9 +571,38 @@ function gui.ImGui_Transport(GL)
 	return transport
 end
 local mat = require"anima.matrixffi"
-guitypes = {val=1,dial=2,toggle=3,button=4,valint=5,drag=6,combo=7,color=8}
+guitypes = {val=1,dial=2,toggle=3,button=4,valint=5,drag=6,combo=7,color=8,curve=9}
 gui.guitypes = guitypes
 
+function gui.Curve(name,numpoints,LUTsize)
+	numpoints = numpoints or 10
+	LUTsize = LUTsize or 720
+	local M = {name = name,numpoints=numpoints,LUTsize=LUTsize}
+	M.LUT = ffi.new("float[?]",LUTsize)
+	M.LUT[0] = -1
+	M.points = ffi.new("ImVec2[?]",numpoints)
+	M.points[0].x = -1
+	function M:getpoints()
+		local pts = {}
+		for i=0,numpoints-1 do
+			pts[i] = {x=M.points[i].x,y=M.points[i].y}
+		end
+		return pts
+	end
+	function M:setpoints(pts)
+		for i=0,#pts do
+			M.points[i].x = pts[i].x
+			M.points[i].y = pts[i].y
+		end
+		M.LUT[0] = -1
+		imgui.CurveGetData(M.points, numpoints,M.LUT, LUTsize )
+	end
+	function M:draw()
+		local sz = 200
+		return imgui.Curve(name, ig.ImVec2(sz*2,sz),M.points, M.numpoints,M.LUT, M.LUTsize) 
+	end
+	return M
+end
 local array_mt = {
 	__new = function(tp,t)
 			if type(t)=="table" then
@@ -666,7 +695,7 @@ function gui.Dialog(name,vars,func, invisible)
 				size = #v[2]
 				sizeN = tostring(size)
 			end
-			assert(size ==3 or size == 4)
+			assert(size ==3 or size == 4,"size for color must be 3 or 4")
 			defs[v[1]] = {default= v[2],type=v[3],args=v[4], size=size, sizeN=sizeN}
 		elseif v[3] == guitypes.valint then
 			v[4] = v[4] or {}
@@ -688,6 +717,23 @@ function gui.Dialog(name,vars,func, invisible)
 				items[i-1] = ffi.new("const char*",v)
 			end
 			defs[v[1]] = {default= v[2],type=v[3],args=v[4],items=items,n_items=#v[4]}
+		elseif v[3] == guitypes.curve then
+			v[4] = v[4] or {numpoints=10,LUTsize=720}
+			local siz_def = #v[2]/2
+			assert(siz_def==math.floor(siz_def))
+			local numpoints = v[4].numpoints or (siz_def + 1)
+			local LUTsize = v[4].LUTsize or 720
+			local curve = gui.Curve(v[1],numpoints,LUTsize)
+			local points = curve.points
+			for i=0,siz_def-1 do
+				points[i].x = v[2][i*2+1]
+				points[i].y = v[2][i*2+2]
+			end
+			points[siz_def].x = -1
+			pointers[v[1]] = points
+			defs[v[1]] = {default=v[2],type=v[3],curve=curve}
+		else
+			error("unknown guitype",2)
 		end
 	end
 	
@@ -696,6 +742,8 @@ function gui.Dialog(name,vars,func, invisible)
 		for k,v in pairs(self.vars) do
 			if ffi.istype(farray,self.vars[k]) then
 				vals[k] = self.vars[k]:get(v)
+			elseif defs[k].type == guitypes.curve then
+				vals[k] = defs[k].curve:getpoints()
 			else
 				vals[k]= self[k] --eq to self.vars[k][0]
 			end
@@ -706,9 +754,15 @@ function gui.Dialog(name,vars,func, invisible)
 		if not vals then return end
 		for k,v in pairs(vals) do
 			if self.vars[k] then
-				--if self.vars[k].set then
+				if self.defs[k].type == guitypes.combo and type(v)=="string" then
+					for i,nn in ipairs(self.defs[k].args) do
+						if nn==v then v=i-1;break end
+					end
+				end
 				if ffi.istype(farray,self.vars[k]) then
 					self.vars[k]:set(v)
+				elseif defs[k].type == guitypes.curve then
+					defs[k].curve:setpoints(v)
 				else
 					self.vars[k][0] = v
 				end
@@ -809,6 +863,14 @@ function gui.Dialog(name,vars,func, invisible)
 					if type(v[4])=="function" then 
 						v[4](self)
 					end
+				end
+			elseif v[3] == guitypes.curve then
+				local curve = defs[v[1]].curve
+				if curve:draw() then
+					if type(v[5])=="function" then 
+						v[5](curve,self)
+					end
+					self.dirty = true
 				end
 			end
 		end
@@ -1366,7 +1428,7 @@ function gui.Histogram(GL,bins,linear)
 			ig.PopItemWidth()
 		end
 		ig.End()
-	end
+	end, Histogram1
 end
 
 function gui.Plotter(xmin,xmax,nvals)
