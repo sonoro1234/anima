@@ -225,7 +225,7 @@ local function Filterer(GL,args)
 	
 	local NM = GL:Dialog("fft",
 	{{"unit",6,guitypes.valint,{min=0,max=6}},
-	{"curv",{0,0.5,1,0.5},guitypes.curve,nil,function(curve) FF:filter(curve.LUT,curve.LUTsize) end},
+	{"curv",{0,0.5,1,0.5},guitypes.curve,{pressed_on_modified=false},function(curve) FF:filter(curve.LUT,curve.LUTsize) end},
 	{"bypass",false,guitypes.toggle},
 	},function(this) 
 		presets.draw()
@@ -251,6 +251,7 @@ local function Filterer(GL,args)
 		gl.glGetIntegerv(glc.GL_DRAW_FRAMEBUFFER_BINDING, old_framebuffer)
 	end
 	function FF:setoldFBO()
+	print("setoldFBO",old_framebuffer[0])
 		glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, old_framebuffer[0]);
 	end
 	function FF:bindtexs()
@@ -375,7 +376,7 @@ local function Filterer(GL,args)
 	function FF:set_texture(tex)
 		if oldtexsignature and oldtexsignature==tex:get_signature() then return end
 		oldtexsignature=tex:get_signature()
-		print"fft texture set"
+		print"-------------fft texture set--------------"
 		self:saveoldFBO()
 		if imageTexture then imageTexture:delete() end
 		imageTexture = tex:resample(RESOLUTION,RESOLUTION)
@@ -392,6 +393,7 @@ local function Filterer(GL,args)
 		self:setoldFBO()
 	end
     function FF:filter(filterArray, length) 
+		print"fft:filter"
 		self:saveoldFBO()
 		
 		self:bindtexs()
@@ -438,6 +440,7 @@ local function Filterer(GL,args)
 		imageProgramvao:draw(glc.GL_TRIANGLE_STRIP)
     end
 	function FF:process(texture)
+		print"fftprocess"
 		if NM.bypass then texture:drawcenter();return end
 		self:set_texture(texture)
 		self:filter(curve.LUT,curve.LUTsize)
@@ -454,19 +457,20 @@ GL = GLcanvas{H=RES,W=RES,profile="CORE",DEBUG=true,use_log=false}
 
 NM = GL:Dialog("test",{{"orig",false,guitypes.toggle}})
 local vicim = require"anima.vicimag"
-local image,tex,fft
+local image,tex,fft,fbo
 function GL.init()
 	GLSL.default_version = "#version 330\n"
 
 	image = vicim.load_im([[C:\luaGL\media\fandema1.tif]])
 	
 	tex = image:totex(GL)
+	fbo = tex:make_fbo()
 	--tex = tex:resample_fac(0.25)
 	GL:set_WH(tex.width,tex.height)
 	fft = Filterer(GL)--,{RES=RES})
-	fft:set_texture(tex)
+	--fft:set_texture(tex)
 	--print_glinfo(GL)
-	--GL:DirtyWrap()
+	GL:DirtyWrap()
 end
 
 function GL.draw(t,w,h)
@@ -474,10 +478,41 @@ function GL.draw(t,w,h)
 	if NM.orig then
 		tex:drawcenter()
 	else
-		--fft:process(tex)
-		fft:output()
+		fft:process_fbo(fbo,tex)
+		fbo:tex():drawcenter()
+		--fft:output()
 	end
 end
+GL:start()
+--]=]
+
+---[=[
+require"anima"
+local GL = GLcanvas{H=700,W=700}
+
+local NM = GL:Dialog("test",{
+{"freq",1,guitypes.val,{min=1,max=500}}
+})
+local tproc,chain,fft
+function GL.init()
+	tproc = require"anima.plugins.texture_processor"(GL,0,NM)
+	tproc:set_process[[vec4 process(vec2 pos){
+		return vec4(sin(pos.x*2*3.14159*freq)*0.5+0.5);
+	}]]
+	fft = Filterer(GL)
+	local tex = GL:Texture()
+	local tex2 = tex:resample(2,2)
+	chain = tex:make_chain{tproc,fft}
+	GL:DirtyWrap()
+end
+
+function GL.draw(t,w,h)
+	ut.Clear()
+	--tproc:process{}
+	chain:process({})
+	chain:tex():drawcenter()
+end
+
 GL:start()
 --]=]
 

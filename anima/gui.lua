@@ -574,7 +574,8 @@ local mat = require"anima.matrixffi"
 guitypes = {val=1,dial=2,toggle=3,button=4,valint=5,drag=6,combo=7,color=8,curve=9}
 gui.guitypes = guitypes
 
-function gui.Curve(name,numpoints,LUTsize)
+function gui.Curve(name,numpoints,LUTsize,pressed_on_modified)
+	if pressed_on_modified == nil then pressed_on_modified=true end
 	numpoints = numpoints or 10
 	LUTsize = LUTsize or 720
 	local M = {name = name,numpoints=numpoints,LUTsize=LUTsize}
@@ -599,7 +600,7 @@ function gui.Curve(name,numpoints,LUTsize)
 	end
 	function M:draw()
 		local sz = 200
-		return imgui.Curve(name, ig.ImVec2(sz*2,sz),M.points, M.numpoints,M.LUT, M.LUTsize) 
+		return imgui.Curve(name, ig.ImVec2(sz*2,sz),M.points, M.numpoints,M.LUT, M.LUTsize,pressed_on_modified) 
 	end
 	return M
 end
@@ -721,9 +722,11 @@ function gui.Dialog(name,vars,func, invisible)
 			v[4] = v[4] or {numpoints=10,LUTsize=720}
 			local siz_def = #v[2]/2
 			assert(siz_def==math.floor(siz_def))
-			local numpoints = v[4].numpoints or (siz_def + 1)
+			local numpoints = v[4].numpoints or 10
+			numpoints = math.max(numpoints,siz_def + 1)
 			local LUTsize = v[4].LUTsize or 720
-			local curve = gui.Curve(v[1],numpoints,LUTsize)
+			local pressed_on_modified = v[4].pressed_on_modified
+			local curve = gui.Curve(v[1],numpoints,LUTsize,pressed_on_modified)
 			local points = curve.points
 			for i=0,siz_def-1 do
 				points[i].x = v[2][i*2+1]
