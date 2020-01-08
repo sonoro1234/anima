@@ -208,7 +208,7 @@ GL = GLcanvas{H=1080,viewH=700,aspect=1.5}
 trans = make(GL)
 local textura
 function GL.init()
-	textura = Texture()
+	textura = GL:Texture()
 	print(textura)
 	textura = textura:Load[[C:\luagl\animacion\resonator6\resonator-038.jpg]]
 end

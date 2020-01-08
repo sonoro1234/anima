@@ -248,10 +248,10 @@ GL = GLcanvas{H=1080,viewH=700,aspect=1.5,SDL=true}
 trans = make(GL)
 local textura
 function GL.init()
-	textura = Texture()
+	textura = GL:Texture()
 	print(textura)
-	--textura = textura:Load[[C:\luagl\animacion\resonator6\resonator-038.jpg]]
-	textura = textura:Load[[G:\VICTOR\pelis\hadas\master1080\teatrito\frame-0001.tif]]
+	textura = textura:Load[[C:\luagl\animacion\resonator6\resonator-038.jpg]]
+	--textura = textura:Load[[G:\VICTOR\pelis\hadas\master1080\teatrito\frame-0001.tif]]
 end
 
 function GL.draw(t,w,h)
