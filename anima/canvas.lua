@@ -27,7 +27,7 @@ require"anima.GLSL"
 require"anima.textures"
 
 -- for getting time with more precission than os.time
-local secs_now
+secs_now = nil
 
 if ffi.os == "Windows" then
 
@@ -1267,7 +1267,7 @@ function GLcanvas(GL)
 				end
 				--self.window:makeContextCurrent()
 				self:makeContextCurrent()
-				self:postdraw()
+				--self:postdraw()
 				io.write(string.format("plug %d\n",i))
 				--self.window:swapBuffers()
 				self:swapBuffers()
@@ -1403,7 +1403,7 @@ function GLcanvas(GL)
 		--Log draw
 		if self.window then
 		self:makeContextCurrent()
-		self:postdraw()
+		--self:postdraw()
 		io.write(string.format("GL:add_plugin %s\n",name or ""))
 		self:swapBuffers()
 		end
@@ -1460,7 +1460,7 @@ function GLcanvas(GL)
 			p.process = function(self,tex,w,h)
 				self:set_texsignature(tex)
 				if self:IsDirty() then
-					--print("call draw",self.NM.name)
+					--print("call process",self.NM.name)
 					self.oldprocess(self,tex,w,h)
 					self.NM.dirty = false
 				end
@@ -1469,7 +1469,11 @@ function GLcanvas(GL)
 			p.process_fbo = function(self,fbo,tex)
 				self:set_texsignature(tex)
 				if self:IsDirty() then
-					self.oldprocess_fbo(self,fbo,tex)
+					--print("call process_fbo",self.NM.name)
+					--self.oldprocess_fbo(self,fbo,tex)
+					fbo:Bind()
+					self.oldprocess(self,tex)
+					fbo:UnBind()
 					fbo:tex():inc_signature()
 					self.NM.dirty = false
 				end
