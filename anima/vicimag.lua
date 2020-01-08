@@ -115,12 +115,27 @@ function M.pixel_data(data,w,h,p)
 		end
 		return pixel
 	end
+	local zero = ffi.new("float[?]",p)
+	function pdat:get_pix(x,y)
+		--assert(x<w and y<h)
+		--clamp
+		--x = x<0 and 0 or x>=w and w-1 or x
+		--y = x<0 and 0 or y>=h and h-1 or y
+		if x<0 or x>w or y<0 or y>h then return zero end
+		return data + (x+ y*w)*p 
+	end
 	function pdat:set_pixel(pixel,x,y)
 		assert(x<w and y<h)
 		assert(#pixel == p)
 		for i=0,p-1 do
 			--data[y*w*p + x + i] = pixel[i+1]
 			data[(y*w + x)*p + i] = pixel[i+1]
+		end
+	end
+	function pdat:set_pix(pixel,x,y)
+		assert(x<w and y<h)
+		for i=0,p-1 do
+			data[(y*w + x)*p + i] = pixel[i]
 		end
 	end
 	function pdat:save(filename)
