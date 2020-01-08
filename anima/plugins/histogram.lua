@@ -149,6 +149,35 @@ void main()
 }
 
 ]]
+local function OtsuThreshold(prob,nbins)
+
+	local omega = ffi.new("float[?]",nbins)
+	local mu = ffi.new("float[?]",nbins)
+	omega[0] = prob[0]
+	mu[0] = 0
+	for i=1,nbins-1 do
+		omega[i] = omega[i-1] + prob[i]
+		mu[i] = mu[i-1] + i * prob[i]
+	end
+	local sigma = ffi.new("float[?]",nbins)
+	local max_sigma = 0
+	local threshold = 0
+	for i=1,nbins-1 do
+		if (omega[i] ~= 0.0 and omega[i] ~= 1.0 and i<nbins-2) then
+			--sigma[i] = ((mu[nbins-1] * omega[i] - mu[i])^2)/ (omega[i] * (1.0 - omega[i]));
+			--value = ((mi_max*w_k - mi_k)*(mi_max*w_k - mi_k))/(w_k*(1-w_k));
+			sigma[i] = ((mu[nbins-1]*omega[i] - mu[i])*(mu[nbins-1]*omega[i] - mu[i]))/(omega[i]*(1-omega[i]));
+		else
+			sigma[i] = 0.0;
+		end
+		if sigma[i] > max_sigma then
+			max_sigma = sigma[i];
+			threshold = i;
+		end
+	end
+	return threshold/nbins, sigma
+end
+
 local function DoMESH(w, h,prog)
 	local zplane = 0
 	local Pos = ffi.new("float[?]",w*h*3)
@@ -217,6 +246,14 @@ local function Histogram(GL,nbins)
 	end
 	function hist:Getcumhist()
 		return fbocumhist
+	end
+	function hist:get_histo()
+		local histovalues = ffi.new("float[?]",nbins)
+		fbohist:get_pixels(glc.GL_RED,glc.GL_FLOAT,0,histovalues)
+		return histovalues
+	end
+	function hist:OtsuThreshold()
+		return OtsuThreshold(hist:get_histo(),nbins)
 	end
 	function hist:set_texture(text)
 		if not inited then self:init() end
