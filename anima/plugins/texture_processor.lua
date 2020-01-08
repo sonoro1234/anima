@@ -21,7 +21,7 @@ void main(){
 
 function mixer(GL,ntex,NM)
 	local plugin = require"anima.plugins.plugin"
-	local M = plugin.new{res={GL.W,GL.H}}
+	local M = plugin.new({res={GL.W,GL.H}},GL)
 	M.NM = NM or {}
 	local frag = ""
 	if NM then
@@ -65,7 +65,7 @@ function mixer(GL,ntex,NM)
 	end
 
 	function M:process(texs,w,h)
-		assert(#texs == ntex)
+		assert(#texs == ntex,"number of textures failing!!")
 		self.tex = texs
 		self.program:use()
 		local U = self.program.unif
