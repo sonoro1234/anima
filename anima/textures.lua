@@ -653,6 +653,48 @@ local function make_tex_greyprog()
 	return P3
 end
 
+local tex_negprogs = {}
+local function make_tex_negprog()
+	local P3 = {}
+	function P3:init()
+		local vert_shad = [[
+	in vec3 Position;
+	in vec2 texcoord;
+	out vec2 texcoordf;
+	void main()
+	{
+		texcoordf = texcoord;
+		gl_Position = vec4(Position,1);
+	}
+	
+	]]
+	local frag_shad = [[
+	uniform sampler2D tex0;
+	in vec2 texcoordf;
+	void main()
+	{
+		vec4 color = texture2D(tex0,texcoordf);
+		gl_FragColor = vec4(vec3(1.0-color.r,1.0-color.g,1.0-color.b),color.a);
+	}
+	]]
+		self.program = GLSL:new():compile(vert_shad,frag_shad)
+		local m = mesh.Quad(-1,-1,1,1)
+		self.vao = VAO({Position=m.points,texcoord=m.texcoords},self.program,m.indexes)
+		print"tex_negprog compiled"
+		self.inited = true
+	end
+	function P3:process(w,h)
+		if not self.inited then self:init() end
+		self.program:use()
+		self.program.unif.tex0:set{0}
+		gl.glViewport(0,0,w,h)
+		self.vao:draw_elm()
+		glext.glUseProgram(0)
+	end
+
+	return P3
+end
+
 function Texture1D(w,formato,data,format,type,args)
 	assert(args.GL)
 	formato = formato or glc.GL_RGB
@@ -711,12 +753,13 @@ function Texture(w,h,formato,pTexor,args)
 		gl.glDeleteTextures(1,tex.pTex) 
 	end
 	
-	function tex:set_data(pData,bitplanes)
-		local bitplanes = bitplanes or 3
+	function tex:set_data(pData,bitplanes, intbitplanes)
+		bitplanes = bitplanes or 3
+		intbitplanes = intbitplanes or bitplanes
 		local formats = { glc.GL_RED, glc.GL_RG, glc.GL_RGB, glc.GL_RGBA}
 		local int_formats = { glc.GL_R32F, glc.GL_RG32F, glc.GL_RGB32F, glc.GL_RGBA32F}
 		self:Bind()
-		gl.glTexImage2D(glc.GL_TEXTURE_2D,0, int_formats[bitplanes], self.width,self.height, 0, formats[bitplanes], glc.GL_FLOAT, pData)
+		gl.glTexImage2D(glc.GL_TEXTURE_2D,0, int_formats[intbitplanes], self.width,self.height, 0, formats[bitplanes], glc.GL_FLOAT, pData)
 		return tex
 	end
 	function tex:Load(filename,srgb,mipmaps)
@@ -737,13 +780,13 @@ function Texture(w,h,formato,pTexor,args)
 		return self
 	end
 	function tex:mag_filter(mode)
-		self:Bind()
+		--self:Bind()
 		 --ati bug
 		if not self.GL.restricted then gl.glEnable( glc.GL_TEXTURE_2D ); end
 		gl.glTexParameteri(glc.GL_TEXTURE_2D,glc.GL_TEXTURE_MAG_FILTER,mode)
 	end
 	function tex:min_filter(mode)
-		self:Bind()
+		--self:Bind()
 		 --ati bug
 		if not self.GL.restricted then gl.glEnable( glc.GL_TEXTURE_2D ); end
 		gl.glTexParameteri(glc.GL_TEXTURE_2D,glc.GL_TEXTURE_MIN_FILTER,mode)
@@ -800,8 +843,19 @@ function Texture(w,h,formato,pTexor,args)
 			tex:blit()
 			self.ping:UnBind()
 		end
+		function slab:process(proc, srctex)
+			srctex = srctex or slab.ping:tex()	
+			local w,h = srctex.width,srctex.height
+			slab.pong:Bind()
+			proc(srctex)
+			slab.pong:UnBind()
+			slab:swapt()
+		end
 		function slab:swapt()
 			 self.ping,self.pong = self.pong,self.ping
+		end
+		function slab:tex()
+			return self.ping:tex()
 		end
 		return slab
 	end
@@ -814,6 +868,34 @@ function Texture(w,h,formato,pTexor,args)
 			--self.ping,self.pong = self.pong,self.ping
 		end
 		return slab
+	end
+	function tex:make_chain(t)
+		local N = #t
+		local function mod(a,b)
+			return ((a-1)%b)+1
+		end
+		local chain = {}
+		local curr = 1
+		for i=1,N do
+			chain[i] = self.GL:initFBO{no_depth=true}
+		end
+		function chain:current()
+			return chain[curr]
+		end
+		function chain:inc()
+			curr = mod(curr + 1,N)
+		end
+		function chain:process( srctex)
+			for i=1,N do
+			t[i]:process_fbo(chain[i],i == 1 and srctex or chain[i-1]:tex())
+			curr = i
+			end
+		end
+		function chain:tex()
+			--print("chain tex",curr)
+			return self[curr]:tex()
+		end
+		return chain
 	end
 	function tex:make_fbo()
 		return self.GL:initFBO({no_depth=true},self.width, self.height)
@@ -831,6 +913,8 @@ function Texture(w,h,formato,pTexor,args)
 	tex_progsSRGB[ctx] = progSRGB
 	local greyprog = tex_greyprogs[ctx] or make_tex_greyprog()
 	tex_greyprogs[ctx] = greyprog
+	local negprog = tex_negprogs[ctx] or make_tex_negprog()
+	tex_negprogs[ctx] = negprog
 	
 	function tex:get_pixels(type,format)
 		type = type or glc.GL_UNSIGNED_BYTE
@@ -857,7 +941,7 @@ function Texture(w,h,formato,pTexor,args)
 	end
 	function tex:drawcenter(W,H)
 		self:Bind(0)
-		prog:drawpos(getAspectViewport(W,H,self.width, self.height))
+		prog:drawpos(getAspectViewport(W or self.GL.W,H or self.GL.H,self.width, self.height))
 	end
 	function tex:drawpos(x,y,w,h)
 		self:Bind(0)
@@ -874,20 +958,45 @@ function Texture(w,h,formato,pTexor,args)
 	function tex:togrey(w,h,mask)
 		ut.Clear()
 		self:Bind(0)
-		greyprog:draw(w,h,mask)
+		greyprog:draw(w or self.width,h or self.height,mask)
+	end
+	--as plugin:process_tex
+	function tex:make_grey(mask)
+		local fbo = self.GL:get_fbo()
+		fbo:Bind()
+		self:togrey(nil,nil,mask)
+		fbo:UnBind()
+		return fbo
+		--fbo:release()
+		--return fbo:texcopy()
+	end
+	function tex:neg()
+		self:Bind()
+		negprog:process(self.width,self.height)
+	end
+
+	function tex:make_neg()
+		local fbo = self.GL:get_fbo()
+		fbo:Bind()
+		self:neg()
+		fbo:UnBind()
+		return fbo
+		-- fbo:release()
+		-- return fbo:texcopy()
 	end
 	--TODO delete all but texture
 	function tex:resample(w,h)
 		local resfbo = self.GL:initFBO({no_depth=true},w,h)
 		resfbo:Bind()
+		self:gen_mipmap()
 		self:drawcenter(resfbo.w,resfbo.h)
 		resfbo:UnBind()
-		local tex = resfbo:GetTexture()
+		local tex = resfbo:tex()
 		resfbo:delete(true) --keep texture
 		return tex
 	end
 	function tex:resample_fac(f)
-		return self:resample(self.width*f,self.height*f)
+		return self:resample(math.floor(self.width*f+0.5),math.floor(self.height*f+0.5))
 	end
 	function tex:inc_signature()
 		self.instance = self.instance + 1
