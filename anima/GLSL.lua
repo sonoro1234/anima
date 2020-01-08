@@ -461,6 +461,9 @@ function initFBO(wFBO,hFBO,args)
 	--get old fbo
 	local old_framebuffer = ffi.new("GLint[1]",0)
 	gl.glGetIntegerv(glc.GL_FRAMEBUFFER_BINDING, old_framebuffer)
+	--get old texture binding
+	local old_tex_binded = ffi.new("GLint[1]",0)
+	gl.glGetIntegerv(glc.GL_TEXTURE_BINDING_2D, old_tex_binded)
 	--the fbo
 	local thefbo = {w = wFBO, h = hFBO, GL=args.GL}
 	thefbo.fb = ffi.new("GLuint[1]")
@@ -535,7 +538,9 @@ function initFBO(wFBO,hFBO,args)
 		error()
    end
    GetGLError"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxinitFBO"
+   -- rebind old fbo and tex
    glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, old_framebuffer[0]);
+   gl.glBindTexture(glc.GL_TEXTURE_2D, old_tex_binded[0]);
    function thefbo:UseTexture(i,j)
 		i = i or 0
 		j = j or i
@@ -566,6 +571,16 @@ function initFBO(wFBO,hFBO,args)
 		return textures[i]
    end
    thefbo.tex = thefbo.GetTexture --alias
+   function thefbo:texcopy(i)
+		i = i or 0
+		local tex = self.GL:Texture(wFBO,hFBO)
+		tex:Bind()
+		local oldreadfbo = self:BindRead(i)
+		gl.glCopyTexSubImage2D(glc.GL_TEXTURE_2D, 0, 0, 0, 0, 0, wFBO,hFBO);
+		glext.glBindFramebuffer(glc.GL_READ_FRAMEBUFFER, oldreadfbo);
+		return tex
+   end
+
    function thefbo:Bind(val)
 		local old_framebuffer = ffi.new("GLuint[1]",0)
 		gl.glGetIntegerv(glc.GL_DRAW_FRAMEBUFFER_BINDING, old_framebuffer)
