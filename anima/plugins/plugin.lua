@@ -131,6 +131,18 @@ pl_mt.__index = {
 		fbo:Bind()
 		self:process(srctex,fbo.w,fbo.h)
 		fbo:UnBind()
+		fbo:tex():inc_signature()
+	end,
+	process_tex = function(self,srctex)
+		local fbo = self.GL:get_fbo()
+		fbo:Bind()
+		--fbo:viewport()
+		--ut.Clear()
+		self:process(srctex)
+		fbo:UnBind()
+		return fbo
+		--fbo:release()
+		--return fbo:tex()
 	end,
 	draw = function(self,tim,w,h,args)
 		plugin.get_args(self.NM,args, tim)
