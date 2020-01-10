@@ -996,6 +996,17 @@ function Texture(w,h,formato,pTexor,args)
 		resfbo:delete(true) --keep texture
 		return tex
 	end
+	function tex:resize(w,h)
+		local resfbo = self.GL:initFBO({no_depth=true},w,h)
+		resfbo:Bind()
+		self:Bind()
+		self:gen_mipmap()
+		self:drawpos(0,0,resfbo.w,resfbo.h)
+		resfbo:UnBind()
+		local tex = resfbo:tex()
+		resfbo:delete(true) --keep texture
+		return tex
+	end
 	function tex:resample_fac(f)
 		return self:resample(math.floor(self.width*f+0.5),math.floor(self.height*f+0.5))
 	end
