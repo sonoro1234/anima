@@ -1334,6 +1334,7 @@ function GLcanvas(GL)
 		function self:SetCursor(c) return sdl.setCursor(c) end
 		OnResize(self.window,self:getWindowSize()) --it is not called fist time
 		sdl.gL_MakeCurrent(window, gl_context);
+		if self.vsync then sdl.gL_SetSwapInterval(1) end
 		doinitCOMMON(self)
 	end
 	local function doinitGLFW(self)
@@ -1377,6 +1378,7 @@ function GLcanvas(GL)
 		
 		local window = lj_glfw.Window(self.viewW, self.viewH, self.name or "")
 		self.window = window
+		
 		function self:makeContextCurrent() self.window:makeContextCurrent() end
 		function self:swapBuffers() self.window:swapBuffers() end
 		function self:getWindowSize() return self.window:getSize() end
@@ -1384,6 +1386,8 @@ function GLcanvas(GL)
 		
 		OnResize(self.window,self:getWindowSize()) --it is not called fist time
 		self.window:makeContextCurrent()
+		
+		if self.vsync then lj_glfw.swapInterval(1) end
 		GetGLError"doinit ini"
 		
 
