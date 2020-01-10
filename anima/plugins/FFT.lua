@@ -216,6 +216,7 @@ local function Filterer(GL,args)
 	local FF = {}
 	args = args or {}
 	args.RES = args.RES or math.max(GL.W,GL.H)
+	if args.power == nil then args.power = true end
 	local m,e = math.frexp(args.RES)
 	if m==0.5 then e=e-1 end
 	args.RES = 2^e
@@ -237,24 +238,33 @@ local function Filterer(GL,args)
 		local peak = NM.peak/END_EDIT_FREQUENCY
 		local min = math.max(0,peak-wi)
 		local max = math.min(1,peak+wi)
-		NM.defs.curv.curve:setpoints{{x=min,y=0.5},{x=peak,y=gain},{x=max,y=0.5},{x=-1,y=0}} 
+		if NM.kind == 0 then
+			NM.defs.curv.curve:setpoints{{x=min,y=0.5},{x=peak,y=gain},{x=max,y=0.5},{x=-1,y=0}}
+		elseif NM.kind == 1 then
+			NM.defs.curv.curve:setpoints{{x=min,y=0.5},{x=peak,y=gain},{x=max,y=gain},{x=-1,y=0}}
+		else --2
+			NM.defs.curv.curve:setpoints{{x=min,y=gain},{x=peak,y=gain},{x=max,y=0.5},{x=-1,y=0}}
+		end
 		--NM.defs.curv.curve:setpoints{{x=min,y=0.5},{x=min,y=gain},{x=peak,y=gain},{x=max,y=gain},{x=max,y=0.5},{x=-1,y=0}}
 	end
 	
 	local powersdata = ffi.new("float[?]",END_EDIT_FREQUENCY)
-	local maxvalp = ffi.new("float[1]",0.01)
+	local maxvalp = ffi.new("float[1]",0.001)
 	local NM = GL:Dialog("fft",
 	{{"unit",6,guitypes.valint,{min=0,max=7}},
 	{"curv",{0,0.5,1,0.5},guitypes.curve,{pressed_on_modified=false},function(curve) FF:filter(curve.LUT,curve.LUTsize) end},
 	{"peak",0.5,guitypes.val,{min=0,max=END_EDIT_FREQUENCY},function(val,this) setcurve(this) end},
 	{"width",0.1,guitypes.val,{min=0,max=0.1},function(val,this) setcurve(this) end},
 	{"gain",1,guitypes.val,{min=0,max=2},function(val,this) setcurve(this) end},
+	{"kind",0,guitypes.combo,{"peak","lowpass","hipass"},function(val,this) setcurve(this) end},
 	{"bypass",false,guitypes.toggle},
 	},function(this) 
 		presets.draw()
 		serializer.draw()
-		ig.SliderFloat("max", maxvalp, 0, 0.01, "%0.4f", 1);
-		ig.PlotLines("powers", powersdata, END_EDIT_FREQUENCY, 0, nil, 0,maxvalp[0], ig.ImVec2(400,200));
+		if args.power then
+			ig.SliderFloat("max", maxvalp, 0, 0.001, "%0.4f", 1);
+			ig.PlotLines("powers", powersdata, END_EDIT_FREQUENCY, 0, nil, 0,maxvalp[0], ig.ImVec2(400,200));
+		end
 	end)
 
 
@@ -274,10 +284,8 @@ local function Filterer(GL,args)
 	local old_framebuffer = ffi.new("GLuint[1]",0)
 	function FF:saveoldFBO()
 		gl.glGetIntegerv(glc.GL_DRAW_FRAMEBUFFER_BINDING, old_framebuffer)
-		print("saveoldFBO",old_framebuffer[0])
 	end
 	function FF:setoldFBO()
-	print("setoldFBO",old_framebuffer[0])
 		glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, old_framebuffer[0]);
 	end
 	function FF:bindtexs()
@@ -341,7 +349,7 @@ local function Filterer(GL,args)
     local iterations = math.log(RESOLUTION) * 2/math.log(2);
 	print("iterations",iterations)
     function FF:fft(inputTextureUnit, outputFramebuffer, width, height, direction) 
-		print"fft----------------"
+		--print"fft----------------"
         subtransformProgramWrapper:use()
         gl.glViewport(0, 0, RESOLUTION, RESOLUTION);
         subtransformProgramWrapper.unif.u_horizontal:set{1}
@@ -403,10 +411,11 @@ local function Filterer(GL,args)
 	function FF:set_texture(tex)
 		if oldtexsignature and oldtexsignature==tex:get_signature() then return end
 		oldtexsignature=tex:get_signature()
-		print"-------------fft texture set--------------"
+		--print"-------------fft texture set--------------"
 		self:saveoldFBO()
 		if imageTexture then imageTexture:delete() end
 		imageTexture = tex:resample(RESOLUTION,RESOLUTION)
+		--imageTexture = tex:resize(RESOLUTION,RESOLUTION)
 		imageTexture:Bind(IMAGE_TEXTURE_UNIT)
 		imageTexture:gen_mipmap()
 		-- imageTexture:Bind(IMAGE_TEXTURE_UNIT)
@@ -420,6 +429,7 @@ local function Filterer(GL,args)
 		self:fft(IMAGE_TEXTURE_UNIT, originalSpectrumFramebuffer, RESOLUTION, RESOLUTION, FORWARD);
 		
 		-------readout power
+		if args.power then
 		self:bindtexs()
 		glext.glBindFramebuffer(glc.GL_FRAMEBUFFER, readoutFramebuffer);
         gl.glViewport(0, 0, RESOLUTION, RESOLUTION);
@@ -440,7 +450,7 @@ local function Filterer(GL,args)
 			if pixelsUserData[i]>maxval then maxval = pixelsUserData[i] end
 		end
 		
-		print("maxval",maxval)
+		--print("maxval",maxval)
 		local powersByFrequency = {}
 		local pixelIndex = 0
 		for yIndex=0,RESOLUTION-1 do
@@ -464,11 +474,11 @@ local function Filterer(GL,args)
 		for i=0,END_EDIT_FREQUENCY-1 do
 			powersdata[i] = data[i] or 0
 		end
-		
+		end --args.power
 		self:setoldFBO()
 	end
     function FF:filter(filterArray, length) 
-		print"fft:filter"
+		--print"fft:filter"
 		self:saveoldFBO()
 		
 		self:bindtexs()
@@ -493,7 +503,7 @@ local function Filterer(GL,args)
 		self:output2(NM.unit)
     end
 	function FF:output2(nn) 
-		print"fft output"
+		--print"fft output"
 		--ut.Clear()
 		if nn==6 or nn==5 then
 			local xoff,yoff= 0,0
@@ -505,7 +515,8 @@ local function Filterer(GL,args)
 				yoff = math.floor((GL.H-GL.W)*0.5+0.5)
 				h = GL.W
 			end
-			gl.glViewport(xoff,yoff,w,h)
+			--gl.glViewport(0,0,GL.W,GL.H) --for resize in set_texture
+			gl.glViewport(xoff,yoff,w,h) --for resample in set_texture
 			bindtex(nn,texturebyunit[nn],glc.GL_CLAMP_TO_EDGE, glc.GL_CLAMP_TO_EDGE, glc.GL_LINEAR_MIPMAP_LINEAR, glc.GL_LINEAR)
 		else
 			gl.glViewport(getAspectViewport(GL.W,GL.H,RESOLUTION, RESOLUTION));
@@ -519,7 +530,7 @@ local function Filterer(GL,args)
 		self:bindtexs()
     end
 	function FF:process(texture)
-		print"---------------fftprocess"
+		--print"---------------fftprocess"
 		if NM.bypass then texture:drawcenter();return end
 		self:set_texture(texture)
 		self:filter(curve.LUT,curve.LUTsize)
@@ -532,7 +543,7 @@ end
 --[=[
 require"anima"
 RES=400
-GL = GLcanvas{H=RES,W=RES,profile="CORE",DEBUG=true,use_log=false}
+GL = GLcanvas{H=RES,W=RES,profile="CORE",DEBUG=false,vsync=true}
 
 NM = GL:Dialog("test",{{"orig",false,guitypes.toggle}})
 local vicim = require"anima.vicimag"
@@ -543,11 +554,11 @@ function GL.init()
 	image = vicim.load_im([[C:\luaGL\media\fandema1.tif]])
 	
 	tex = image:totex(GL)
-	fbo = tex:make_fbo()
+	
 	--tex = tex:resample_fac(0.25)
 	GL:set_WH(tex.width,tex.height)
-	fft = Filterer(GL)--,{RES=RES})
-	--fft:set_texture(tex)
+	fft = Filterer(GL,{power=false})
+	fbo = GL:initFBO{no_depth=true}
 	--print_glinfo(GL)
 	GL:DirtyWrap()
 end
@@ -570,11 +581,15 @@ require"anima"
 local RES = 512*2
 local GL = GLcanvas{H=RES,W=RES,vsync=true,SDL=false}
 
-local NM = GL:Dialog("test",{
-{"freq",100,guitypes.val,{min=1,max=RES/2}},
-{"turns",0,guitypes.val,{min=0,max=1}}
+local NM = GL:Dialog("sines",{
+{"freq",100,guitypes.val,{min=0,max=RES/2}},
+{"turns",0,guitypes.dial,{fac=-0.5/math.pi}}
 })
-local tproc,chain,fft,fbo,fbo2
+
+
+
+local tproc,chain,fft
+local Dbox
 function GL.init()
 	tproc = require"anima.plugins.texture_processor"(GL,0,NM)
 	---[=[
@@ -611,23 +626,24 @@ function GL.init()
 	]]
 	--]=]
 	fft = Filterer(GL)
+	
+	Dbox = GL:DialogBox("test",true)
+	Dbox:add_dialog(tproc.NM)
+	Dbox:add_dialog(fft.NM)
+	
+	
 	local tex = GL:Texture()
-	local tex2 = tex:resample(2,2)
-	fbo = GL:initFBO{no_depth=true}
-	fbo2 = GL:initFBO{no_depth=true}
+
 	chain = tex:make_chain{tproc,fft}
 	GL:DirtyWrap()
 end
 
 function GL.draw(t,w,h)
 	ut.Clear()
-	-- tproc:process_fbo(fbo,{})
-	-- fft:process_fbo(fbo2,fbo:tex())
-	-- fbo2:tex():drawcenter()
+
 	chain:process({})
 	chain:tex():drawcenter()
-	--io.read"*l"
-	--print"frame"
+
 end
 
 GL:start()
