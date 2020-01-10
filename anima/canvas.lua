@@ -1183,14 +1183,14 @@ function GLcanvas(GL)
 			
 		local newW,newH,xpos,ypos
 		if aspect > GLaspect then
-			newW,newH = height*GLaspect, height
+			newW,newH = math.floor(height*GLaspect+0.5), height
 		elseif aspect < GLaspect then
-			newW,newH = width,width/GLaspect
+			newW,newH = width,math.floor(0.5 + width/GLaspect)
 		else
 			newW,newH = width, height
 		end
-		xpos = math.floor(0.5*(width - newW))
-		ypos = math.floor(0.5*(height - newH))
+		xpos = math.floor(0.5*(width - newW)+0.5)
+		ypos = math.floor(0.5*(height - newH)+0.5)
 		return xpos,ypos,newW,newH
 	end
 	GL.getAspectViewport = GLgetAspectViewport

@@ -7,14 +7,14 @@ function getAspectViewport(width,height,w,h)
 			
 		local newW,newH,xpos,ypos
 		if aspect > GLaspect then
-			newW,newH = height*GLaspect, height
+			newW,newH = math.floor(height*GLaspect+0.5), height
 		elseif aspect < GLaspect then
-			newW,newH = width,width/GLaspect
+			newW,newH = width,math.floor(0.5 + width/GLaspect)
 		else
 			newW,newH = width, height
 		end
-		xpos = math.floor(0.5*(width - newW))
-		ypos = math.floor(0.5*(height - newH))
+		xpos = math.floor(0.5*(width - newW)+0.5)
+		ypos = math.floor(0.5*(height - newH)+0.5)
 		return xpos,ypos,newW,newH
 end
 --loading several textures
@@ -791,8 +791,8 @@ function Texture(w,h,formato,pTexor,args)
 		if not self.GL.restricted then gl.glEnable( glc.GL_TEXTURE_2D ); end
 		gl.glTexParameteri(glc.GL_TEXTURE_2D,glc.GL_TEXTURE_MIN_FILTER,mode)
 	end
-	function tex:gen_mipmap(n)
-		self:Bind(n)
+	function tex:gen_mipmap()
+		--self:Bind(n)
 		
 		 --ati bug
 		if not self.GL.restricted then gl.glEnable( glc.GL_TEXTURE_2D ); end
@@ -825,12 +825,12 @@ function Texture(w,h,formato,pTexor,args)
 		gl.glTexParameterf(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso[0]);
 	end
 	function tex:set_border(t)
-		self:Bind()
+		--self:Bind()
 		gl.glTexParameterfv(glc.GL_TEXTURE_2D,glc.GL_TEXTURE_BORDER_COLOR,ffi.new("float[4]",t))
 	end
 	function tex:set_wrap(modewrap)
 		modewrap = modewrap or glc.GL_MIRRORED_REPEAT
-		gl.glBindTexture(glc.GL_TEXTURE_2D, self.tex)
+		--gl.glBindTexture(glc.GL_TEXTURE_2D, self.tex)
 		gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_WRAP_S, modewrap); 
 		gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_WRAP_T, modewrap);
 	end
@@ -988,6 +988,7 @@ function Texture(w,h,formato,pTexor,args)
 	function tex:resample(w,h)
 		local resfbo = self.GL:initFBO({no_depth=true},w,h)
 		resfbo:Bind()
+		self:Bind()
 		self:gen_mipmap()
 		self:drawcenter(resfbo.w,resfbo.h)
 		resfbo:UnBind()
