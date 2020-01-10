@@ -586,15 +586,20 @@ function gui.Curve(name,numpoints,LUTsize,pressed_on_modified)
 	function M:getpoints()
 		local pts = {}
 		for i=0,numpoints-1 do
-			pts[i] = {x=M.points[i].x,y=M.points[i].y}
+			pts[i+1] = {x=M.points[i].x,y=M.points[i].y}
 		end
 		return pts
 	end
 	function M:setpoints(pts)
-		for i=0,#pts do
-			M.points[i].x = pts[i].x
-			M.points[i].y = pts[i].y
+		assert(#pts<=numpoints)
+		for i=1,#pts do
+			M.points[i-1].x = pts[i].x
+			M.points[i-1].y = pts[i].y
 		end
+		M.LUT[0] = -1
+		imgui.CurveGetData(M.points, numpoints,M.LUT, LUTsize )
+	end
+	function M:get_data()
 		M.LUT[0] = -1
 		imgui.CurveGetData(M.points, numpoints,M.LUT, LUTsize )
 	end
@@ -733,6 +738,7 @@ function gui.Dialog(name,vars,func, invisible)
 				points[i].y = v[2][i*2+2]
 			end
 			points[siz_def].x = -1
+			curve:get_data()
 			pointers[v[1]] = points
 			defs[v[1]] = {default=v[2],type=v[3],curve=curve}
 		else
