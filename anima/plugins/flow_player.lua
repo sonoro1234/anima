@@ -149,10 +149,14 @@ local function flow_player(GL)
 		U.fadeonly:set{fadeonly}
 		
 		if doclamp then
+			self.tex1:Bind(0)
 			self.tex1:set_wrap(glc.GL_CLAMP_TO_BORDER)
+			self.tex2:Bind(1)
 			self.tex2:set_wrap(glc.GL_CLAMP_TO_BORDER)
 		else
+			self.tex1:Bind(0)
 			self.tex1:set_wrap()
+			self.tex2:Bind(1)
 			self.tex2:set_wrap()
 		end
 		self.tex1:Bind(0)
