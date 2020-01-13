@@ -38,11 +38,15 @@ void main()
 }
 ]]
 
+
 local function ClearFBO(fbo)
+	fbo:Bind()
 	glext.glUseProgram(0);
-	glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, fbo.fb[0]);
+	--glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, fbo.fb[0]);
 	gl.glClearColor(0.0, 0.0, 0.0, 0.0)
 	gl.glClear(bit.bor(glc.GL_COLOR_BUFFER_BIT,glc.GL_DEPTH_BUFFER_BIT))
+	--gl.glClearColor(0.0, 0.0, 0.0, 0.0)
+	--fbo:UnBind()
 end
 
 local function clamp()
@@ -66,9 +70,9 @@ function M.layers_mixer(GL,usemsaa, lm_args)
 	function LM:init()
 
 		if usemsaa then
-			mixfbo = GL:initFBOMultiSample()
-			fbo = GL:initFBOMultiSample()
-			fboDUMP = GL:initFBO()
+			mixfbo = GL:initFBOMultiSample()--{no_depth=true})
+			fbo = GL:initFBOMultiSample()--{no_depth=true})
+			fboDUMP = GL:initFBO()--{no_depth=true})
 		else
 			mixfbo = GL:initFBO()
 			fbo = GL:initFBO()
@@ -92,13 +96,16 @@ function M.layers_mixer(GL,usemsaa, lm_args)
 	end
 
 	function LM:draw(timebegin, w, h, args, fade)
+
 		if not self.inited then self:init() end
 		fade = fade or 1
 		local old_framebuffer = ffi.new("GLint[1]",0)
-		gl.glGetIntegerv(glc.GL_FRAMEBUFFER_BINDING, old_framebuffer)
-		
+		gl.glGetIntegerv(glc.GL_DRAW_FRAMEBUFFER_BINDING, old_framebuffer)
+
 		gl.glEnable(glc.GL_MULTISAMPLE);
-		--gl.glEnable(glc.GL_SAMPLE_ALPHA_TO_COVERAGE);
+		gl.glDisable(glc.GL_SAMPLE_ALPHA_TO_COVERAGE);
+		gl.glDisable(glc.GL_SAMPLE_ALPHA_TO_ONE)
+		gl.glDisable(glc.GL_SAMPLE_COVERAGE)
 		--clear
 		gl.glDisable(glc.GL_BLEND)
 		ClearFBO(mixfbo)
@@ -109,9 +116,10 @@ function M.layers_mixer(GL,usemsaa, lm_args)
 		
 		local oldzorder = -math.huge
 		for i,theseg in ipairs(args.cliplist) do
-			--print(i,theseg)
-			local theclip, alpha, cliptime, zorder, alphaM, set_alpha1 = get_args(theseg, timebegin)
 
+			local theclip, alpha, cliptime, zorder, alphaM, set_alpha1 = get_args(theseg, timebegin)
+			
+			mixfbo:UnBind()
 			fbo:Bind()
 			gl.glDisable(glc.GL_BLEND)
 
@@ -188,11 +196,13 @@ function M.layers_mixer(GL,usemsaa, lm_args)
 			end
 			--]]
 		end
-		args.cliplist = nil
 		gl.glDisable(glc.GL_BLEND)
+		args.cliplist = nil
+
 		
 		if usemsaa then
 			mixfbo:Dump(old_framebuffer[0])
+			glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, old_framebuffer[0]);
 		else
 			program2:use()
 			glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, old_framebuffer[0]);
