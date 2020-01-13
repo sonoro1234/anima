@@ -39,6 +39,12 @@ local t =
 	GL_IMAGE_BUFFER = {1,'glUniform1iv'},
 }
 
+local function set_table__gc(t, func)
+	local prox = newproxy(true)
+	getmetatable(prox).__gc = function() func(t) end
+	t.gcproxy = prox
+	return t --setmetatable(t, mt)
+end
 
 --print"making uniform_types -------------------------------"
 local uniform_types = {}
@@ -652,11 +658,14 @@ function initFBO(wFBO,hFBO,args)
 			gl.glDeleteTextures(args.num_tex, self.color_tex);
 		end
 		if self.depth_rb then gl.glDeleteTextures(1, thefbo.depth_rb) end
+		--avoid _gc after manual delete
+		getmetatable(self.gcproxy).__gc = nil
 	end
 	function thefbo:viewport()
 		gl.glViewport(0,0,self.w,self.h)
 	end
 	print"done initFBO"
+	set_table__gc(thefbo,function(t) print"deleting fbo";t:delete() end)
 	return thefbo
 end
 fbostatus = {[[GL_FRAMEBUFFER_UNDEFINED]],
