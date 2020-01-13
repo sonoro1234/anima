@@ -1,5 +1,12 @@
 local imffi = im.imffi
 
+local function set_table__gc(t, func)
+	local prox = newproxy(true)
+	getmetatable(prox).__gc = function() func(t) end
+	t[prox] = true
+	return t --setmetatable(t, mt)
+end
+
 --set w,h centered inside width,height
 function getAspectViewport(width,height,w,h)
 		local GLaspect = w/h
@@ -774,6 +781,7 @@ function Texture(w,h,formato,pTexor,args)
 		self.filename = filename
 		--
 		if mipmaps then
+			self:Bind()
 			self:gen_mipmap()
 		end
 		self:inc_signature()
@@ -861,7 +869,7 @@ function Texture(w,h,formato,pTexor,args)
 	end
 	function tex:make_slabMS()
 		local slab = {isSlab=true}
-		slab.pong = GL:initFBOMultiSample(self.width, self.height)--,color_tex = self.pTex})
+		slab.pong = GL:initFBOMultiSample(nil,self.width, self.height)--,color_tex = self.pTex})
 		slab.ping = self.GL:initFBO({no_depth=true},self.width, self.height)
 		function slab:swapt()
 			slab.pong:Dump(slab.ping.fb[0])
@@ -1016,6 +1024,7 @@ function Texture(w,h,formato,pTexor,args)
 	function tex:get_signature()
 		return tostring(self)..self.instance
 	end
+	--set_table__gc(tex,function(t) print("delete texture",t.tex);t:delete() end)
 	return tex
 end
 function LoadTextures2(fileNames,GLparams,mipmaps)
@@ -1208,7 +1217,8 @@ function LoadCompressedTotexture(filename, texture,srgb)
 	--print(pData,width, height,compressedFormat, size)
   
     gl.glBindTexture(glc.GL_TEXTURE_2D, texture);
-
+	gl.glPixelStorei(glc.GL_UNPACK_ALIGNMENT, 1)
+	
     gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_MIN_FILTER, glc.GL_LINEAR);
     gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_MAG_FILTER, glc.GL_LINEAR);
       -- Create the texture from the compressed bytes.

@@ -30,6 +30,7 @@ local function MM_Maker(GL, fac)
 		--------ms tosingle fbo
 		glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER,  old_framebuffer[0]);   -- Make sure no FBO is set as the draw framebuffer
 		local tt = msfbo:GetTexture()
+		tt:Bind()
 		tt:gen_mipmap()
 		tt:draw(timebegin,w,h)
 		--[[

@@ -689,11 +689,14 @@ function MakeSlab(w,h,args,GL)
 end
 
 
-function initFBOMultiSample(GL,wFBO,hFBO)
+function initFBOMultiSample(GL,wFBO,hFBO,args)
+	args = args or {}
 	assert(GL)
 	hFBO = hFBO or GL.H; wFBO=wFBO or GL.W
 	local old_framebuffer = ffi.new("GLint[1]",0)
 	gl.glGetIntegerv(glc.GL_DRAW_FRAMEBUFFER_BINDING, old_framebuffer)
+	local old_tex_binded = ffi.new("GLint[1]",0)
+	gl.glGetIntegerv(glc.GL_TEXTURE_BINDING_2D_MULTISAMPLE, old_tex_binded)
 	
 	local NumOfSamples = ffi.new("GLuint[1]")
 	local g_MultiSampleTexture_ID = ffi.new("GLuint[1]")
@@ -713,12 +716,14 @@ function initFBOMultiSample(GL,wFBO,hFBO)
 	glext.glBindRenderbuffer(glc.GL_RENDERBUFFER, g_MultiSampleColorRenderBufferObject_ID[0]);
 	glext.glRenderbufferStorageMultisample(glc.GL_RENDERBUFFER, NumOfSamples[0], glc.GL_RGBA, wFBO, hFBO);
 	glext.glFramebufferRenderbuffer(glc.GL_DRAW_FRAMEBUFFER, glc.GL_COLOR_ATTACHMENT0, glc.GL_RENDERBUFFER, g_MultiSampleColorRenderBufferObject_ID[0]);
+	if not args.no_depth then
 	glext.glGenRenderbuffers(1, g_MultiSampleDepthBufferObject_ID);
 	glext.glBindRenderbuffer(glc.GL_RENDERBUFFER, g_MultiSampleDepthBufferObject_ID[0]);
 	glext.glRenderbufferStorageMultisample(glc.GL_RENDERBUFFER, NumOfSamples[0], glc.GL_DEPTH24_STENCIL8, wFBO, hFBO);
 	glext.glFramebufferRenderbuffer(glc.GL_DRAW_FRAMEBUFFER, glc.GL_DEPTH_ATTACHMENT, glc.GL_RENDERBUFFER, g_MultiSampleDepthBufferObject_ID[0]);
 	glext.glFramebufferRenderbuffer(glc.GL_DRAW_FRAMEBUFFER, glc.GL_STENCIL_ATTACHMENT, glc.GL_RENDERBUFFER, g_MultiSampleDepthBufferObject_ID[0]);
-
+	end
+	
 	 local fbo_status = glext.glCheckFramebufferStatus(glc.GL_DRAW_FRAMEBUFFER)
   -- if (glc.GL_FRAMEBUFFER_COMPLETE_EXT ~= fbo_status) then
 	if (glc.GL_FRAMEBUFFER_COMPLETE ~= fbo_status) then
@@ -732,6 +737,7 @@ function initFBOMultiSample(GL,wFBO,hFBO)
 		error()
 	end
 	glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, old_framebuffer[0]); 
+	gl.glBindTexture(glc.GL_TEXTURE_2D_MULTISAMPLE, old_tex_binded[0]);
 	print("MultiSample fbo",NumOfSamples[0],g_MultiSampleFrameBufferObject_ID[0],g_MultiSampleTexture_ID[0])
 	local ret = {color_tex = g_MultiSampleTexture_ID ,fb = g_MultiSampleFrameBufferObject_ID,GL=GL}
 	
@@ -766,7 +772,7 @@ function initFBOMultiSample(GL,wFBO,hFBO)
 
 		glext.glBlitFramebuffer(0, 0, w, h, 0, 0, w, h, glc.GL_COLOR_BUFFER_BIT, glc.GL_LINEAR);
 		glext.glBindFramebuffer(glc.GL_READ_FRAMEBUFFER,  old_read_framebuffer[0]);
-		self:UnBind(framebuffer)
+		self:UnBind()
 	end
 		------------------------
 	GetGLError"initMSSA"

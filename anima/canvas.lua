@@ -677,8 +677,8 @@ function GLcanvas(GL)
 		return initFBO(w or self.W,h or self.H, args)
 	end
 	
-	function GL:initFBOMultiSample(w,h)
-		return initFBOMultiSample(GL,w,h)
+	function GL:initFBOMultiSample(args,w,h)
+		return initFBOMultiSample(GL,w,h,args)
 	end
 	
 	function GL:set_WH(W,H)
@@ -1060,6 +1060,7 @@ function GLcanvas(GL)
 				if GL.SRGB then
 					gl.glEnable(glc.GL_FRAMEBUFFER_SRGB)
 					local tex = GL.fbo:GetTexture()
+					tex:Bind()
 					if GL.fbo_nearest then
 						tex:mag_filter(glc.GL_NEAREST)
 						tex:min_filter(glc.GL_NEAREST)
@@ -1070,6 +1071,7 @@ function GLcanvas(GL)
 					gl.glDisable(glc.GL_FRAMEBUFFER_SRGB)
 				else
 					local tex = GL.fbo:GetTexture()
+					tex:Bind()
 					if GL.fbo_nearest then
 						tex:mag_filter(glc.GL_NEAREST)
 						tex:min_filter(glc.GL_NEAREST)
