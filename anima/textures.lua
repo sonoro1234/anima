@@ -3,7 +3,7 @@ local imffi = im.imffi
 local function set_table__gc(t, func)
 	local prox = newproxy(true)
 	getmetatable(prox).__gc = function() func(t) end
-	t[prox] = true
+	t.gcproxy = prox
 	return t --setmetatable(t, mt)
 end
 
@@ -757,7 +757,11 @@ function Texture(w,h,formato,pTexor,args)
 	end
 	
 	function tex:delete()
+		assert(not self.isdeleted)
 		gl.glDeleteTextures(1,tex.pTex) 
+		--avoid _gc after manual delete
+		getmetatable(self.gcproxy).__gc = nil
+		self.isdeleted = true
 	end
 	
 	function tex:set_data(pData,bitplanes, intbitplanes)
@@ -1024,7 +1028,7 @@ function Texture(w,h,formato,pTexor,args)
 	function tex:get_signature()
 		return tostring(self)..self.instance
 	end
-	--set_table__gc(tex,function(t) print("delete texture",t.tex);t:delete() end)
+	set_table__gc(tex,function(t) print("delete texture",t.tex);t:delete() end)
 	return tex
 end
 function LoadTextures2(fileNames,GLparams,mipmaps)
