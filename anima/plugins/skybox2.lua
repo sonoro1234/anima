@@ -157,6 +157,7 @@ end
 require"anima"
 GL = GLcanvas{fps=60,aspect=1.5,H=700}
 local SK = make(GL)
+local textura
 function GL.init()
 
 	camara = newCamera(GL,"tps")
@@ -167,7 +168,7 @@ function GL.init()
 	--textura = Texture():Load[[C:\luaGL\media\juncos.tif]]
 	--textura = Texture():Load[[C:\luaGL\media\estanque-001.jpg]]
 	--textura = Texture():Load[[C:\luaGL\media\estanque-002.jpg]]
-	textura = Texture():Load[[C:\luaGL\media\estanque7.jpg]]
+	textura = GL:Texture():Load[[C:\luaGL\media\estanque7.jpg]]
 	SK:init({camera=camara})
 end
 function GL.draw(t,w,h)
