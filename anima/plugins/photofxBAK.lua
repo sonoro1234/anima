@@ -122,14 +122,14 @@ function M.photofx(GL,args)
 	{"invert",false,guitypes.toggle},
 	{"bypass",false,guitypes.toggle}
 	}, function() 
-		if imgui.Curve("c_x", ig.ImVec2(sz,sz),pointsx, numpoints,LUTdatax, LUTsize )  then
+		if imgui.Curve("c_x", ig.ImVec2(sz,sz),pointsx, numpoints,LUTdatax, LUTsize,true )  then
 			LUTx:set_data(LUTdatax, glc.GL_RED)
 			--for i=0,2 do print(LUTdatax[i]) end
 		end
-		if imgui.Curve("c_y", ig.ImVec2(sz,sz),pointsy, numpoints,LUTdatay, LUTsize )  then
+		if imgui.Curve("c_y", ig.ImVec2(sz,sz),pointsy, numpoints,LUTdatay, LUTsize,true )  then
 			LUTy:set_data(LUTdatay, glc.GL_RED)
 		end
-		if imgui.Curve("c_z", ig.ImVec2(sz,sz),pointsz, numpoints,LUTdataz, LUTsize )  then
+		if imgui.Curve("c_z", ig.ImVec2(sz,sz),pointsz, numpoints,LUTdataz, LUTsize,true )  then
 			LUTz:set_data(LUTdataz, glc.GL_RED)
 		end
 		fB.draw()

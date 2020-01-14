@@ -141,9 +141,9 @@ function M.photofx(GL,args)
 	local sz = 300
 	local curr_curve = 1
 	local curve_pars = {
-	{ ig.ImVec2(sz,sz),pointsx, numpoints,LUTdatax, LUTsize},
-	{ ig.ImVec2(sz,sz),pointsy, numpoints,LUTdatay, LUTsize},
-	{ ig.ImVec2(sz,sz),pointsz, numpoints,LUTdataz, LUTsize}
+	{ ig.ImVec2(sz,sz),pointsx, numpoints,LUTdatax, LUTsize,true},
+	{ ig.ImVec2(sz,sz),pointsy, numpoints,LUTdatay, LUTsize,true},
+	{ ig.ImVec2(sz,sz),pointsz, numpoints,LUTdataz, LUTsize,true}
 	}
 	local curve_labels = {"L","a","b"}
 	local Luts = {LUTx,LUTy,LUTz}
