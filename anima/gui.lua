@@ -814,7 +814,7 @@ function gui.Dialog(name,vars,func, invisible)
 				end
 			elseif v[3] == guitypes.color then
 				if defs[v[1]].size == 3 then
-					if imgui.igColorEdit3(v[1], pointers[v[1]].data, 0) then
+					if imgui.igColorEdit3(v[1], pointers[v[1]].data, imgui.ImGuiColorEditFlags_Float) then
 						self.dirty = true
 						namevar = v[1]
 						if v[4] then 
