@@ -448,8 +448,7 @@ local function GuiInitSDL(GL)
 				local modst = sdl.getModState()
 				if bit.band(modst ,sdl.KMOD_ALT)~=0 then
 
-					GL.offX = 0.5*GL.scale*X + GL.offX
-					GL.offY = 0.5*GL.scale*Y + GL.offY
+					GL.offX, GL.offY = GL:GlassOffsets(X,Y,0.5)
 					GL.scale = GL.scale * 0.5
 				elseif bit.band(modst ,sdl.KMOD_CTRL)~=0 then
 				
@@ -458,8 +457,8 @@ local function GuiInitSDL(GL)
 					GL.offY = 0
 				else
 					GL:SetCursor( GL.cursors.glass_p);
-					GL.offX = -GL.scale*X + GL.offX
-					GL.offY = -GL.scale*Y + GL.offY
+					
+					GL.offX, GL.offY = GL:GlassOffsets(X,Y,2)
 					GL.scale = GL.scale * 2
 
 				end
@@ -578,18 +577,15 @@ local function GuiInitGLFW(GL)
 			if button == glfwc.GLFW_MOUSE_BUTTON_1 and action == glfwc.GLFW_PRESS then
 				if mods == glfwc.GLFW_MOD_ALT then
 
-					GL.offX = 0.5*GL.scale*X + GL.offX
-					GL.offY = 0.5*GL.scale*Y + GL.offY
+					GL.offX, GL.offY = GL:GlassOffsets(X,Y,0.5)
 					GL.scale = GL.scale * 0.5
 				elseif mods == glfwc.GLFW_MOD_CONTROL then
-				
 					GL.scale = 1
 					GL.offX = 0
 					GL.offY = 0
 				else
 					glfw.glfwSetCursor(GL.window, GL.cursors.glass_p);
-					GL.offX = -GL.scale*X + GL.offX
-					GL.offY = -GL.scale*Y + GL.offY
+					GL.offX, GL.offY = GL:GlassOffsets(X,Y,2)
 					GL.scale = GL.scale * 2
 
 				end
@@ -956,34 +952,31 @@ function GLcanvas(GL)
 				gl.glClearColor(0.1,0.1,0.1,1)
 				ut.Clear()
 				gl.glClearColor(0,0,0,1)
-				--GL.fbo:GetTexture():drawpos(unpack(GL.stencil_sizes))
+
 				local x,y,w,h = unpack(self.stencil_sizes)
-				--[[
-				if GL.SRGB then
-					GL.fbo:GetTexture():drawposSRGB(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
-				else
-					GL.fbo:GetTexture():drawpos(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
-				end
-				--]]
 				
 				if GL.SRGB then
 					gl.glEnable(glc.GL_FRAMEBUFFER_SRGB)
 					local tex = GL.fbo:GetTexture()
+					tex:Bind()
+					tex:gen_mipmap()
 					if GL.fbo_nearest then
 						tex:mag_filter(glc.GL_NEAREST)
 						tex:min_filter(glc.GL_NEAREST)
 					else
-						tex:gen_mipmap()
+						--tex:gen_mipmap()
 					end
 					tex:drawpos(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
 					gl.glDisable(glc.GL_FRAMEBUFFER_SRGB)
 				else
 					local tex = GL.fbo:GetTexture()
+					tex:Bind()
+					tex:gen_mipmap()
 					if GL.fbo_nearest then
 						tex:mag_filter(glc.GL_NEAREST)
 						tex:min_filter(glc.GL_NEAREST)
 					else
-						tex:gen_mipmap()
+						--tex:gen_mipmap()
 					end
 					tex:drawpos(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
 				end
@@ -1047,36 +1040,30 @@ function GLcanvas(GL)
 				gl.glClearColor(0.1,0.1,0.1,1)
 				ut.Clear()
 				gl.glClearColor(0,0,0,1)
-				--GL.fbo:GetTexture():drawpos(unpack(GL.stencil_sizes))
 				local x,y,w,h = unpack(self.stencil_sizes)
-				--[[
-				if GL.SRGB then
-					GL.fbo:GetTexture():drawposSRGB(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
-				else
-					GL.fbo:GetTexture():drawpos(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
-				end
-				--]]
 				
 				if GL.SRGB then
 					gl.glEnable(glc.GL_FRAMEBUFFER_SRGB)
 					local tex = GL.fbo:GetTexture()
 					tex:Bind()
+					tex:gen_mipmap()
 					if GL.fbo_nearest then
 						tex:mag_filter(glc.GL_NEAREST)
 						tex:min_filter(glc.GL_NEAREST)
 					else
-						tex:gen_mipmap()
+						--tex:gen_mipmap()
 					end
 					tex:drawpos(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
 					gl.glDisable(glc.GL_FRAMEBUFFER_SRGB)
 				else
 					local tex = GL.fbo:GetTexture()
 					tex:Bind()
+					tex:gen_mipmap() --for any reason mipmaps need to be generated always (even using nearest) or never
 					if GL.fbo_nearest then
 						tex:mag_filter(glc.GL_NEAREST)
 						tex:min_filter(glc.GL_NEAREST)
 					else
-						tex:gen_mipmap()
+						--tex:gen_mipmap()
 					end
 					tex:drawpos(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
 				end
@@ -1218,7 +1205,17 @@ function GLcanvas(GL)
 	--for converting from window coordinates to GL.fbo coordinates
 	function GL:ScreenToViewport(X,Y)
 		local x,y,w,h = unpack(self.stencil_sizes)
+		x= x + self.offX
+		y= y + self.offY
+		w = w*self.scale
+		h = h*self.scale
 		return self.W*(X - x)/w,self.H*(Y - y)/h
+	end
+	--makes ScreenToViewport return the same values for X and Y after fac in GL.scale
+	function GL:GlassOffsets(X,Y,fac)
+		local x,y,w,h = unpack(self.stencil_sizes)
+		local fac1 = 1- fac
+		return (X-x)*fac1+fac*self.offX, (Y-y)*fac1+fac*self.offY
 	end
 	
 	local function doinitCOMMON(self)
@@ -1454,6 +1451,7 @@ function GLcanvas(GL)
 	-- wraps plugins.process and process_fbo functions to be called only if is dirty
 	-- because changed NM values or new texture provided
 	function GL:DirtyWrap()
+		self.plugins = self.plugins or {}
 		for i,p in ipairs(self.plugins) do
 			print("GL:DirtyWrap",i,p,p.name)
 		end
