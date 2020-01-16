@@ -124,6 +124,7 @@ function M.pixel_data(data,w,h,p)
 		if x<0 or x>w or y<0 or y>h then return zero end
 		return data + (x+ y*w)*p 
 	end
+	pdat.pix = pdat.get_pix
 	function pdat:set_pixel(pixel,x,y)
 		assert(x<w and y<h)
 		assert(#pixel == p)
