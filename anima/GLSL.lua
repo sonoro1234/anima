@@ -406,6 +406,7 @@ function GLSL:set_unif(D)
 	end
 end
 
+
 function pingpongFBO(w,h,num,GL)
 	num = num or 2
 	assert(w)
@@ -448,6 +449,15 @@ function printFramebufferInfo(target, fbo)
         end
         i = i + 1
     until (buffer[0] ~= glc.GL_NONE);
+end
+
+--returns a function that restores saved FBO when called
+function DrawFBOKeeper()
+	local old_framebuffer = ffi.new("GLuint[1]",0)
+	gl.glGetIntegerv(glc.GL_DRAW_FRAMEBUFFER_BINDING, old_framebuffer)
+	return function()	
+		glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, old_framebuffer[0]);
+	end
 end
 
 function initFBO(wFBO,hFBO,args)
