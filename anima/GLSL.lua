@@ -1097,6 +1097,9 @@ function VAO(t,program,indices,tsize,isize)
 	tVao.attribs = attribs
 	tVao.vao = vao[0]
 	glext.glBindVertexArray(0);
+	--add to program vaos
+	program.vaos = program.vaos or {}
+	table.insert(program.vaos, tVao)
 	return tVao
 end
 function image2D(w,h,type,data)
