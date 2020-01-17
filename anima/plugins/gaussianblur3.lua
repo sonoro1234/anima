@@ -117,6 +117,7 @@ local function BlurClipMaker(GL)
 			--kernel,offs = genlinearkernel(val,this.stdevs) 
 			Clip:update()
 		end},
+	{"bypass",false,guitypes.toggle}
 	}
 	)
 	Clip.NM = NM
@@ -146,6 +147,11 @@ local function BlurClipMaker(GL)
 	end
 	
 	function Clip:process(srctex,w,h)
+		if NM.bypass then
+		ut.Clear()
+			srctex:drawcenter()
+			return
+		end
 		local w,h = w or self.res[1],h or self.res[2] --srctex.width,srctex.height
 		local old_framebuffer = ffi.new("GLint[1]",0)
 		gl.glGetIntegerv(glc.GL_FRAMEBUFFER_BINDING, old_framebuffer)
@@ -210,6 +216,7 @@ local function BlurClipMaker(GL)
 		mixfbos[0]:Bind()
 
 		theclip[1]:draw(timebegin, w, h,theclip)
+		if not NM.bypass then
 		--prtable(kernel,offs)
 		--for i=1,NM.iters do
 			programH:use()
@@ -244,6 +251,7 @@ local function BlurClipMaker(GL)
 			ut.project(w,h)
 			ut.DoQuad(w,h)
 		--end
+		end
 		
 		programstd:use()
 		glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, old_framebuffer[0]);
