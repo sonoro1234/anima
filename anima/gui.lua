@@ -794,7 +794,7 @@ function gui.Dialog(name,vars,func, invisible)
 					end
 				end
 			elseif v[3] == guitypes.drag then
-				local vspeed = v[4].precission or 1
+				local vspeed = v[4].precission or 0.003
 				if defs[v[1]].size > 1 then
 				if imgui["igDragFloat"..defs[v[1]].sizeN](v[1], pointers[v[1]].data,vspeed, v[4].min or ig.FLT_MAX , v[4].max or ig.FLT_MAX , "%.3f", 1.0) then
 					self.dirty = true
