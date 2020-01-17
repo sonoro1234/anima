@@ -447,20 +447,12 @@ local function GuiInitSDL(GL)
 			if button == sdl.BUTTON_LEFT and action == sdl.PRESSED then
 				local modst = sdl.getModState()
 				if bit.band(modst ,sdl.KMOD_ALT)~=0 then
-
-					GL.offX, GL.offY = GL:GlassOffsets(X,Y,0.5)
-					GL.scale = GL.scale * 0.5
-				elseif bit.band(modst ,sdl.KMOD_CTRL)~=0 then
-				
-					GL.scale = 1
-					GL.offX = 0
-					GL.offY = 0
+					GL:GlassOffsets(X,Y,0.5)
+				elseif bit.band(modst ,sdl.KMOD_CTRL)~=0 then				
+					GL:GlassInit()
 				else
 					GL:SetCursor( GL.cursors.glass_p);
-					
-					GL.offX, GL.offY = GL:GlassOffsets(X,Y,2)
-					GL.scale = GL.scale * 2
-
+					GL:GlassOffsets(X,Y,2)
 				end
 			end
 		end
@@ -576,18 +568,12 @@ local function GuiInitGLFW(GL)
 		elseif GL.tool == "glass" then
 			if button == glfwc.GLFW_MOUSE_BUTTON_1 and action == glfwc.GLFW_PRESS then
 				if mods == glfwc.GLFW_MOD_ALT then
-
-					GL.offX, GL.offY = GL:GlassOffsets(X,Y,0.5)
-					GL.scale = GL.scale * 0.5
+					GL:GlassOffsets(X,Y,0.5)
 				elseif mods == glfwc.GLFW_MOD_CONTROL then
-					GL.scale = 1
-					GL.offX = 0
-					GL.offY = 0
+					GL:GlassInit()
 				else
 					glfw.glfwSetCursor(GL.window, GL.cursors.glass_p);
-					GL.offX, GL.offY = GL:GlassOffsets(X,Y,2)
-					GL.scale = GL.scale * 2
-
+					GL:GlassOffsets(X,Y,2)
 				end
 			end
 		end
@@ -645,7 +631,7 @@ function GLcanvas(GL)
 	
 	GL.viewH = GL.viewH or GL.H
 	GL.viewW = GL.viewH * GL.aspect
-	--Lupa
+	--Glass
 	GL.scale = 1
 	GL.offX = 0
 	GL.offY = 0
@@ -908,6 +894,44 @@ function GLcanvas(GL)
 		return timebegin
 	end
 	
+	function GL:FBODrawPrivate()
+		local x,y,w,h = unpack(self.stencil_sizes)
+		local tex = self.fbo:GetTexture()
+		tex:Bind()
+		tex:gen_mipmap()
+		if GL.fbo_nearest then
+			tex:mag_filter(glc.GL_NEAREST)
+			tex:min_filter(glc.GL_NEAREST)
+		else
+			--tex:gen_mipmap()
+		end
+		tex:drawpos(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
+	end
+	function GL:FBODraw()
+		local GL = self
+		if GL.use_fbo then
+			glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, 0);
+			gl.glClearColor(0.1,0.1,0.1,1)
+			ut.Clear()
+			gl.glClearColor(0,0,0,1)
+			if GL.SRGB then
+				gl.glEnable(glc.GL_FRAMEBUFFER_SRGB)
+				self:FBODrawPrivate()
+				gl.glDisable(glc.GL_FRAMEBUFFER_SRGB)
+			else
+				self:FBODrawPrivate()	
+			end		
+		end
+		GetGLError("fbo_dump")
+		--mouse pick
+		if GL.mouse_pick and GL.pick_mouse_coords then
+			local xm,ym = unpack(GL.pick_mouse_coords)
+			local mouse_pick = GL.mouse_pick
+			--GL.mouse_pick = nil
+			GL.pick_mouse_coords = nil
+			mouse_pick.action(xm,ym)
+		end
+	end
 	function GL:get_time()
 		return self.globaltime[0] --or 0
 	end
@@ -947,50 +971,7 @@ function GLcanvas(GL)
 		
 		if true then --not (self.window:getAttrib( glc.GLFW_ICONIFIED)>0) then --iconif
 		--strange error on gl.ortho(0,0,0,0...
-			if GL.use_fbo then
-				glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, 0);
-				gl.glClearColor(0.1,0.1,0.1,1)
-				ut.Clear()
-				gl.glClearColor(0,0,0,1)
-
-				local x,y,w,h = unpack(self.stencil_sizes)
-				
-				if GL.SRGB then
-					gl.glEnable(glc.GL_FRAMEBUFFER_SRGB)
-					local tex = GL.fbo:GetTexture()
-					tex:Bind()
-					tex:gen_mipmap()
-					if GL.fbo_nearest then
-						tex:mag_filter(glc.GL_NEAREST)
-						tex:min_filter(glc.GL_NEAREST)
-					else
-						--tex:gen_mipmap()
-					end
-					tex:drawpos(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
-					gl.glDisable(glc.GL_FRAMEBUFFER_SRGB)
-				else
-					local tex = GL.fbo:GetTexture()
-					tex:Bind()
-					tex:gen_mipmap()
-					if GL.fbo_nearest then
-						tex:mag_filter(glc.GL_NEAREST)
-						tex:min_filter(glc.GL_NEAREST)
-					else
-						--tex:gen_mipmap()
-					end
-					tex:drawpos(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
-				end
-				
-			end
-			GetGLError("fbo_dump")
-			--mouse pick
-			if GL.mouse_pick and GL.pick_mouse_coords then
-				local xm,ym = unpack(GL.pick_mouse_coords)
-				local mouse_pick = GL.mouse_pick
-				--GL.mouse_pick = nil
-				GL.pick_mouse_coords = nil
-				mouse_pick.action(xm,ym)
-			end
+			self:FBODraw()
 			self:postdraw()
 		end --iconif
 		
@@ -1034,50 +1015,7 @@ function GLcanvas(GL)
 		
 		if not (self.window:getAttrib( glfwc.GLFW_ICONIFIED)>0) then --iconif
 		--strange error on gl.ortho(0,0,0,0...
-			
-			if GL.use_fbo then
-				glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, 0);
-				gl.glClearColor(0.1,0.1,0.1,1)
-				ut.Clear()
-				gl.glClearColor(0,0,0,1)
-				local x,y,w,h = unpack(self.stencil_sizes)
-				
-				if GL.SRGB then
-					gl.glEnable(glc.GL_FRAMEBUFFER_SRGB)
-					local tex = GL.fbo:GetTexture()
-					tex:Bind()
-					tex:gen_mipmap()
-					if GL.fbo_nearest then
-						tex:mag_filter(glc.GL_NEAREST)
-						tex:min_filter(glc.GL_NEAREST)
-					else
-						--tex:gen_mipmap()
-					end
-					tex:drawpos(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
-					gl.glDisable(glc.GL_FRAMEBUFFER_SRGB)
-				else
-					local tex = GL.fbo:GetTexture()
-					tex:Bind()
-					tex:gen_mipmap() --for any reason mipmaps need to be generated always (even using nearest) or never
-					if GL.fbo_nearest then
-						tex:mag_filter(glc.GL_NEAREST)
-						tex:min_filter(glc.GL_NEAREST)
-					else
-						--tex:gen_mipmap()
-					end
-					tex:drawpos(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
-				end
-				
-			end
-			GetGLError("fbo_dump")
-			--mouse pick
-			if GL.mouse_pick and GL.pick_mouse_coords then
-				local xm,ym = unpack(GL.pick_mouse_coords)
-				local mouse_pick = GL.mouse_pick
-				--GL.mouse_pick = nil
-				GL.pick_mouse_coords = nil
-				mouse_pick.action(xm,ym)
-			end
+			self:FBODraw()
 			self:postdraw()
 		end --iconif
 		
@@ -1156,11 +1094,12 @@ function GLcanvas(GL)
 		window:setCharCallback(nil);
 		window:setKeyCallback(nil);
 		--]]
-		
+
 		if not GL.not_imgui then self.Impl:destroy() end
 		
 		self.window:destroy()
-
+		
+		
 		--dont destroy in case multiwindow
 		--imgui.igShutdown();
 		lj_glfw.terminate()
@@ -1215,7 +1154,10 @@ function GLcanvas(GL)
 	function GL:GlassOffsets(X,Y,fac)
 		local x,y,w,h = unpack(self.stencil_sizes)
 		local fac1 = 1- fac
-		return (X-x)*fac1+fac*self.offX, (Y-y)*fac1+fac*self.offY
+		self.offX, self.offY, self.scale = (X-x)*fac1+fac*self.offX, (Y-y)*fac1+fac*self.offY, self.scale*fac
+	end
+	function GL:GlassInit()
+		self.offX, self.offY, self.scale = 0, 0, 1
 	end
 	
 	local function doinitCOMMON(self)
