@@ -482,6 +482,8 @@ local function GuiInitGLFW(GL)
 	ig.GetIO().ConfigFlags = ig.GetIO().ConfigFlags + imgui.ImGuiConfigFlags_NavEnableKeyboard
 	print"imgui init done"
 	
+	GL:makeContextCurrent()
+	
 	GL.Ficons = gui.FontIcons(GL)
 	GL.set_imgui_fonts()
 	ig.lib.ImGui_ImplOpenGL3_CreateDeviceObjects()
@@ -1160,6 +1162,25 @@ function GLcanvas(GL)
 		self.offX, self.offY, self.scale = 0, 0, 1
 	end
 	
+	GL.textures = {}
+	function GL:addTexture(n,info)
+		if(self.textures[n]) then
+			print("texture ",n,"already present",info)
+			prtable(GL.textures)
+			error("hhh")
+		end
+		self.textures[n] = info
+	end
+	function GL:removeTexture(n,info)
+		if not self.textures[n] then
+			print("texture",n,"not present",info)
+			--print(debug.traceback())
+			prtable(GL.textures)
+			error("iii")
+		end
+		self.textures[n] = nil
+	end
+	
 	local function doinitCOMMON(self)
 		--require"anima.GLSL"
 		-----------------------------------------------------------------------------------
@@ -1273,6 +1294,7 @@ function GLcanvas(GL)
 			return w[0],h[0]
 		end
 		function self:SetCursor(c) return sdl.setCursor(c) end
+		function self:checkcontext() return sdl.gL_GetCurrentContext()==self.gl_context end
 		OnResize(self.window,self:getWindowSize()) --it is not called fist time
 		sdl.gL_MakeCurrent(window, gl_context);
 		if self.vsync then sdl.gL_SetSwapInterval(1) end
@@ -1324,6 +1346,7 @@ function GLcanvas(GL)
 		function self:swapBuffers() self.window:swapBuffers() end
 		function self:getWindowSize() return self.window:getSize() end
 		function self:SetCursor(c) return glfw.glfwSetCursor(self.window,c) end
+		function self:checkcontext() return self.window==glfw.glfwGetCurrentContext() end
 		
 		OnResize(self.window,self:getWindowSize()) --it is not called fist time
 		self.window:makeContextCurrent()

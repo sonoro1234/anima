@@ -484,16 +484,20 @@ function initFBO(wFBO,hFBO,args)
 	local thefbo = {w = wFBO, h = hFBO, GL=args.GL}
 	thefbo.fb = ffi.new("GLuint[1]")
 	glext.glGenFramebuffers(1, thefbo.fb);
-	print("initFBO",wFBO,hFBO,thefbo.fb[0])
+	print("initFBO",wFBO,hFBO,thefbo.fb[0],thefbo)
 	glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, thefbo.fb[0]);
 	--the color textures
 	if not args.color_tex then
 		thefbo.color_tex = ffi.new("GLuint[?]",args.num_tex)
+		--assert(thefbo.GL:checkcontext())
+		gl.glBindTexture(glc.GL_TEXTURE_2D,0); --https://stackoverflow.com/questions/18641988/broken-texture-number-opengl-after-glgentextures-glbindtexture/18652534
 		gl.glGenTextures(args.num_tex, thefbo.color_tex);
 		local intformat = args.SRGB and glc.GL_SRGB_ALPHA or glc.GL_RGBA32F
 		thefbo.SRGB = args.SRGB
 		for i=0,args.num_tex-1 do
 			gl.glBindTexture(glc.GL_TEXTURE_2D, thefbo.color_tex[i]);
+			--print("initFBO creates tex",thefbo.color_tex[i])
+			thefbo.GL:addTexture(thefbo.color_tex[i],"from FBO "..thefbo.fb[0].." "..tostring(thefbo))
 			gl.glPixelStorei(glc.GL_UNPACK_ALIGNMENT,1);
 	
 			gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_WRAP_S, args.wrap);
@@ -516,6 +520,7 @@ function initFBO(wFBO,hFBO,args)
 		thefbo.suplied_textures = true
 		thefbo.color_tex = args.color_tex
 		for i=0,args.num_tex-1 do
+			--print("initFBO assigns tex",thefbo.color_tex[i])
 			glext.glFramebufferTexture(glc.GL_DRAW_FRAMEBUFFER, glc.GL_COLOR_ATTACHMENT0 + i, thefbo.color_tex[i], 0);
 		end
 	end
@@ -537,8 +542,10 @@ function initFBO(wFBO,hFBO,args)
 		--]]
 		local internalformat = args.depth_format or glc.GL_DEPTH_COMPONENT
 		-- with texture
+		gl.glBindTexture(glc.GL_TEXTURE_2D,0); --https://stackoverflow.com/questions/18641988/broken-texture-number-opengl-after-glgentextures-glbindtexture/18652534
 		gl.glGenTextures(1, thefbo.depth_rb);
 		gl.glBindTexture(glc.GL_TEXTURE_2D, thefbo.depth_rb[0]);
+		thefbo.GL:addTexture(thefbo.depth_rb[0],"depth from FBO "..thefbo.fb[0].." "..tostring(thefbo))
 		gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_WRAP_S, glc.GL_CLAMP_TO_EDGE);
 		gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_WRAP_T, glc.GL_CLAMP_TO_EDGE);
 		gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_MIN_FILTER, glc.GL_NEAREST);
@@ -584,7 +591,9 @@ function initFBO(wFBO,hFBO,args)
    function thefbo:GetTexture(i)
 		i = i or 0
 		if textures[i] then return textures[i] end
-		textures[i] = Texture(wFBO,hFBO,glc.GL_RGBA,self.color_tex + i,{GL=self.GL} )
+		--print("tex() ",(self.color_tex + i)[0],"from FBO",self,self.fb[0])
+		local pointer = ffi.new("GLuint[1]",(self.color_tex + i)[0])
+		textures[i] = Texture(wFBO,hFBO,glc.GL_RGBA,pointer,{GL=self.GL} )
 		return textures[i]
    end
    thefbo.tex = thefbo.GetTexture --alias
@@ -667,13 +676,34 @@ function initFBO(wFBO,hFBO,args)
 		return glext.glIsFramebuffer(self.fb[0])
 	end
 	function thefbo:delete(keep_tex)
+		--do return end
+		assert(GL:checkcontext())
+		print("deleting FBO",self.fb[0],self)
+		---[[
+		self:Bind()
+		for i=0,args.num_tex-1 do
+			--glext.glFramebufferTexture2D(glc.GL_DRAW_FRAMEBUFFER, glc.GL_COLOR_ATTACHMENT0 + i, glc.GL_TEXTURE_2D, 0, 0);
+			glext.glFramebufferTexture(glc.GL_DRAW_FRAMEBUFFER, glc.GL_COLOR_ATTACHMENT0 + i, 0, 0);
+		end
+		if self.depth_rb then
+			glext.glFramebufferTexture2D(glc.GL_DRAW_FRAMEBUFFER, glc.GL_DEPTH_ATTACHMENT, glc.GL_TEXTURE_2D, 0, 0);
+		end
+		self:UnBind()
+		--]]
 		glext.glDeleteFramebuffers(1, self.fb);
 		if (not thefbo.suplied_textures) and (not keep_tex) then
+			--print("deleting tex",self.color_tex[0],"from fbo",self.fb[0],self)
 			gl.glDeleteTextures(args.num_tex, self.color_tex);
+			self.GL:removeTexture(self.color_tex[0])
 		end
-		if self.depth_rb then gl.glDeleteTextures(1, thefbo.depth_rb) end
+		if self.depth_rb then
+			gl.glDeleteTextures(1, thefbo.depth_rb) 
+			self.GL:removeTexture(thefbo.depth_rb[0])
+		end
+		
 		--avoid _gc after manual delete
 		getmetatable(self.gcproxy).__gc = nil
+		
 	end
 	function thefbo:viewport()
 		gl.glViewport(0,0,self.w,self.h)

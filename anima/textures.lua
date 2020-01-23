@@ -743,28 +743,34 @@ function Texture(w,h,formato,pTexor,args)
 	
 	if not pTexor then
 		tex.pTex = ffi.new("GLuint[?]",1)
+		gl.glBindTexture(glc.GL_TEXTURE_2D,0); --https://stackoverflow.com/questions/18641988/broken-texture-number-opengl-after-glgentextures-glbindtexture/18652534
 		gl.glGenTextures(1,tex.pTex) 
 		gl.glBindTexture(glc.GL_TEXTURE_2D, tex.pTex[0])
+		tex.GL:addTexture(tex.pTex[0],"Texture "..tostring(tex))
 		gl.glTexParameteri(glc.GL_TEXTURE_2D,glc.GL_TEXTURE_MIN_FILTER,glc.GL_LINEAR)
 		gl.glTexParameteri(glc.GL_TEXTURE_2D,glc.GL_TEXTURE_MAG_FILTER,glc.GL_LINEAR)
 		gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_WRAP_S, glc.GL_MIRRORED_REPEAT);
 		gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_WRAP_T, glc.GL_MIRRORED_REPEAT);
 		gl.glTexImage2D(glc.GL_TEXTURE_2D,0, formato, w, h, 0, glc.GL_RGB, glc.GL_UNSIGNED_BYTE, nil)
 		tex.tex = tex.pTex[0]
-		print("new tex2d",tex.tex)
+		--print("new tex2d",tex.tex,tex)
 	else
 		tex.pTex = pTexor
 		tex.tex = pTexor[0]
-		print("new tex2d from pTexor",tex.tex)
+		--print("new tex2d from pTexor",tex.tex,tex)
 	end
-	
+	--assert(tex.tex == tex.pTex[0])
 	function tex:is_texture()
 		return gl.glIsTexture(self.tex)==glc.GL_TRUE
 	end
 	
 	function tex:delete()
-		assert(not self.isdeleted)
+		--assert(GL.window==glfw.glfwGetCurrentContext())
+		--assert(not self.isdeleted)
+		--print("tex:delete isdeleted", self.isdeleted,"contex good",GL:checkcontext(),"tex:",self.tex,self)
+		--prtable("tex:delete from", debug.getinfo(4,"Sl"))
 		gl.glDeleteTextures(1,tex.pTex) 
+		self.GL:removeTexture(tex.pTex[0])
 		--avoid _gc after manual delete
 		getmetatable(self.gcproxy).__gc = nil
 		self.isdeleted = true
@@ -1034,7 +1040,7 @@ function Texture(w,h,formato,pTexor,args)
 	function tex:get_signature()
 		return tostring(self)..self.instance
 	end
-	set_table__gc(tex,function(t) print("delete texture",t.tex);t:delete() end)
+	set_table__gc(tex,function(t) print("__gcdelete texture",t.tex,t);t:delete() end)
 	return tex
 end
 function LoadTextures2(fileNames,GLparams,mipmaps)

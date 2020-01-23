@@ -1273,7 +1273,8 @@ function gui.SetImGui(GL)
 	GL.show_imgui = true
 	function GL:postdraw() 
 		if GL.show_imgui then
-
+			GL:makeContextCurrent()
+			
 			self.Impl:NewFrame()
 
 			if self.Log then self.Log:Draw() end
