@@ -109,14 +109,17 @@ vec3 XYZ2RGB(vec3 xyz)
 	return M * xyz;
 }
 ///////////XYZ LAB
-float delt = 6.0/29.0;
+float delt = 6.0/29.0;//cubic root of delt3
 float delt2 = delt*delt;
-float delt3 = delt2*delt;
+float delt3 = 216.0/24389; //delt2*delt;
+float kappa = 24389.0/27.0;
+float kappainv = 27.0/24389.0;
 float fflab(float t)
 {
 	if(t > delt3)
 		return pow(t, 1.0/3.0);
 	else
+		//return (t*kappa + 16.0)/216.0; //http://www.brucelindbloom.com
 		return t/(3.0*delt2) + 4.0/29.0;
 }
 float fflab_inv(float t)
@@ -124,7 +127,15 @@ float fflab_inv(float t)
 	if(t > delt)
 		return pow(t, 3.0);
 	else
+		//return (116.0*t - 16.0)*kappainv;
 		return 3.0*delt2*(t - 4.0/29.0);
+}
+float fflab_invL(float L)
+{
+	if(L > delt3*kappa)
+		return pow((L+16.0)/116,3);
+	else
+		return L*kappainv;
 }
 //standart white points
 const vec3 A ={	1.09850, 	1.00000 ,	0.35585};
@@ -155,6 +166,7 @@ vec3 LAB2XYZ(vec3 Lab,vec3 White)
 	float fac = (Lab.x + 16.0)/116.0;
 	float X =fflab_inv(fac + Lab.y/500.0);
 	float Y = fflab_inv(fac);
+	//float Y = fflab_invL(Lab.x);
 	float Z = fflab_inv(fac - Lab.z/200.0);
 	return vec3(X,Y,Z)*White;
 }
