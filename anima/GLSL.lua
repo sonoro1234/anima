@@ -464,7 +464,7 @@ function initFBO(wFBO,hFBO,args)
 	assert(args.GL)
 
 	if type(wFBO)=="table" then hFBO = wFBO.H; wFBO=wFBO.W end
-	print("initFBO",wFBO,hFBO)
+	
 	wFBO = math.max(1,wFBO)
 	hFBO = math.max(1,hFBO)
 	GetGLError"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxinitFBO ini"
@@ -484,6 +484,7 @@ function initFBO(wFBO,hFBO,args)
 	local thefbo = {w = wFBO, h = hFBO, GL=args.GL}
 	thefbo.fb = ffi.new("GLuint[1]")
 	glext.glGenFramebuffers(1, thefbo.fb);
+	print("initFBO",wFBO,hFBO,thefbo.fb[0])
 	glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, thefbo.fb[0]);
 	--the color textures
 	if not args.color_tex then
@@ -662,6 +663,9 @@ function initFBO(wFBO,hFBO,args)
 		glext.glBindFramebuffer(glc.GL_READ_FRAMEBUFFER,  old_read_framebuffer[0]);
 		self:UnBind(framebuffer)
 	end
+	function thefbo:is_framebuffer()
+		return glext.glIsFramebuffer(self.fb[0])
+	end
 	function thefbo:delete(keep_tex)
 		glext.glDeleteFramebuffers(1, self.fb);
 		if (not thefbo.suplied_textures) and (not keep_tex) then
@@ -674,8 +678,8 @@ function initFBO(wFBO,hFBO,args)
 	function thefbo:viewport()
 		gl.glViewport(0,0,self.w,self.h)
 	end
-	print"done initFBO"
-	set_table__gc(thefbo,function(t) print"deleting fbo";t:delete() end)
+	--print"done initFBO"
+	set_table__gc(thefbo,function(t) print("deleting fbo",t.fb[0]);t:delete() end)
 	return thefbo
 end
 fbostatus = {[[GL_FRAMEBUFFER_UNDEFINED]],
