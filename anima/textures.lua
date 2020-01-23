@@ -751,9 +751,15 @@ function Texture(w,h,formato,pTexor,args)
 		gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_WRAP_T, glc.GL_MIRRORED_REPEAT);
 		gl.glTexImage2D(glc.GL_TEXTURE_2D,0, formato, w, h, 0, glc.GL_RGB, glc.GL_UNSIGNED_BYTE, nil)
 		tex.tex = tex.pTex[0]
+		print("new tex2d",tex.tex)
 	else
 		tex.pTex = pTexor
 		tex.tex = pTexor[0]
+		print("new tex2d from pTexor",tex.tex)
+	end
+	
+	function tex:is_texture()
+		return gl.glIsTexture(self.tex)==glc.GL_TRUE
 	end
 	
 	function tex:delete()
