@@ -677,7 +677,7 @@ function initFBO(wFBO,hFBO,args)
 	end
 	function thefbo:delete(keep_tex)
 		--do return end
-		assert(GL:checkcontext())
+		assert(self.GL:checkcontext())
 		print("deleting FBO",self.fb[0],self)
 		---[[
 		self:Bind()
