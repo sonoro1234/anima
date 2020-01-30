@@ -241,7 +241,7 @@ local function ColorKmeans(GL,K)
 			local ra = math.random()*sum_D
 			local sum = 0
 			for i = 0,npix-1 do
-				if ra <= sum and ra < sum + D[i] then 
+				if ra >= sum and ra < sum + D[i] then 
 					K = K + 1
 					centers[K] = {datat[3*i], datat[3*i+1], datat[3*i+2]}
 					break
