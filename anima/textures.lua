@@ -1008,7 +1008,6 @@ function Texture(w,h,formato,pTexor,args)
 		-- fbo:release()
 		-- return fbo:texcopy()
 	end
-	--TODO delete all but texture
 	function tex:resample(w,h)
 		local resfbo = self.GL:initFBO({no_depth=true},w,h)
 		resfbo:Bind()
