@@ -571,7 +571,7 @@ function gui.ImGui_Transport(GL)
 	return transport
 end
 local mat = require"anima.matrixffi"
-guitypes = {val=1,dial=2,toggle=3,button=4,valint=5,drag=6,combo=7,color=8,curve=9}
+guitypes = {val=1,dial=2,toggle=3,button=4,valint=5,drag=6,combo=7,color=8,curve=9,slider_enum=10}
 gui.guitypes = guitypes
 
 function gui.Curve(name,numpoints,LUTsize,pressed_on_modified)
@@ -723,6 +723,13 @@ function gui.Dialog(name,vars,func, invisible)
 				items[i-1] = ffi.new("const char*",v)
 			end
 			defs[v[1]] = {default= v[2],type=v[3],args=v[4],items=items,n_items=#v[4]}
+		elseif v[3] == guitypes.slider_enum then
+			pointers[v[1]] = int_p(v[2])
+			--local items = ffi.new("const char*[?]",#v[4])
+			for i,v in ipairs(v[4]) do
+				--items[i-1] = ffi.new("const char*",v)
+			end
+			defs[v[1]] = {default= v[2],type=v[3],args=v[4],items=items,n_items=#v[4]}
 		elseif v[3] == guitypes.curve then
 			v[4] = v[4] or {numpoints=10,LUTsize=720}
 			local siz_def = #v[2]/2
@@ -838,6 +845,14 @@ function gui.Dialog(name,vars,func, invisible)
 				end
 			elseif v[3] == guitypes.combo then
 				if ig.Combo(v[1],pointers[v[1]], defs[v[1]].items,defs[v[1]].n_items,-1) then
+					self.dirty = true
+					namevar = v[1]
+					if v[5] then
+						v[5](pointers[v[1]][0],self)
+					end
+				end
+			elseif v[3] == guitypes.slider_enum then
+				if ig.SliderInt(v[1],pointers[v[1]], 1,defs[v[1]].n_items,defs[v[1]].args[pointers[v[1]][0]]) then
 					self.dirty = true
 					namevar = v[1]
 					if v[5] then
