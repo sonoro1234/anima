@@ -105,7 +105,106 @@ end
 
 function M.pixel_data(data,w,h,p)
 	data = data or ffi.new("float[?]",w*h*p)
-	local pdat = {data=data,w=w,h=h,p=p}
+	local pdat = {data=data,w=w,h=h,p=p,npix=w*h}
+	--returns i,j indexes and pix
+	function pdat:iterator()
+		local i,j = -1, 0
+		return function()
+			if i == self.w-1 then
+				i = 0
+				j = j + 1
+				if j == self.h then return nil end
+			else
+				i = i + 1
+			end
+			return i,j,self:pix(i,j)
+		end
+	end
+	--returns i1,j1 indexes as relative increments respect i,j and pix with max increment==r
+	--respects image borders
+	local min, max = math.min, math.max
+	function pdat:square_it(i,j,r)
+		local mindx = max(-i,-r)
+		local maxdx = min(self.w - i - 1,r)
+		local mindy = max(-j,-r)
+		local maxdy = min(self.h - j - 1,r)
+		local dx,dy = mindx - 1, mindy
+		return function()
+			if dx == maxdx then
+				dx = mindx
+				dy = dy + 1
+				if dy > maxdy then return nil end
+			else
+				dx = dx + 1
+			end
+			return dx, dy, self:pix(i+dx,j+dy)
+		end
+	end
+	--returns i1,j1 indexes as relative increments respect i,j and pix with max increment==r
+	--respects image borders
+	local function it2(state)
+		--print(state,self)
+			if state.dx == state.maxdx then
+				state.dx = state.mindx
+				state.dy = state.dy + 1
+				if state.dy > state.maxdy then return nil end
+			else
+				state.dx = state.dx + 1
+			end
+			return state.dx, state.dy, state.self:pix(state.i+state.dx,state.j+state.dy)
+		end
+	function pdat:square_it2(i,j,r)
+		local state = {
+			i = i,
+			j = j,
+			mindx = max(-i,-r),
+			maxdx = min(self.w - i - 1, r),
+			mindy = max(-j,-r),
+			maxdy = min(self.h - j - 1, r),
+		}
+		state.dx = state.mindx - 1
+		state.dy = state.mindy
+		state.self = self
+		return it2,state,self
+	end
+	function pdat:copy()
+		local data2 = ffi.new("float[?]",w*h*p)
+		ffi.copy(data2, data, w*h*p*ffi.sizeof"float")
+		return M.pixel_data(data2,w,h,p)
+	end
+	function pdat:mult(f)
+		local size = w*h*p
+		local data2 = ffi.new("float[?]",size)
+		for i=0,size-1 do
+			data2[i] = data[i]*f
+		end
+		self.data = data2
+		data = data2
+	end
+	--returns float array deinterlaced (cant be used as data for indexing i,j)
+	function pdat:deinterlace()
+		local sizeor = w*h*p
+		local deint = ffi.new("float[?]",sizeor)
+		local ideint = 0
+		for plane = 0,p-1 do
+			for np=0,self.npix-1 do
+				deint[ideint] = self:lpix(np)[plane]
+				ideint = ideint + 1
+			end
+		end
+		return deint
+	end
+	--sets data from deinterlaced version
+	function pdat:interlace(deint)
+		local size = w*h*p
+		local ideint = 0
+		for plane = 0,p-1 do
+			for np=0,self.npix-1 do
+				self:lpix(np)[plane] = deint[ideint]
+				ideint = ideint + 1
+			end
+		end
+	end
 	function pdat:get_pixel(x,y)
 		assert(x<w and y<h)
 		local pixel = {}
@@ -123,6 +222,9 @@ function M.pixel_data(data,w,h,p)
 		--y = x<0 and 0 or y>=h and h-1 or y
 		if x<0 or x>w or y<0 or y>h then return zero end
 		return data + (x+ y*w)*p 
+	end
+	function pdat:lpix(n)
+		return data + n*p
 	end
 	pdat.pix = pdat.get_pix
 	function pdat:set_pixel(pixel,x,y)
@@ -160,6 +262,7 @@ function M.pixel_data(data,w,h,p)
 	function pdat:flipV_inplace()
 		local dat = M.flip_vertical(self.data,w,h,p)
 		self.data = dat
+		data = dat
 	end
 	function pdat:totex(GL)
 		local pData,width,height,bitplanes = self.data,w,h,p
@@ -176,6 +279,10 @@ end
 
 function M.load_im(fname,unpacked)
 	local imag = im.FileImageLoadBitmap(fname)
+	if (imag==nil) then
+		print ("Unnable to open the file: " .. fname)
+		error("23")
+	end
 	return M.pixel_data(M.tofloat(imag,unpacked))
 end
 
