@@ -60,6 +60,7 @@ function GL.draw(t,w,h)
 	U.L:set{NM.L}
 	U.out_color:set{NM.out_color}
 	U.size:set{GL.W,GL.H}
+	gl.glViewport(0,0,w,h)
 	vao:draw_elm()
 end
 
