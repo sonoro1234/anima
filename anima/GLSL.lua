@@ -496,7 +496,7 @@ function initFBO(wFBO,hFBO,args)
 		thefbo.SRGB = args.SRGB
 		for i=0,args.num_tex-1 do
 			gl.glBindTexture(glc.GL_TEXTURE_2D, thefbo.color_tex[i]);
-			--print("initFBO creates tex",thefbo.color_tex[i])
+			dprint("initFBO creates tex",thefbo.color_tex[i])
 			thefbo.GL:addTexture(thefbo.color_tex[i],"from FBO "..thefbo.fb[0].." "..tostring(thefbo))
 			gl.glPixelStorei(glc.GL_UNPACK_ALIGNMENT,1);
 	
@@ -520,7 +520,7 @@ function initFBO(wFBO,hFBO,args)
 		thefbo.suplied_textures = true
 		thefbo.color_tex = args.color_tex
 		for i=0,args.num_tex-1 do
-			--print("initFBO assigns tex",thefbo.color_tex[i])
+			dprint("initFBO assigns tex",thefbo.color_tex[i])
 			glext.glFramebufferTexture(glc.GL_DRAW_FRAMEBUFFER, glc.GL_COLOR_ATTACHMENT0 + i, thefbo.color_tex[i], 0);
 		end
 	end
@@ -693,10 +693,17 @@ function initFBO(wFBO,hFBO,args)
 		glext.glDeleteFramebuffers(1, self.fb);
 		if (not thefbo.suplied_textures) and (not keep_tex) then
 			--print("deleting tex",self.color_tex[0],"from fbo",self.fb[0],self)
-			gl.glDeleteTextures(args.num_tex, self.color_tex);
-			self.GL:removeTexture(self.color_tex[0])
+			--gl.glDeleteTextures(args.num_tex, self.color_tex);
+			--self.GL:removeTexture(self.color_tex[0])
+			--if it was converted to Texture dont delete
+			for i=0,args.num_tex-1 do
+				if not textures[i] then
+					gl.glDeleteTextures(1, self.color_tex+i);
+					self.GL:removeTexture((self.color_tex+i)[0])
+				end
+			end
 		end
-		if self.depth_rb then
+		if self.depth_rb and not depth_tex then
 			gl.glDeleteTextures(1, thefbo.depth_rb) 
 			self.GL:removeTexture(thefbo.depth_rb[0])
 		end
@@ -709,7 +716,7 @@ function initFBO(wFBO,hFBO,args)
 		gl.glViewport(0,0,self.w,self.h)
 	end
 	--print"done initFBO"
-	set_table__gc(thefbo,function(t) print("deleting fbo",t.fb[0]);t:delete() end)
+	set_table__gc(thefbo,function(t) print("_gc deleting fbo",t.fb[0]);t:delete() end)
 	return thefbo
 end
 fbostatus = {[[GL_FRAMEBUFFER_UNDEFINED]],
