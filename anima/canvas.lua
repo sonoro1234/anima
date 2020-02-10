@@ -23,6 +23,9 @@ function NotModal(...)
 	return GL:Dialog(...)
 end
 ----------------------------------
+--assign to print in debug
+dprint = function() end
+------------------------------
 require"anima.GLSL"
 require"anima.textures"
 
@@ -1167,7 +1170,7 @@ function GLcanvas(GL)
 		if(self.textures[n]) then
 			print("texture ",n,"already present",info)
 			prtable(GL.textures)
-			error("hhh")
+			error("hhh",2)
 		end
 		self.textures[n] = info
 	end
@@ -1176,7 +1179,7 @@ function GLcanvas(GL)
 			print("texture",n,"not present",info)
 			--print(debug.traceback())
 			prtable(GL.textures)
-			error("iii")
+			error("iii",2)
 		end
 		self.textures[n] = nil
 	end
