@@ -427,7 +427,7 @@ function GL.init()
 	tex = GL:Texture():Load[[c:\luagl\media\estanque3.jpg]]
 	tproc = require"anima.plugins.texture_processor"(GL,3,NM)
 	tproc:set_textures{tex,fboblur:GetTexture(),fbomask:GetTexture()}
-	tproc:set_process[[vec4 process(){
+	tproc:set_process[[vec4 process(vec2 pos){
 	
 		if (invert)
 			c3 = vec4(1) - c3;
