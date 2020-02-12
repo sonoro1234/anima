@@ -451,7 +451,7 @@ function GL.draw(t,w,h)
 	--if edit.NM.dirty then
 	fbomask:Bind()
 	ut.Clear()
-	edit:draw(t,w,h)
+	edit:process() --draw(t,w,h)
 	fbomask:UnBind()
 	edit.NM.dirty = false
 	--end
@@ -460,7 +460,7 @@ function GL.draw(t,w,h)
 	--fboblur:GetTexture():draw(t,w,h)
 	--fbomask:GetTexture():draw(t,w,h)
 	--edit:draw(t,w,h)
-	tproc:process()
+	tproc:process({tex,fboblur:GetTexture(),fbomask:GetTexture()})
 end
 GL:start()
 --]=]
