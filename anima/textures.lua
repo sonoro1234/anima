@@ -463,7 +463,7 @@ local function ReLoadTexture(fileName,texture,srgb,mipmaps)
 		image = nil
 		gldata, glformat = LoadGL16(fileName)
 	else
-		assert(image:DataType()==im.BYTE,image:DataType())
+		assert(image:DataType()==im.BYTE,im.DataTypeName(image:DataType()))
 		datatype = glc.GL_UNSIGNED_BYTE
 		gldata, glformat = image:GetOpenGLData()
 	end
@@ -477,7 +477,7 @@ local function ReLoadTexture(fileName,texture,srgb,mipmaps)
 			rgbf = glformat
 		else
 			local datatype = image and image:DataType()
-			print("glformat",glformat,ToStr(swapped_glc[glformat]),datatype)
+			print("glformat",glformat,gldata,ToStr(swapped_glc[glformat]),im.DataTypeName(datatype))
 			rgbf = glformat
 			error("unknown file format:"..tostring(fileName))
 		end
@@ -781,8 +781,15 @@ function Texture(w,h,formato,pTexor,args)
 		intbitplanes = intbitplanes or bitplanes
 		local formats = { glc.GL_RED, glc.GL_RG, glc.GL_RGB, glc.GL_RGBA}
 		local int_formats = { glc.GL_R32F, glc.GL_RG32F, glc.GL_RGB32F, glc.GL_RGBA32F}
+		local types = {[glc.GL_FLOAT] = "float[?]", [glc.GL_UNSIGNED_SHORT]="unsigned short[?]",[glc.GL_UNSIGNED_BYTE]="unsigned char[?]"}
+		local type
+		for k,v in pairs(types) do
+			if ffi.istype(v,pData) then type=k;break end
+		end
+		--print("set_data type",swapped_glc[type])
+		assert(type)
 		self:Bind()
-		gl.glTexImage2D(glc.GL_TEXTURE_2D,0, int_formats[intbitplanes], self.width,self.height, 0, formats[bitplanes], glc.GL_FLOAT, pData)
+		gl.glTexImage2D(glc.GL_TEXTURE_2D,0, int_formats[intbitplanes], self.width,self.height, 0, formats[bitplanes], type, pData)
 		return tex
 	end
 	function tex:Load(filename,srgb,mipmaps)
@@ -943,7 +950,7 @@ function Texture(w,h,formato,pTexor,args)
 	function tex:get_pixels(type,format)
 		type = type or glc.GL_UNSIGNED_BYTE
 		format = format or glc.GL_RGBA
-		local types = {[glc.GL_FLOAT] = "float[?]", [glc.GL_UNSIGNED_SHORT]="short[?]",[glc.GL_UNSIGNED_BYTE]="char[?]"}
+		local types = {[glc.GL_FLOAT] = "float[?]", [glc.GL_UNSIGNED_SHORT]="unsigned short[?]",[glc.GL_UNSIGNED_BYTE]="unsigned char[?]"}
 		local formats = {[glc.GL_RED]=1,[glc.GL_RGB]=3,[glc.GL_RGBA]=4}
 		local ncomponents = formats[format]		
 		local allocstr = types[type]
