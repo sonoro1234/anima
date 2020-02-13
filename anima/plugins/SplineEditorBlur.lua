@@ -344,11 +344,14 @@ local function Editor(GL)
 		blur3.NM.vars.radio[0] = math.min(39*2,math.max(1,NM.feather*GL.W))
 		blur3:update()
 		blurfbo:tex():inc_signature()
+		if blur3.NM.radio == 0 then
+			blurfbo:tex():drawcenter(w,h)
+		else
 		--blur3:set_texsignature(blurfbo:GetTexture())
 		blur3:process(blurfbo:tex(),w,h)
 		--blur3:draw(t,w,h,{clip={blurfbo:GetTexture()}})
 		-- blurfbo:GetTexture():draw(t,w,h)
-		
+		end
 		--blurfbo:release()
 		gl.glEnable(glc.GL_DEPTH_TEST)
 	end
