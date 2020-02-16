@@ -3,7 +3,12 @@ require"anima"
 local M = {}
 function M.flip_vertical(data,w,h,p)
 	local datasize = w*p*h
-	local rdata = ffi.new("float[?]",datasize)
+	local types = {"float[?]","unsigned short[?]","unsigned char[?]"}
+	local type
+	for k,v in ipairs(types) do
+		if ffi.istype(v,data) then type=v;break end
+	end
+	local rdata = ffi.new(type,datasize)
 	for i=0,w-1 do
 		for j=0,h-1 do
 			for k=0,p-1 do
