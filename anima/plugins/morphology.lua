@@ -38,9 +38,14 @@ void main()
 	float valmin = 10;
 	for(int x=-kernelsize;x<=kernelsize;x++){
 		for(int y=-kernelsize;y<=kernelsize;y++){
-			//float val = texelFetch(tex,ivec2(gl_FragCoord.xy)+ivec2(x,y),0).r;
-			float val = texture(tex,(gl_FragCoord.xy+vec2(x,y))/texs,0).r;
+			float val = texelFetch(tex,ivec2(gl_FragCoord.xy)+ivec2(x,y),0).r;
+			//float val = texture(tex,(gl_FragCoord.xy+vec2(x,y))/texs,0).r;
 			valmin = min(valmin,val);
+			//if(valmin==0.0){
+			//	gl_FragColor = vec4(vec3(0.0),1);
+			//	return;
+			//}
+			
 		}
 	}
 	gl_FragColor = vec4(vec3(valmin),1);
@@ -65,12 +70,14 @@ void main()
 ]]
 
 local function morphology(GL,args)
-	local fixed_fbos = args.fixed_fbos
+	args = args or {}
+
 	local plugin = require"anima.plugins.plugin"
 	local M = plugin.new({res={GL.W,GL.H}},GL)
 	local NM = GL:Dialog("morphol",
 	{{"op",0,guitypes.combo,{"erode","dilate","open","close","TopHatW","TopHatB"}},
-	{"kernelsize",1,guitypes.drag,{min=0,max=10}},
+	{"kernelsize",1,guitypes.valint,{min=0,max=10}},
+	{"iters",1,guitypes.valint,{min=1,max=30}},
 	{"doneg",false,guitypes.toggle},
 	{"bypass",false,guitypes.toggle}
 	})
@@ -78,7 +85,7 @@ local function morphology(GL,args)
 	M.NM = NM
 
 	local program_erode,program_dilate, program_substract,quade,quadd,quads
-	local fbo,fbo2
+	local slab
 	function M:init()
 		program_erode = GLSL:new():compile(vert,frag_erode)
 		program_dilate = GLSL:new():compile(vert,frag_dilate)
@@ -86,10 +93,8 @@ local function morphology(GL,args)
 		quade = mesh.quad():vao(program_erode)
 		quadd = mesh.quad():vao(program_dilate)
 		quads = mesh.quad():vao(program_substract)
-		if fixed_fbos then
-			fbo = GL:initFBO{no_depth=true}
-			fbo2 = GL:initFBO{no_depth=true}
-		end
+
+		slab = GL:make_slab()
 	end
 	
 	local program,quad,program2,quad2
@@ -130,42 +135,57 @@ local function morphology(GL,args)
 			subs = true
 		end
 		if not program2 then
+			slab:Bind()
 			program:use()
 			program.unif.kernelsize:set{NM.kernelsize}
 			program.unif.tex:set{0}
 			gl.glViewport(0,0,w or self.res[1], h or self.res[2])
-			--ut.Clear()
 			quad:draw_elm()
-		else
-			if not fixed_fbos then fbo = GL:get_fbo() end
-			fbo:Bind()
-			program:use()
-			program.unif.kernelsize:set{NM.kernelsize}
-			program.unif.tex:set{0}
-			gl.glViewport(0,0,w or self.res[1], h or self.res[2])
-			--ut.Clear()
-			quad:draw_elm()
-			fbo:UnBind()
-			if subs then
-				if not fixed_fbos then fbo2 = GL:get_fbo() end
-				fbo2:Bind()
+			slab:UnBind()
+			for i=2,NM.iters do
+				slab:tex():Bind()
+				slab:Bind()
+				quad:draw_elm()
+				slab:UnBind()
 			end
-			fbo:tex():Bind()
+			slab:tex():drawcenter()
+		else
+			slab:Bind()
+			program:use()
+			program.unif.kernelsize:set{NM.kernelsize}
+			program.unif.tex:set{0}
+			gl.glViewport(0,0,w or self.res[1], h or self.res[2])
+			quad:draw_elm()
+			slab:UnBind()
+			for i=2,NM.iters do
+				slab:tex():Bind()
+				slab:Bind()
+				quad:draw_elm()
+				slab:UnBind()
+			end
+			slab:tex():Bind()
+			slab:Bind()
 			program2:use()
 			program2.unif.kernelsize:set{NM.kernelsize}
 			program2.unif.tex:set{0}
 			gl.glViewport(0,0,w or self.res[1], h or self.res[2])
-			--ut.Clear()
 			quad2:draw_elm()
-			if not fixed_fbos then fbo:release() end
-			if subs then
-				fbo2:UnBind()
+			slab:UnBind()
+			for i=2,NM.iters do
+				slab:tex():Bind()
+				slab:Bind()
+				quad2:draw_elm()
+				slab:UnBind()
+			end
+			if not subs then 
+				slab:tex():drawcenter()
+			else
 				if NM.op == 4 then
 					srctex:Bind(0)
-					fbo2:tex():Bind(1)
+					slab:tex():Bind(1)
 				else
 					srctex:Bind(1)
-					fbo2:tex():Bind(0)
+					slab:tex():Bind(0)
 				end
 				program_substract:use()
 				program_substract.unif.tex:set{0}
@@ -174,7 +194,6 @@ local function morphology(GL,args)
 				gl.glViewport(0,0,w or self.res[1], h or self.res[2])
 				--ut.Clear()
 				quads:draw_elm()
-				if not fixed_fbos then fbo2:release() end
 			end
 		end
 	end
@@ -186,7 +205,7 @@ end
 local GL = GLcanvas{H=700,aspect=1}
 
 NM = GL:Dialog("test",{
-	{"orig",false,guitypes.toggle}
+	{"orig",false,guitypes.toggle},
 })
 
 fileName = [[C:\luaGL\frames_anima\msquares\imagen2.tif]]
@@ -198,12 +217,17 @@ local vicim = require"anima.vicimag"
 -- print(image:DataType(),im.BYTE,im.DataTypeName(image:DataType()),im.DataTypeName(im.BYTE))
 local pd = vicim.load_im(fileName)
 local texture,program_erode,quad
+local fbo ,fbo2
+
 function GL.init()
-	fx = morphology(GL)
-	fx.NM.vars.op[0]=4
+	
 	texture = pd:totex(GL) --GL:Texture():Load(fileName)
 	GL:set_WH(texture.width,texture.height)
-	--GL:DirtyWrap()
+	fx = morphology(GL,{fixed_fbos=true})
+	fx.NM.vars.op[0]=4
+	fbo = GL:initFBO({no_depth=true})
+	--fbo2 = GL:initFBO({no_depth=true})
+	GL:DirtyWrap()
 end
 
 function GL.draw(t,w,h)
@@ -212,7 +236,9 @@ function GL.draw(t,w,h)
 	if NM.orig then
 		texture:drawcenter(w,h)
 	else
-		fx:process(texture)
+
+		fx:process_fbo(fbo,texture)
+		fbo:tex():drawcenter()
 	end
 end
 
