@@ -741,11 +741,12 @@ function MakeSlab(w,h,args,GL)
 	end
 	function slab:UnBind()
 		self.pong:UnBind()
-		self.swapt()
+		self:swapt()
 	end
 	function slab:tex()
 		return slab.ping:tex()
 	end
+	return slab
 end
 
 
