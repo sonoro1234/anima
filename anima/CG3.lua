@@ -841,7 +841,7 @@ function M.lexicografic_sort(P)
 	end)
 	P.sorted = true
 end
-
+-- returns bounds given polygon
 function M.bounds(P)
 	local minx,maxx,miny,maxy = math.huge,-math.huge,math.huge,-math.huge
 	for i=1,#P do
