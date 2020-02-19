@@ -633,3 +633,10 @@ function GlobalsChecker()
 	end
 	return Gc
 end
+
+function ProfileStart()
+	require("jit.p").start("3vfsi4m1",'profReport.txt')
+end
+function ProfileStop()
+	require("jit.p").stop()
+end
