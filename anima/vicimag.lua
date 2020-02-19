@@ -115,14 +115,14 @@ function M.pixel_data(data,w,h,p)
 	function pdat:iterator()
 		local i,j = -1, 0
 		return function()
-			if i == self.w-1 then
+			if i == w-1 then
 				i = 0
 				j = j + 1
-				if j == self.h then return nil end
+				if j == h then return nil end
 			else
 				i = i + 1
 			end
-			return i,j,self:pix(i,j)
+			return i,j,data + (i+ j*w)*p --self:pixR(i,j)
 		end
 	end
 	--returns i1,j1 indexes as relative increments respect i,j and pix with max increment==r
@@ -220,18 +220,17 @@ function M.pixel_data(data,w,h,p)
 		return pixel
 	end
 	local zero = ffi.new("float[?]",p)
-	function pdat:get_pix(x,y)
-		--assert(x<w and y<h)
-		--clamp
-		--x = x<0 and 0 or x>=w and w-1 or x
-		--y = x<0 and 0 or y>=h and h-1 or y
-		if x<0 or x>w or y<0 or y>h then return zero end
+	function pdat:pix(x,y)
+		if x<0 or x>=w or y<0 or y>=h then return zero end
+		return data + (x+ y*w)*p 
+	end
+	function pdat:pixR(x,y)
 		return data + (x+ y*w)*p 
 	end
 	function pdat:lpix(n)
 		return data + n*p
 	end
-	pdat.pix = pdat.get_pix
+	--pdat.pix = pdat.get_pix
 	function pdat:set_pixel(pixel,x,y)
 		assert(x<w and y<h)
 		assert(#pixel == p)
