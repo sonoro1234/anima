@@ -1011,7 +1011,7 @@ function Texture(w,h,formato,pTexor,args)
 		fbo:Bind()
 		self:neg()
 		fbo:UnBind()
-		return fbo
+		return fbo:tex()
 		-- fbo:release()
 		-- return fbo:texcopy()
 	end
