@@ -667,7 +667,7 @@ function gui.Dialog(name,vars,func, invisible)
 	
 	local pointers = {}
 	local defs = {}
-	local NM = {name = name ,vars=pointers, defs=defs,invisible=invisible, func = func, dirty = true}
+	local NM = {name = name ,vars=pointers, defs=defs,invisible=invisible, func = func, dirty = true, isDialog=true}
 
 	local double_p = ffi.typeof("double[1]")
 	local float_p = ffi.typeof("float[1]")
