@@ -250,7 +250,7 @@ function M.mesh(t)
 	mesh.triangles = t.triangles or {}
 	mesh.ntriangles = #mesh.triangles/3
 	mesh.normals = t.normals --or {}
-	mesh.tcoords = t.tcoords or {mat.vec2(0,0)}
+	mesh.tcoords = t.tcoords --or {mat.vec2(0,0)}
 	function mesh:point(i)
 		return self.points[i]
 	end
@@ -331,11 +331,16 @@ function M.mesh(t)
 			self.points[i] = pR.xyz
 		end
 	end
+	function mesh:scale(f)
+		for i=1,#self.points do
+			self.points[i] = self.points[i]*f
+		end
+	end
 	function mesh:vao(program)
 		local tt = {}
 		tt.position = mat.vec2vao(mesh.points)
 		tt.normal = self.normals and mat.vec2vao(self.normals) or nil
-		tt.texcoords = mat.vec2vao(self.tcoords)
+		tt.texcoords = self.tcoords and mat.vec2vao(self.tcoords) or nil
 		local vao =  VAO(tt,program, mesh.triangles)
 		function vao:reset_mesh(mesh1)
 			self:set_buffer("position",mat.vec2vao(mesh1.points))
