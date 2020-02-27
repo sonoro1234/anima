@@ -291,7 +291,7 @@ local function Editor(GL)
 		local lps = mat.vec2vao(self.ps[ii])
 		vaoT[ii]:set_buffer("position",lps,(#self.ps[ii])*2)
 		local indexes
-		indexes,self.good_indexes = CG.EarClip(self.ps[ii])
+		indexes,self.good_indexes = CG.EarClipSimple(self.ps[ii])
 		vaoT[ii]:set_indexes(indexes)
 	end
 	
