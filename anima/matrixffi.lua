@@ -59,6 +59,11 @@ vec2 = ffi.metatype('vec2', {
 	if i == 'xy' then return v end
 	if i == 'norm' then return sqrt(v*v) end
 	if i == 'normalize' then return v/sqrt(v*v) end
+	if i == 'cross' then
+		return function(_,w)
+					 return v.x*w.y-v.y*w.x
+				end
+	end
     return nil
   end,
   __tostring = function(v) return '<'..v.x..','..v.y..'>' end
