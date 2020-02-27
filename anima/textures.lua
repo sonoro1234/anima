@@ -440,7 +440,7 @@ local function LoadGL16(fileName)
 	return gldata, glformat
 end
 
-local function ReLoadTexture(fileName,texture,srgb,mipmaps)
+local function ReLoadTexture(fileName,texture,srgb,tex)
 	--print("ReLoadTexture")
 	local rgbf  --= srgb and glc.GL_SRGB or glc.GL_RGB
 
@@ -474,7 +474,12 @@ local function ReLoadTexture(fileName,texture,srgb,mipmaps)
 		elseif glformat == glc.GL_RGBA then
 			rgbf = glc.GL_RGBA32F
 		elseif glformat == glc.GL_LUMINANCE then
-			rgbf = glformat
+			rgbf = glc.GL_RGBA32F --glc.GL_LUMINANCE --glc.GL_RED --glc.GL_RGBA32F --glformat
+			if tex.GL.restricted then
+				glformat = glc.GL_RED
+				local swizzleMask = ffi.new("GLint[4]",{glc.GL_RED, glc.GL_RED, glc.GL_RED, glc.GL_ONE})
+				gl.glTexParameteriv(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_SWIZZLE_RGBA, swizzleMask);
+			end
 		else
 			local datatype = image and image:DataType()
 			print("glformat",glformat,gldata,ToStr(swapped_glc[glformat]),im.DataTypeName(datatype))
@@ -799,7 +804,7 @@ function Texture(w,h,formato,pTexor,args)
 			self.GL.loaded_files[filename] = true
 		end
 		--assert(mipmaps)
-		self.width,self.height,self.internal_format,self.formato,self.datatype = ReLoadTexture(filename,self.tex,srgb) --,mipmaps)
+		self.width,self.height,self.internal_format,self.formato,self.datatype = ReLoadTexture(filename,self.tex,srgb,self) --,mipmaps)
 		self.aspect = self.width/self.height
 		self.filename = filename
 		--
