@@ -1342,6 +1342,17 @@ function GLcanvas(GL)
 		
 		if self.invisible then glfw.glfwWindowHint(glfwc.GLFW_VISIBLE, glfwc.GLFW_FALSE) end
 		
+		--[[ setting screen multisample
+		local window = lj_glfw.Window(self.viewW, self.viewH, self.name or "")
+		local NumOfSamples = ffi.new("GLuint[1]")
+		window:makeContextCurrent()
+		gl.glGetIntegerv(glc.GL_MAX_SAMPLES, NumOfSamples);
+		print("GLFW_SAMPLES",NumOfSamples[0])
+		window:swapBuffers()
+		window:destroy()
+		glfw.glfwWindowHint(glfwc.GLFW_SAMPLES, NumOfSamples[0])
+		--]]
+		
 		local window = lj_glfw.Window(self.viewW, self.viewH, self.name or "")
 		self.window = window
 		
