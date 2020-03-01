@@ -4,6 +4,7 @@
 local vert_shad = [[
 #version 130
 uniform sampler2D tex0;
+uniform float nbins;
 vec3 lumin = vec3( 0.30, 0.59, 0.11);
 in vec3 position;
 void main()
@@ -11,7 +12,9 @@ void main()
 
 	vec4 col = texelFetch(tex0, ivec2(position.xy), 0);
 	float lum = dot(col.rgb,lumin);
-	gl_Position = vec4((lum - 0.5)*2.0,0,0.0,1.0);
+	lum = lum*(nbins-1.0)/nbins; //from [0,1] to [0,1)
+	//lum = lum - (lum/nbins); //from [0,1] to [0,1)
+	gl_Position = vec4((lum - 0.5)*2.0, 0, 0.0, 1.0); //from [0.1) to [-1.1) ndc
 	gl_FrontColor = vec4(1.0,0.0,0.0,1.0);
 }
 
@@ -253,6 +256,7 @@ local function Histogram(GL,nbins)
 		return histovalues
 	end
 	function hist:OtsuThreshold()
+		if not textura then return 0.5 end
 		return OtsuThreshold(hist:get_histo(),nbins)
 	end
 	function hist:set_texture(text)
@@ -317,7 +321,7 @@ local function Histogram(GL,nbins)
 		gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_WRAP_T, modewrap);
 	
 		programfx.unif.tex0:set{0}
-		-- programfx.unif.w:set{w}
+		programfx.unif.nbins:set{nbins}
 		-- programfx.unif.h:set{h}
 	
 		--gl.glMatrixMode(glc.GL_PROJECTION)
@@ -403,6 +407,8 @@ local function Histogram(GL,nbins)
 		
 		--gl.glDisable(glc.GL_FRAMEBUFFER_SRGB)
 	end
+	
+	--GL:add_plugin(hist,"hist") --dont has NM so 
 	return hist
 end
 
