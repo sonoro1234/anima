@@ -9,7 +9,9 @@ function plugin.serializer(M)
 		M.save = M.save or function() return M.NM:GetValues() end
 	end
 	local fb = {}
+	local lastloaded
 	fb.load = function(filename)
+		lastloaded = filename
 		local func,err = loadfile(filename)
 		if not func then print(err); error();return end
 		local params = func()
@@ -25,8 +27,8 @@ function plugin.serializer(M)
 		file:write(table.concat(str))
 		file:close()
 	end
-	fb.loader = gui.FileBrowser(nil,{filename="phfx",key="loadps"},fb.load)
-	fb.saver = gui.FileBrowser(nil,{check_existence=true,filename="phfx",key="saveps"},fb.save)
+	fb.loader = gui.FileBrowser(nil,{filename="phfx",key="loadps",pattern=M.NM and M.NM.name},fb.load)
+	fb.saver = gui.FileBrowser(nil,{check_existence=true,filename="phfx",key="saveps",pattern=M.NM and M.NM.name,addext=true},fb.save)
 	function fb.draw()
 		if ig.SmallButton("save") then
 			fb.saver.open()
@@ -145,25 +147,29 @@ pl_mt.__index = {
 		--return fbo:tex()
 	end,
 	draw = function(self,tim,w,h,args)
-		plugin.get_args(self.NM,args, tim)
-		local theclip = args.clip
-		local srctex
-		if theclip[1].isTex2D then
-			theclip[1]:set_wrap(glc.GL_CLAMP)
-			self:process(theclip[1],w,h)
-		elseif theclip[1].isSlab then
-			self:process_sl(theclip[1])
+		if args then 
+			plugin.get_args(self.NM,args, tim)
+			local theclip = args.clip
+			local srctex
+			if theclip[1].isTex2D then
+				theclip[1]:set_wrap(glc.GL_CLAMP)
+				self:process(theclip[1],w,h)
+			elseif theclip[1].isSlab then
+				self:process_sl(theclip[1])
+			else
+				-- self.fbo:Bind()
+				-- theclip[1]:draw(tim, w, h,theclip)
+				-- self.fbo:UnBind()
+				-- self:process(self.fbo:GetTexture(),w,h)
+				local fbo = GL:get_fbo()
+				fbo:Bind()
+				theclip[1]:draw(tim, w, h,theclip)
+				fbo:UnBind()
+				self:process(fbo:tex(),w,h)
+				fbo:release()
+			end
 		else
-			-- self.fbo:Bind()
-			-- theclip[1]:draw(tim, w, h,theclip)
-			-- self.fbo:UnBind()
-			-- self:process(self.fbo:GetTexture(),w,h)
-			local fbo = GL:get_fbo()
-			fbo:Bind()
-			theclip[1]:draw(tim, w, h,theclip)
-			fbo:UnBind()
-			self:process(fbo:tex(),w,h)
-			fbo:release()
+			self:process(nil,w,h)
 		end
 	end,
 	init = function(self) end,
