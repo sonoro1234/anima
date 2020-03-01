@@ -70,6 +70,12 @@ vec2 = ffi.metatype('vec2', {
 })
 local vec3
 vec3 = ffi.metatype('vec3', {
+	-- __new = function(tp,x,y,z,w)
+		-- if ffi.istype(vec2,x) then
+			-- return ffi.new(tp,x.x,x.y,y or 0)
+		-- end
+		-- return ffi.new(tp,x,y,z,w)
+	-- end,
 	__eq = function(a,b) return a.x == b.x and a.y == b.y and a.z == b.z end,
   __add = function(a, b) return vec3(a.x + b.x, a.y + b.y, a.z + b.z) end,
   __sub = function(a, b) return vec3(a.x - b.x, a.y - b.y, a.z - b.z) end,
@@ -540,7 +546,8 @@ function M.sin2d(a,b)
 end
 function M.vec2vao(t,n)
 	--print("vec2vao",t,n,t[1])
-	n = n or (ffi.istype(vec3,t[1]) and 3) or (ffi.istype(vec2,t[1]) and 2) or error"vec2vao no vecs"
+	n = n or (ffi.istype(vec3,t[1]) and 3) or (ffi.istype(vec2,t[1]) and 2) 
+	or error("vec2vao wants vec2 or vec3 but is receiving "..ffi.typeof(t[1]))
 
 	local lp = ffi.new("float[?]",#t*n)
 	if n == 3 then
