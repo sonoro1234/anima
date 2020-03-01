@@ -1,4 +1,6 @@
-function HSV2RGB(H,S,V)
+local M = {}
+
+function M.HSV2RGB(H,S,V)
 
 	local var_r, var_g , var_b;
 	
@@ -25,4 +27,6 @@ function HSV2RGB(H,S,V)
 	
 	return var_r, var_g , var_b
 end
+
+return M
 
