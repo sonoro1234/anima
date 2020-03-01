@@ -1378,7 +1378,7 @@ function GLcanvas(GL)
 			plugin:init()
 			plugin.inited = true
 		end
-		print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxaddplugin: " .. (name or plugin.name or ""),"NM",plugin.NM)
+		print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxaddplugin: " .. (name or plugin.name or "unnamed"),"NM",plugin.NM)
 		self.plugins = self.plugins or {}
 		self.plugins[#self.plugins + 1] = plugin --{plugin=plugin,name=name or ""}
 

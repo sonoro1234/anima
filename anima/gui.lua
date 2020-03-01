@@ -210,13 +210,13 @@ function gui.YesNo(msg)
 	end
 	return D
 end
---args.key, args.curr_dir, args.pattern, args.filename
+--args.key, args.curr_dir, args.pattern, args.filename, args.check_existence, args.addext
 function gui.FileBrowser(filename_p, args, funcOK)
 	
 	args = args or {}
 	args.key = args.key or "filechooser"
-	local pattern_ed = ffi.new"char[32]"
-	ffi.copy(pattern_ed, args.pattern or "" )
+	local pattern_ed = ffi.new("char[32]",args.pattern or "")
+	--ffi.copy(pattern_ed, args.pattern or "" )
 	local pathut = require"anima.path"
 	local curr_dir = args.curr_dir or pathut.this_script_path() 
 	local curr_dir_ed = ffi.new("char[256]")
@@ -300,6 +300,10 @@ function gui.FileBrowser(filename_p, args, funcOK)
 				fullname = ""
 				if #savefilename > 0 then
 					fullname = pathut.chain(curr_dir,savefilename)
+					if args.addext then --for saving with ext
+						local ext = pathut.ext(savefilename)
+						if ext =="" or not ext then fullname = fullname.."."..ffistr(pattern_ed) end
+					end
 					if args.check_existence then
 						if lfs.attributes(fullname) then
 							print("check_existence true",fullname)
@@ -572,7 +576,7 @@ function gui.ImGui_Transport(GL)
 end
 local mat = require"anima.matrixffi"
 guitypes = {val=1,dial=2,toggle=3,button=4,valint=5,drag=6,combo=7,color=8,curve=9,slider_enum=10}
-gui.guitypes = guitypes
+gui.types = guitypes
 
 function gui.Curve(name,numpoints,LUTsize,pressed_on_modified)
 	if pressed_on_modified == nil then pressed_on_modified=true end
@@ -747,7 +751,7 @@ function gui.Dialog(name,vars,func, invisible)
 			points[siz_def].x = -1
 			curve:get_data()
 			pointers[v[1]] = points
-			defs[v[1]] = {default=v[2],type=v[3],curve=curve}
+			defs[v[1]] = {default=v[2],type=v[3],curve=curve,args=v[4]}
 		else
 			error("unknown guitype",2)
 		end
@@ -792,6 +796,13 @@ function gui.Dialog(name,vars,func, invisible)
 		--if (imgui.igBegin(name,nil,0)) then
 		local namevar
 		for i,v in ipairs(vars) do
+		
+			if (v[3] == guitypes.button or v[3] == guitypes.toggle or v[3] == guitypes.color) then
+				if v[5] and v[5].sameline then ig.SameLine() end
+			elseif v[4].sameline then 
+				ig.SameLine() 
+			end
+			
 			if v[3] == guitypes.val then
 				if imgui.igSliderFloat(v[1], pointers[v[1]], v[4].min, v[4].max, "%.3f", 1.0) then
 					self.dirty = true
