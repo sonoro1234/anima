@@ -221,13 +221,16 @@ local function EarClipSimple(poly)
 			--find collinear
 			if not repaired then
 			for i=1,#ind do
-				local s = Sign(poly[ind[mod(i-1,#ind)]],poly[ind[i]],poly[ind[mod(i+1,#ind)]])
-				--print("find collinear",i,s)
-				if (math.abs(s) <= 1e-18*1) then
-					table.remove(ind,i)
-					repaired = true
-					--print("collinear",ind[i])
-					break
+				local a,b,c = poly[ind[mod(i-1,#ind)]],poly[ind[i]],poly[ind[mod(i+1,#ind)]]
+				local ang,conv,s,cose = CG.Sign(a,b,c)
+				if (s==0) then
+					local angle,conv,s,cose = Angle(a,b,c)
+					if not angle==0 then
+						print("collinear repaired",ind[i],angle,conv,s,cose)
+						table.remove(ind,i)
+						repaired = true
+						break
+					end
 				end
 			end
 			end
@@ -240,7 +243,7 @@ local function EarClipSimple(poly)
 				local j = mod(i+2,#ind)
 				while j~=jlimit do
 					local c,d = poly[ind[j]],poly[ind[mod(j+1,#ind)]]
-					local inters,sc,sd = SegmentIntersect(a,b,c,d)
+					local inters,sc,sd = M.SegmentIntersect(a,b,c,d)
 					--print("find crossin",i,j,"vals",inters,sc,sd)
 					if inters then
 						--print("self crossing",a,b,c,d)

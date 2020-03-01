@@ -147,15 +147,6 @@ local function DeleteEdgeO(E,a,b)
 	--DeleteEdge1(E,b,a)
 end
 
-local function deleteTriangleEdgeMal(E,a,b,c)
-	if not c then return end
-	local e = E[a][b]
-	removeEdgeEnd(e,c)
-	if #e==0 then
-		E[a][b] = nil
-		E[b][a] = nil
-	end
-end
 
 local function deleteTriangle(E,a,b,c)
 	--if not c then return end

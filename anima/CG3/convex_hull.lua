@@ -1,6 +1,11 @@
 local CG = require"anima.CG3.base"
 local Sign = CG.Sign
 
+local function mod(a,b)
+	return ((a-1)%b)+1
+end
+
+
 function CG.Jarvis_Conv(P)
 	--find leftmost
 	local minx = 1
