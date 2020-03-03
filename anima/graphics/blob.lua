@@ -102,21 +102,44 @@ function M.sanitize_boundary(polys)
 	local function mod(a,b)
 		return ((a-1)%b)+1
 	end
-	--sanitize repeated points
+	--sanitize repeated points between poly and holes
 	for npoly,poly in ipairs(polys) do
+		--avoid self repetition
+		local modpoly = {}
+		for i=1,#poly-1 do
+			local pt = poly[i]
+			for j=i+1,#poly do
+			local pt2 = poly[j]
+				if pt==pt2 then 
+					local a = poly[i] - poly[mod(i-1,#poly)]
+					local b = poly[mod(i+1,#poly)] - poly[i]
+					local ap = vec2(-a.y,a.x).normalize 
+					local bp = vec2(-b.y,b.x).normalize
+					local cp = (0.5*(ap+bp)).normalize
+					modpoly[i] = poly[i] - cp*0.025 --out
+					local a = poly[j] - poly[mod(j-1,#poly)]
+					local b = poly[mod(j+1,#poly)] - poly[j]
+					local ap = vec2(-a.y,a.x).normalize 
+					local bp = vec2(-b.y,b.x).normalize
+					local cp = (0.5*(ap+bp)).normalize
+					modpoly[j] = poly[j] - cp*0.025 --out
+				end
+			end
+		end
+		for k,v in pairs(modpoly) do poly[k] = v end
 		--contract holes
 		for ih,hole in ipairs(poly.holes) do
 			local modhole = {}
-				for j=1,#hole do
-					--if pt == hole[j] then
-						local a = hole[j] - hole[mod(j-1,#hole)]
-						local b = hole[mod(j+1,#hole)] - hole[j]
-						local ap = vec2(a.y,-a.x).normalize 
-						local bp = vec2(b.y,-b.x).normalize
-						local cp = (0.5*(ap+bp)).normalize
-						modhole[j] = hole[j] + cp*0.1
-					--end
-				end
+			for j=1,#hole do
+				--if pt == hole[j] then
+					local a = hole[j] - hole[mod(j-1,#hole)]
+					local b = hole[mod(j+1,#hole)] - hole[j]
+					local ap = vec2(a.y,-a.x).normalize 
+					local bp = vec2(b.y,-b.x).normalize
+					local cp = (0.5*(ap+bp)).normalize
+					modhole[j] = hole[j] + cp*0.05
+				--end
+			end
 			--copy
 			for k,v in pairs(modhole) do hole[k] = v end
 		end
