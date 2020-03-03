@@ -20,7 +20,7 @@ M.Sign = Sign
 local acos = math.acos
 local function Angle(p1,p2,p3,CCW)
 	if CCW then p1,p3 = p3,p1 end
-	--assert(p1~=p2 and p2~=p3) --would give nan as angle
+	assert(p1~=p2 and p2~=p3) --would give nan as angle
 	if p1==p2 or p2==p3 then
 		print("Angle called with p1==p2 or p2==p3")
 		return math.pi*0.5,true,0,0
@@ -205,7 +205,7 @@ local function check_crossings(poly,verbose)
 			local ci,di = j,mod(j+1,#poly)
 			local c,d = poly[ci],poly[di]
 			if M.SegmentIntersect(a,b,c,d) then
-				if verbose then print("self crossing",ai,bi,ci,di) end
+				if verbose then print("self crossing",ai,bi,ci,di,"#poly",#poly) end
 				has_cros = true
 			end
 		end
@@ -227,9 +227,6 @@ function M.lexicografic_compare(a,b)
 	
 local algo = require"anima.CG3.algorithm"
 function M.lexicografic_sort(P)
-	-- table.sort(P,function(a,b) 
-		-- return (a.x < b.x) or ((a.x == b.x) and (a.y < b.y))
-	-- end)
 	algo.quicksort(P,1,#P,M.lexicografic_compare)
 	P.sorted = true
 end
@@ -255,7 +252,7 @@ local function binary_search(A, T, fcomp)
 	end
     return false
 end
-
+M.binary_search = binary_search
 
 function M.lexicografic_find(P,v)
 	return binary_search(P,v,M.lexicografic_compare)

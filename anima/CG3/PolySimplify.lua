@@ -350,7 +350,7 @@ function CG.PolySimplifyNC(poly,eps)
 	local _,removedS = PolySimplifyNC2(poly,list,eps)
 	removed = removed + removedS
 	
-	return poly,removed
+	return removed
 end
 
 

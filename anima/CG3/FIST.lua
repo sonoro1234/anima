@@ -41,13 +41,20 @@ local function IsPointInPolyBorder(poly,p)
 	end
 	return false
 end
-local function remove_colinear(pt,verbose,CCW)
+local function remove_colinear(pt,verbose)
 
 	local colin = {}
 	local numpt = #pt
 	for i=1,numpt do
-		local ang,conv,s,cose = Angle(pt[mod(i-1,numpt)],pt[i],pt[mod(i+1,numpt)],CCW)
-		if s==0 and cose<0 then colin[#colin+1] = i end
+		local ang,conv,s,cose = Angle(pt[mod(i-1,numpt)],pt[i],pt[mod(i+1,numpt)])
+		--if s==0 and cose<0 then colin[#colin+1] = i end
+		if s==0 then  
+			if cose<0 then
+				colin[#colin+1] = i
+			elseif pt[mod(i-1,numpt)]==pt[mod(i+1,numpt)] then --cose>0 and repeated
+				colin[#colin+1] = i
+			end
+		end
 	end
 	for i=#colin,1,-1 do
 		if verbose then print("collinear removes",colin[i]) end
@@ -274,6 +281,7 @@ local function InsertHoles(poly,skip_check)
 	--do return poly end
 	--]=]
 	--classify holes according to leftmost vertex
+	local bridges = {}
 	local holes_order = {}
 	for i,hole in ipairs(holes) do
 		
@@ -315,6 +323,7 @@ local function InsertHoles(poly,skip_check)
 				for ii=1,dd.j do
 					newpoly[ii] = poly[ii]
 				end
+
 				for ii=0,#hole-1 do
 					newpoly[#newpoly+1] = hole[mod(ii+horder.mini,#hole)]
 				end
@@ -324,6 +333,11 @@ local function InsertHoles(poly,skip_check)
 					newpoly[#newpoly+1] = poly[ii]
 				end
 				poly = newpoly
+				
+				bridges[dd.j]= true
+				bridges[dd.j+1] = true
+				bridges[indmini]= true
+				bridges[indmini+1] = true
 				
 				--print("bridge added",i,"was",horder.i,horder.mini,"inds",dd.j,dd.j+1,indmini,indmini+1)
 				if CG.check_crossings(poly,true) then
@@ -337,24 +351,65 @@ local function InsertHoles(poly,skip_check)
 		if not bridgedone then error"not bridge" end
 	end
 	poly.holes = {}
+	poly.bridges = bridges
 	return poly
 end
 
+local function check_collinear(poly,ind,msg)
+
+	local colin = {}
+	local numpt = #ind
+	for i=1,numpt do
+		local ang,conv,s,cose = CG.Angle(poly[ind[mod(i-1,numpt)]],poly[ind[i]],poly[ind[mod(i+1,numpt)]])
+		if s==0 then  
+			if cose<0 then
+				print("collinear on",i,msg)
+				error"collinear"
+			elseif poly[ind[mod(i-1,numpt)]]==poly[ind[mod(i+1,numpt)]] then --cose>0 and repeated
+				print("collinear on",i,msg)
+				error"collinear"
+			end
+		end
+	end
+
+end
+
+local function repair1collinear(poly,ind,i)
+	local numpt = #ind
+	if numpt <3 then return false end
+	local ang,conv,s,cose = CG.Angle(poly[ind[mod(i-1,numpt)]],poly[ind[i]],poly[ind[mod(i+1,numpt)]])
+		if s==0 then  
+			if cose<0 then
+				print("repair1collinear on",i,#ind)
+				table.remove(ind,i)
+				return true
+			elseif poly[ind[mod(i-1,numpt)]]==poly[ind[mod(i+1,numpt)]] then --cose>0 and repeated
+				print("repair1collinear on",i,#ind)
+				table.remove(ind,i)
+				return true
+			end
+		end
+		return false
+end
 
 function CG.EarClipFIST(poly)
+
 
 	local use_urgent = true
 	local IsPointInTri = CG.IsPointInTriC --CG.IsPointInTriC
 
 	--check it is simple
 	local hasC,hasR = CG.check_simple(poly,true,false)
-	if hasC  then error"crossing in not simple polygon" end
+	if hasC  then 
+		--do return poly,{},false end
+		error"crossing in not simple polygon"		
+	end
 	--signed area
 	-- local sA = signed_area(poly)
 	-- print("sA",sA)
 	-- assert(sA<=0)
 	if poly.holes and #poly.holes > 0 then
-		poly = InsertHoles(poly)
+		poly = InsertHoles(poly,true)
 		
 		--check it is simple again
 		--print"checking outer poly-holes"
@@ -362,6 +417,7 @@ function CG.EarClipFIST(poly)
 		if hasC then error"crossings in polygon with holes" end
 	end
 	
+	remove_colinear(poly,true)
 	-- local sA = signed_area(poly)
 	-- print("sA",sA)
 	-- assert(sA<=0)
@@ -403,7 +459,7 @@ function CG.EarClipFIST(poly)
 			end
 			
 			while j~=jlimit do
-				if not convex[ind[j]] and 
+				if not convex[ind[j]] and --not poly.bridges[ind[j]] and
 				IsPointInTri(poly[ind[j]],a,b,c) then
 					empty = false
 					break
@@ -470,7 +526,8 @@ function CG.EarClipFIST(poly)
 	end
 	
 	local function create_tr_update(i,create,dontremove)
-		
+		--print("create_tr_update",i,create,#ind)
+		--check_collinear(poly,ind,"before trupdate "..i)
 		local zeroarea
 		local b = ind[i]
 		table.remove(ind,i)
@@ -486,6 +543,12 @@ function CG.EarClipFIST(poly)
 		end
 		end
 		--]=]
+		i = mod(i,#ind)
+		
+		while repair1collinear(poly,ind,mod(i-1,#ind)) do end
+		while repair1collinear(poly,ind,mod(i,#ind)) do end
+		--check_collinear(poly,ind,"after trupdate "..i)
+		
 		i = mod(i,#ind)
 		local a,c = ind[mod(i-1,#ind)],ind[mod(i,#ind)]
 		local am1,cM1 = ind[mod(i-2,#ind)],ind[mod(i+1,#ind)]
@@ -504,13 +567,18 @@ function CG.EarClipFIST(poly)
 			table.insert(tr,b-1)
 			table.insert(tr,c-1)
 		end
+		--check_collinear(poly,ind,"end trupdate "..i)
 	end
 	
 	---- main
+	
 	for i,v in ipairs(poly) do ind[i] = i end
+	
+	--check_collinear(poly,ind,"initial")
 	update_all_ears()
 	local last_uae
 	while #ind > 2 do
+		--check_collinear(poly,ind,"main loop")
 		local initind = #ind
 		--find smallest angle eartips
 		local has_eartip = false
@@ -548,7 +616,7 @@ function CG.EarClipFIST(poly)
 			create_tr_update(mineartipI,true)
 		else
 			-- try to repair
-			print("\ntrying to repair",#ind)
+			print("\n-----------trying to repair",#ind)
 			local repaired = false
 			if last_uae ~= #ind then
 				update_all_ears()
@@ -576,17 +644,19 @@ function CG.EarClipFIST(poly)
 			if not repaired then
 			for i=1,#ind do
 				local j = mod(i+1,#ind)
-				if poly[ind[i]]==poly[ind[j]] then 
+				if poly[ind[i]]==poly[ind[j]] then
+					print("consecutive repeat repaired",ind[i])
 					create_tr_update(i,false)
 					repaired = true
-					print("consecutive repeat repaired",ind[i])
 					break
 				end
 			end
 			end
 			
 			if not repaired then
+			print"trying repiair1collinear"
 			for i=1,#ind do
+			--[=[
 				local a,b,c = poly[ind[mod(i-1,#ind)]],poly[ind[i]],poly[ind[mod(i+1,#ind)]]
 				local ang,conv,s,cose = CG.Sign(a,b,c)
 				if (s==0) then
@@ -598,6 +668,8 @@ function CG.EarClipFIST(poly)
 						break
 					end
 				end
+			--]=]
+				if repair1collinear(poly,ind,i) then repaired = true end
 			end
 			end
 			if not repaired then break end
@@ -609,6 +681,8 @@ function CG.EarClipFIST(poly)
 		print"-------endrestpoly"
 		local restpoly = {}
 		for i,v in ipairs(ind) do restpoly[#restpoly+1] = poly[ind[i]] end
+		print("rest poly check simple------")
+		CG.check_simple(restpoly,true)
 		return poly,tr,false,restpoly
 	end	
 	return poly,tr,true
