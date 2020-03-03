@@ -379,8 +379,17 @@ require"anima.animation"
 local function GuiInitSDL(GL)
 	GL.Impl = ig.Imgui_Impl_SDL_opengl3()
 	
-	GL.Impl:Init(GL.window, GL.gl_context)
+	
 	ig.GetIO().ConfigFlags = ig.GetIO().ConfigFlags + imgui.ImGuiConfigFlags_NavEnableKeyboard
+	local ok = pcall(function() return imgui.ImGuiConfigFlags_ViewportsEnable end)
+	if ok then
+		GL.has_imgui_viewport = true
+		ig.GetIO().ConfigFlags = ig.GetIO().ConfigFlags + imgui.ImGuiConfigFlags_DockingEnable
+		if GL.use_imgui_viewport then
+			ig.GetIO().ConfigFlags = ig.GetIO().ConfigFlags + imgui.ImGuiConfigFlags_ViewportsEnable
+		end
+	end
+	GL.Impl:Init(GL.window, GL.gl_context)
 	
 	GL.Ficons = gui.FontIcons(GL)
 	GL.set_imgui_fonts()
@@ -481,8 +490,16 @@ local function GuiInitGLFW(GL)
 	--GL.Impl = ig.ImplGlfwGL3()
 
 	print"imgui init"
-	GL.Impl:Init(GL.window, false,GL.glsl_version or "#version 130")
 	ig.GetIO().ConfigFlags = ig.GetIO().ConfigFlags + imgui.ImGuiConfigFlags_NavEnableKeyboard
+	local ok = pcall(function() return imgui.ImGuiConfigFlags_ViewportsEnable end)
+	if ok then
+		GL.has_imgui_viewport = true
+		ig.GetIO().ConfigFlags = ig.GetIO().ConfigFlags + imgui.ImGuiConfigFlags_DockingEnable
+		if GL.use_imgui_viewport then
+			ig.GetIO().ConfigFlags = ig.GetIO().ConfigFlags + imgui.ImGuiConfigFlags_ViewportsEnable
+		end
+	end
+	GL.Impl:Init(GL.window, false,GL.glsl_version or "#version 130")
 	print"imgui init done"
 	
 	GL:makeContextCurrent()

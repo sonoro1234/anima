@@ -519,12 +519,17 @@ function gui.ImGui_Transport(GL)
 	local HoverAction = HoverActionFactory(0.5,0.0001,1)
 
 	function transport:draw()
-
-		--local height = ig.GetFrameHeightWithSpacing() + ig.GetStyle().WindowPadding.y*2
-		ig.SetNextWindowPos(ig.ImVec2(0.0, ig.GetIO().DisplaySize.y), 0, ig.ImVec2(0.0, 1.0));
-		--ig.SetNextWindowPos(ig.ImVec2(0, ig.GetIO().DisplaySize.y - height));
-		ig.SetNextWindowSize(ig.ImVec2(ig.GetIO().DisplaySize.x,0))--height));
-		
+		if GL.has_imgui_viewport then
+			local vwp = ig.GetMainViewport()
+			ig.SetNextWindowViewport(vwp.ID)
+			ig.SetNextWindowPos(ig.ImVec2(vwp.Pos.x, vwp.Pos.y + ig.GetMainViewport().Size.y), 0, ig.ImVec2(0.0, 1.0));
+			ig.SetNextWindowSize(ig.ImVec2(ig.GetMainViewport().Size.x,0))--height));
+		else
+			--local height = ig.GetFrameHeightWithSpacing() + ig.GetStyle().WindowPadding.y*2
+			ig.SetNextWindowPos(ig.ImVec2(0.0, ig.GetIO().DisplaySize.y), 0, ig.ImVec2(0.0, 1.0));
+			--ig.SetNextWindowPos(ig.ImVec2(0, ig.GetIO().DisplaySize.y - height));
+			ig.SetNextWindowSize(ig.ImVec2(ig.GetIO().DisplaySize.x,0))--height));
+		end
 		ig.PushStyleVarFloat(imgui.ImGuiStyleVar_Alpha,0.0001)
 		
 		if ig.Begin("Transport",nil,imgui.ImGuiWindowFlags_NoTitleBar + imgui.ImGuiWindowFlags_NoResize) then
@@ -1299,12 +1304,13 @@ function gui.SetImGui(GL)
 	GL.show_imgui = true
 	function GL:postdraw() 
 		if GL.show_imgui then
+
 			GL:makeContextCurrent()
-			
+
 			self.Impl:NewFrame()
 
 			if self.Log then self.Log:Draw() end
-			
+		
 			self:draw_imgui_not_modal()
 
 			if self.imgui then self:imgui() end
@@ -1317,15 +1323,16 @@ function gui.SetImGui(GL)
 
 			if self.postimgui then self.postimgui() end
 
---[[
 			--viewport branch
-			local igio = ig.GetIO()
-			if bit.band(igio.ConfigFlags , ig.lib.ImGuiConfigFlags_ViewportsEnable) ~= 0 then
-				ig.UpdatePlatformWindows();
-				ig.RenderPlatformWindowsDefault();
-				GL.window:makeContextCurrent()
+			if GL.has_imgui_viewport then
+				local igio = ig.GetIO()
+				if bit.band(igio.ConfigFlags , ig.lib.ImGuiConfigFlags_ViewportsEnable) ~= 0 then
+					ig.UpdatePlatformWindows();
+					ig.RenderPlatformWindowsDefault();
+					GL:makeContextCurrent()
+				end
 			end
---]]
+
 		else
 			self.FPScounter:fps(os.clock())
 		end
