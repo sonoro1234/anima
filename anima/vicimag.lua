@@ -224,6 +224,7 @@ function M.pixel_data(data,w,h,p)
 		if x<0 or x>=w or y<0 or y>=h then return zero end
 		return data + (x+ y*w)*p 
 	end
+	pdat.get_pix = pdat.pix --alias
 	function pdat:pixR(x,y)
 		return data + (x+ y*w)*p 
 	end
