@@ -374,7 +374,7 @@ function ToolBox(GL)
 	end
 	return toolbox
 end
-
+gui.ToolBox = ToolBox
 local sin, cos, atan2, pi, max, min,acos,sqrt = math.sin, math.cos, math.atan2, math.pi, math.max, math.min,math.acos,math.sqrt
 
 local function dial(label,value_p,sz, fac)
@@ -519,7 +519,7 @@ function gui.ImGui_Transport(GL)
 	local HoverAction = HoverActionFactory(0.5,0.0001,1)
 
 	function transport:draw()
-		if GL.has_imgui_viewport then
+		if GL.has_imgui_viewport then --imgui viewport branch
 			local vwp = ig.GetMainViewport()
 			ig.SetNextWindowViewport(vwp.ID)
 			ig.SetNextWindowPos(ig.ImVec2(vwp.Pos.x, vwp.Pos.y + ig.GetMainViewport().Size.y), 0, ig.ImVec2(0.0, 1.0));
@@ -559,6 +559,7 @@ function gui.ImGui_Transport(GL)
 				ig.PopStyleVar(1)
 			ig.SameLine()
 			
+			if GL.opentoolbox then ig.OpenPopup"toolbox";GL.opentoolbox=false end
 			if ig.Button("tools") then imgui.igOpenPopup("toolbox") end
 				ig.PushStyleVarFloat(imgui.ImGuiStyleVar_Alpha,1)
 				ToolBox(GL):draw()
@@ -1306,7 +1307,13 @@ function gui.SetImGui(GL)
 		if GL.show_imgui then
 
 			GL:makeContextCurrent()
-
+			
+			--[[
+			if (bit.band(ig.GetIO().ConfigFlags , imgui.ImGuiConfigFlags_DockingEnable)~=0) then
+				local dockspace_id = ig.GetIDStr("MyDockSpace");
+				ig.DockSpace(dockspace_id)--, ImVec2(0.0f, 0.0f), dockspace_flags);
+			end
+--]]
 			self.Impl:NewFrame()
 
 			if self.Log then self.Log:Draw() end

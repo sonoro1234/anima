@@ -439,6 +439,14 @@ local function GuiInitSDL(GL)
 		--dont process mouse if used by imgui
 		if imgui.igGetIO().WantCaptureMouse then return end
 		
+		if button == sdl.BUTTON_RIGHT then
+			GL.mouse_but[2] = (action == sdl.PRESSED) and 1 or 0
+			if GL.mouse_but[2]==1 then
+				GL.opentoolbox = true
+				return
+			end
+		end
+		
 		--glfw.glfwGetCursorPos(win, GL.mxpos,GL.mypos)
 		GL.mxpos[0],GL.mypos[0] = x,y
 		local X,Y = toGLcoords(GL.mxpos[0],GL.mypos[0])
@@ -567,10 +575,18 @@ local function GuiInitGLFW(GL)
 		if button == glfwc.GLFW_MOUSE_BUTTON_1 then
 			GL.mouse_but[1] = (action == glfwc.GLFW_PRESS) and 1 or 0
 		end
-
+		
 		GL.Impl.MouseButtonCallback(win, button, action, mods)
 		--dont process mouse if used by imgui
 		if imgui.igGetIO().WantCaptureMouse then return end
+		
+		if button == glfwc.GLFW_MOUSE_BUTTON_2 then
+			GL.mouse_but[2] = (action == glfwc.GLFW_PRESS) and 1 or 0
+			if GL.mouse_but[2]==1 then
+				GL.opentoolbox = true
+				return
+			end
+		end
 		
 		glfw.glfwGetCursorPos(win, GL.mxpos,GL.mypos)
 		local X,Y = toGLcoords(GL.mxpos[0],GL.mypos[0])
