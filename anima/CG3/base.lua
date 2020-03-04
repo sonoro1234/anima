@@ -98,7 +98,7 @@ local function IsPointInTriC( pt,  v1,  v2,  v3)
 	b2 = Sign(pt, v2, v3) ;
 	b3 = Sign(pt, v3, v1) ;
 	
-	return (b1<=0 and b2<=0 and b3<=0) or (b1>=0 and b2>=0 and b3>=0)
+	return (b1<=0 and b2<=0 and b3<=0) or (b1>=0 and b2>=0 and b3>=0),b1,b2,b3
 end
 M.IsPointInTriC = IsPointInTriC
 --dont needs to be oriented
@@ -140,7 +140,7 @@ M.signed_area = signed_area
 
 --answers without taking orientation
 --includes the border
-function M.IsPointInPoly(P, p)
+local function IsPointInPoly(P, p)
 
     local i, j, c = 0,0,false --true
 	local lenP = #P
@@ -152,14 +152,61 @@ function M.IsPointInPoly(P, p)
         if ((((P[i].y <= p.y) and (p.y < P[j].y)) or
              ((P[j].y <= p.y) and (p.y < P[i].y))) and
 			 --((P[j].y < p.y) and (p.y <= P[i].y))) and
-            (p.x < (P[j].x - P[i].x) * (p.y - P[i].y) / (P[j].y - P[i].y) + P[i].x)) then
-		   --((P[j].y - P[i].y)*(p.x - P[i].x) > (P[j].x - P[i].x) * (p.y - P[i].y)  )) then
+		(p.x < (P[j].x - P[i].x) * (p.y - P[i].y) / (P[j].y - P[i].y) + P[i].x)) then
+		--((p.x - P[i].x) < (P[j].x - P[i].x) * (p.y - P[i].y) / (P[j].y - P[i].y) )) then
+		
+		 -- ((P[j].y - P[i].y)*(p.x - P[i].x) < (P[j].x - P[i].x) * (p.y - P[i].y)  )) then
           c = not c;
 		end
 	end
 	P[#P] = nil
     return c;
 end
+
+--crossing number algo
+--http://geomalgorithms.com/a03-_inclusion.html
+local function IsPointInPolyCn(V,P)
+	local i, c = 0,false 
+	local lenV = #V
+	V[lenV + 1] = V[1]
+	for i=1,lenV do
+		if (((V[i].y <= P.y) and (V[i+1].y > P.y))     -- an upward crossing
+        or ((V[i].y > P.y) and (V[i+1].y <=  P.y)))  -- a downward crossing
+		then
+			local vt = (P.y  - V[i].y) / (V[i+1].y - V[i].y);
+			if (P.x <  V[i].x + vt * (V[i+1].x - V[i].x)) then -- P.x < intersect
+                 c = not c   -- a valid crossing of y=P.y right of P.x
+			end
+		end
+	end
+	V[#V] = nil
+    return c;
+end
+
+local function IsPointInPolyWn(V,P)
+	local i, wn = 0,0 
+	local lenV = #V
+	V[lenV + 1] = V[1]
+	for i=1,lenV do
+		if (V[i].y <= P.y) then          -- start y <= P.y
+            if (V[i+1].y  > P.y) then     -- an upward crossing
+                if (Sign( V[i], V[i+1], P) > 0) then --- P left of  edge
+                    wn = wn + 1            -- have  a valid up intersect
+				end
+			end
+                                -- start y > P.y (no test needed
+		elseif (V[i+1].y  <= P.y) then    -- a downward crossing
+                if (Sign( V[i], V[i+1], P) < 0) then -- P right of  edge
+                    wn = wn - 1            -- have  a valid down intersect
+				end
+        end
+	end
+	V[#V] = nil
+    return wn~=0;
+end
+
+M.IsPointInPoly = IsPointInPolyCn
+
 --with CW orientarion
 local function IsConvex(a,b,c)
 	return Sign(a,b,c) <=0

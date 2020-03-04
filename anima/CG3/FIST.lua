@@ -577,6 +577,7 @@ function CG.EarClipFIST(poly)
 	--check_collinear(poly,ind,"initial")
 	update_all_ears()
 	local last_uae
+	local last_uae2
 	while #ind > 2 do
 		--check_collinear(poly,ind,"main loop")
 		local initind = #ind
@@ -654,24 +655,31 @@ function CG.EarClipFIST(poly)
 			end
 			
 			if not repaired then
-			print"trying repiair1collinear"
-			for i=1,#ind do
-			--[=[
-				local a,b,c = poly[ind[mod(i-1,#ind)]],poly[ind[i]],poly[ind[mod(i+1,#ind)]]
-				local ang,conv,s,cose = CG.Sign(a,b,c)
-				if (s==0) then
-					local angle,conv,s,cose = Angle(a,b,c)
-					if not angle==0 then
-						print("collinear repaired",ind[i],angle,conv,s,cose)
-						create_tr_update(i,false)
-						repaired = true
-						break
+				print"trying repiair1collinear"
+				for i=1,#ind do
+				--[=[
+					local a,b,c = poly[ind[mod(i-1,#ind)]],poly[ind[i]],poly[ind[mod(i+1,#ind)]]
+					local ang,conv,s,cose = CG.Sign(a,b,c)
+					if (s==0) then
+						local angle,conv,s,cose = Angle(a,b,c)
+						if not angle==0 then
+							print("collinear repaired",ind[i],angle,conv,s,cose)
+							create_tr_update(i,false)
+							repaired = true
+							break
+						end
 					end
+				--]=]
+					if repair1collinear(poly,ind,i) then repaired = true end
 				end
-			--]=]
-				if repair1collinear(poly,ind,i) then repaired = true end
 			end
-			end
+			-- if not repaired and last_uae2 ~= #ind then
+				-- print"update_all_ears with IsPointInTri"
+				-- IsPointInTri = CG.IsPointInTri
+				-- update_all_ears()
+				-- repaired = true
+				-- last_uae2 = #ind
+			-- end
 			if not repaired then break end
 		end
 	end	
@@ -683,6 +691,9 @@ function CG.EarClipFIST(poly)
 		for i,v in ipairs(ind) do restpoly[#restpoly+1] = poly[ind[i]] end
 		print("rest poly check simple------")
 		CG.check_simple(restpoly,true)
+		print("rest poly check self crossings------")
+		local cc = require"anima.CG3.check_poly"
+		cc.check_self_crossings(restpoly,true)
 		return poly,tr,false,restpoly
 	end	
 	return poly,tr,true

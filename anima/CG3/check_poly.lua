@@ -96,7 +96,7 @@ local function check2poly_crossings(poly1,poly2)
 
 end
 
-local function check_self_crossings(poly)
+local function check_self_crossings(poly,donterror)
 	for i=1,#poly do
 		local ai,bi = i,mod(i+1,#poly)
 		local a,b = poly[ai],poly[bi]
@@ -109,7 +109,7 @@ local function check_self_crossings(poly)
 				print(a,b,c,d,d==a)
 				--print((a-b).normalize,(c-d).normalize)
 				print("self crossing",ai,bi,ci,di,"#poly",#poly)
-				error"self crossing"
+				if not donterror then error"self crossing" end
 				--has_cros = true
 			end
 		end
@@ -152,5 +152,5 @@ local function check_collinear(poly)
 	end
 
 end
-local M = {CHECKPOLY=CHECKPOLY,CHECKCOLIN=check_collinear}
+local M = {CHECKPOLY=CHECKPOLY,CHECKCOLIN=check_collinear,check_self_crossings=check_self_crossings}
 return M

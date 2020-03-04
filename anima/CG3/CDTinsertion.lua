@@ -174,8 +174,13 @@ function CG.CDTinsertion1(P,Ed,Poli)
 		return tr2,Ed
 	end
 
-local SegmentIntersect = CG.SegmentIntersect	
+local SegmentIntersect = CG.SegmentIntersect
+--takes P: table of points, Ed: Edge struct over P, 
+-- Poli: table of poligon edges to add in form of pairs of indexes over Pd
+-- delout: delete edges out of polygon
 function CG.CDTinsertion(P,Ed,Poli,delout)
+
+		--polygon points
 		local Pol = {}
 		for i=1,#Poli do
 			Pol[i] = P[Poli[i][1]]
@@ -300,13 +305,21 @@ function CG.CDTinsertion(P,Ed,Poli,delout)
 				end
 			end
 		end
+		
+		-- local function reverse(t)
+			-- local t2 ={}
+			-- for i=#t,1,-1 do t2[#t2+1] = t[i] end
+			-- return t2
+		-- end
+		
+		local floor = math.floor
 		local function reverse(t)
-			local t2 ={}
-			for i=#t,1,-1 do t2[#t2+1] = t[i] end
-			return t2
+			local s = #t+1
+			for i=1,floor(#t/2) do
+				t[i],t[s-i] = t[s-i],t[i]
+			end
+			return t
 		end
-		
-		
 		
 		local Pdelout = {}
 		--CHECK(Ed)
@@ -345,8 +358,7 @@ function CG.CDTinsertion(P,Ed,Poli,delout)
 					Tpseudo(Ed,P,Pl,b,a)
 					if delout then
 						for i=1,#Pl do 
-							if( CG.IsPointInPoly(Pol,P[Pl[i]])) then
-							else
+							if not CG.IsPointInPoly(Pol,P[Pl[i]]) then
 								Pdelout[Pl[i]] = true 
 							end
 						end
@@ -362,49 +374,66 @@ function CG.CDTinsertion(P,Ed,Poli,delout)
 		end
 		
 		if delout then
-		local Polv = {}
-		for i=1,#Poli do
-			Polv[Poli[i][1]] = true
-			Pdelout[Poli[i][1]] = nil --
-		end
-		--test not in poli
-		-- for ka,_ in pairs(Pdelout) do
-			-- if( CG.IsPointInPoly(Pol,P[ka])) then
-				-- print(ka,"in poly")
-				-- Pdelout[ka] = nil
-			-- end
-		-- end
-		-----------------------
-		local fin
-		repeat
-			fin = true
-			for ka,_ in pairs(Pdelout) do
-				--print("delout",ka)
-				if Ed[ka] then
-					local todel = {}
-					for kb,vv in pairs(Ed[ka]) do
-						todel[#todel+1] = kb
-					end
-					
-					for i=1,#todel do
-						local kb = todel[i]
-						if not Polv[kb] then --not in poly
-							Pdelout[kb] = true
+			---[=[
+			--move polygon points from Pdelout to Polv
+			local Polv = {}
+			for i=1,#Poli do
+				Polv[Poli[i][1]] = true
+				Pdelout[Poli[i][1]] = nil 
+			end
+
+			local fin
+			repeat
+				fin = true
+				local Pdelout2 = {} --for inserting in Pdelout while doing pairs
+				for ka,_ in pairs(Pdelout) do
+					--print("delout",ka)
+					if Ed[ka] then
+						local todel = {}
+						for kb,vv in pairs(Ed[ka]) do
+							todel[#todel+1] = kb
 						end
-						local c = Ed[ka][kb]
-						if not Polv[c] then --not in poly
-							Pdelout[c] = true
+						
+						for i=1,#todel do
+							local kb = todel[i]
+							if not Polv[kb] then --not in poly
+								Pdelout2[kb] = true
+							end
+							local c = Ed[ka][kb]
+							if not Polv[c] then --not in poly
+								Pdelout2[c] = true
+							end
+							CG.deleteTriangle(Ed,ka,kb,c)
 						end
-						CG.deleteTriangle(Ed,ka,kb,c)
+						Pdelout[ka] = nil
+						fin = false --so repeat
+						break
+					else
+						Pdelout[ka] = nil
 					end
-					Pdelout[ka] = nil
-					fin = false
-					break
-				else
-					Pdelout[k] = nil
+				end
+				for ka,_ in pairs(Pdelout2) do
+					Pdelout[ka] = true
+				end
+			until fin
+			--]=]
+			-- remove rests
+			local doneT = {}
+			for ka,v in pairs(Ed) do
+				for kb,op in pairs(v) do
+					local hash = CG.TriangleKey(ka,kb,op)
+					if not doneT[hash] then
+						--if all points are from poly
+						--if Polv[ka] and Polv[kb] and Polv[op] then
+							local bari = (P[ka] + P[kb] + P[op])/3
+							if not CG.IsPointInPoly(Pol,bari) then
+								CG.deleteTriangle(Ed,ka,kb,op)
+							end
+						--end
+						doneT[hash] = true
+					end
 				end
 			end
-		until fin
 		end
 		
 		--recreate triangulation

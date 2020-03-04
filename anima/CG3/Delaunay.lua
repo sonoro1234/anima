@@ -2,7 +2,7 @@ local CG = require"anima.CG3.base"
 local M = CG
 
 --Edges structure
-
+--E[a] = {b=c} key=vertex sharing edge value=vertex opposite to edge
 local function setEdge(E,a,b,c)
 	E[a] = E[a] or {}
 	E[a][b] = c
@@ -172,6 +172,7 @@ local function setTriangle(E,a,b,c)
 	setEdge(E,c,a,b)
 end
 M.setTriangle = setTriangle
+
 M.MAXVERT = 1000000
 local function EdgeHash(a,b)
 	if b < a then a,b = b,a end
@@ -197,30 +198,40 @@ function M.Ed2TRBAK(E)
 	end
 	return tr2
 end
-
+--generate tr indexes for openGL rendering 
+-- from Edges 
 function M.Ed2TR(E)
 	local doneT = {}
-	local Ed2 = E --deepcopy(E)
-	local tr2 = {}
-	for ka,v in pairs(Ed2) do
-	for kb,op in pairs(v) do
-		local hash = M.TriangleKey(ka,kb,op)
-		if not doneT[hash] then
-			table.insert(tr2,ka-1)
-			table.insert(tr2,kb-1)
-			table.insert(tr2,op-1)
-			doneT[hash] = true
+	local tr = {}
+	for ka,v in pairs(E) do
+		for kb,op in pairs(v) do
+			local hash = M.TriangleKey(ka,kb,op)
+			if not doneT[hash] then
+				table.insert(tr,ka-1)
+				table.insert(tr,kb-1)
+				table.insert(tr,op-1)
+				doneT[hash] = true
+			end
 		end
 	end
-	end
-	return tr2
+	return tr
 end
+--generates Edges from tr indexes
+function M.TR2Ed(tr)
+	assert(#tr%3==0)
+	local E = {}
+	for i=1,#tr,3 do
+		setTriangle(E,tr[i]+1,tr[i+1]+1,tr[i+2]+1)
+	end
+	return E
+end
+
 local function LenEt(Et)
 	local count = 0
 	for ka,v in pairs(Et) do
-	for kb,e in pairs(v) do
-		count = count + 1
-	end
+		for kb,e in pairs(v) do
+			count = count + 1
+		end
 	end
 	return count
 end
@@ -332,11 +343,11 @@ end
 local function setTriangleInc(E,T)
 	setTriangle(E,T.p[1],T.p[2],T.p[3])
 end
+
+--generates unique hash for a triangle a,b,c
+--without inverting order
 local min = math.min
 local function TriangleKey(a,b,c)
-	-- local t = {a,b,c}
-	-- table.sort(t)
-	-- return table.concat(t,"_")
 	
 	local mina = min(a,min(b,c))
 	local t = {[0]=a,b,c}
@@ -348,10 +359,12 @@ local function TriangleKey(a,b,c)
 		end
 	end
 	return table.concat(t2,"_")
-	-- if a > b then a,b = b,a end
-	-- if b > c then b,c = c,b end
-	-- if a > b then a,b = b,a end
-	-- return a .. "_" .. b .. "_" .. c
+	-- other way but can do inversion, could be faster
+	-- local ori = 1
+	-- if a > b then a,b = b,a; ori=-ori end
+	-- if b > c then b,c = c,b; ori=-ori end
+	-- if a > b then a,b = b,a; ori=-ori end
+	-- return ori .. "_" .. a .. "_" .. b .. "_" .. c
 end
 M.TriangleKey = TriangleKey
 local function newT(Tlist,a,b,c)
@@ -574,7 +587,7 @@ local function permutation(t)
 	end
 	return res
 end
-
+----------------------------------
 local TA = require"anima.TA"
 function M.DelaunayInc(P,limit)
 	limit = limit or #P
