@@ -65,6 +65,7 @@ function mixer(GL,ntex,NM)
 	end
 
 	function M:process(texs,w,h)
+		gl.glDisable(glc.GL_DEPTH_TEST)
 		assert(#texs == ntex,"number of textures failing!!")
 		self.tex = texs
 		self.program:use()
@@ -83,6 +84,7 @@ function mixer(GL,ntex,NM)
 		gl.glViewport(0,0,w or self.res[1], h or self.res[2])
 		ut.Clear()
 		self.vao:draw_elm()
+		--gl.glEnable(glc.GL_DEPTH_TEST)
 	end
 	GL:add_plugin(M,"texproc")
 	return M
