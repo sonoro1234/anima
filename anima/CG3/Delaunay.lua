@@ -201,15 +201,17 @@ end
 --generate tr indexes for openGL rendering 
 -- from Edges 
 function M.Ed2TR(E)
+	local insert = table.insert
+	local TriangleKey = M.TriangleKey
 	local doneT = {}
 	local tr = {}
 	for ka,v in pairs(E) do
 		for kb,op in pairs(v) do
-			local hash = M.TriangleKey(ka,kb,op)
+			local hash = TriangleKey(ka,kb,op)
 			if not doneT[hash] then
-				table.insert(tr,ka-1)
-				table.insert(tr,kb-1)
-				table.insert(tr,op-1)
+				insert(tr,ka-1)
+				insert(tr,kb-1)
+				insert(tr,op-1)
 				doneT[hash] = true
 			end
 		end
@@ -348,7 +350,7 @@ end
 --without inverting order
 local min = math.min
 local function TriangleKey(a,b,c)
-	
+	--[[
 	local mina = min(a,min(b,c))
 	local t = {[0]=a,b,c}
 	local t2 
@@ -359,12 +361,15 @@ local function TriangleKey(a,b,c)
 		end
 	end
 	return table.concat(t2,"_")
+	--]]
+	---[[
 	-- other way but can do inversion, could be faster
-	-- local ori = 1
-	-- if a > b then a,b = b,a; ori=-ori end
-	-- if b > c then b,c = c,b; ori=-ori end
-	-- if a > b then a,b = b,a; ori=-ori end
-	-- return ori .. "_" .. a .. "_" .. b .. "_" .. c
+	local ori = 1
+	if a > b then a,b = b,a; ori=-ori end
+	if b > c then b,c = c,b; ori=-ori end
+	if a > b then a,b = b,a; ori=-ori end
+	return ori .. "_" .. a .. "_" .. b .. "_" .. c
+	--]]
 end
 M.TriangleKey = TriangleKey
 local function newT(Tlist,a,b,c)
