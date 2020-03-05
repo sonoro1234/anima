@@ -174,19 +174,19 @@ pl_mt.__index = {
 	end,
 	init = function(self) end,
 	IsDirty = function(self)
-		--print("IsDirty",self.NM.name,self.NM.isDBox)
+		--print("IsDirty",self.NM.name,"isDBox",self.NM.isDBox,"dirty",self.NM.dirty)
 		if self.NM.isDBox then
 			if self.NM.dirty then return true end
 			for i,D in ipairs(self.NM.dialogs) do
-				--print(D.name,D.dirty)
-				if D.dirty then
+				--print("    testing",D.name,D.dirty)
+				if D.dirty or (D.plugin.always_dirty) then
 					--print("dbox test:",D.name,D.dirty)
 					return true 
 				end
 			end
 			return false
 		else
-			return self.NM.dirty
+			return self.NM.dirty or self.always_dirty
 		end
 	end,
 	set_texsignature = function(plug,tex)

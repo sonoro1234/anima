@@ -1478,7 +1478,10 @@ function GLcanvas(GL)
 				if self:IsDirty() then
 					--print("call process",self.NM.name)
 					self.oldprocess(self,tex,w,h)
-					self.NM.dirty = false
+					if not p.always_dirty then
+						--print("always dirty",self.NM.name)
+						self.NM.dirty = false 
+					end
 				end
 			end
 			p.oldprocess_fbo = p.process_fbo
@@ -1491,7 +1494,9 @@ function GLcanvas(GL)
 					self.oldprocess(self,tex)
 					fbo:UnBind()
 					fbo:tex():inc_signature()
-					self.NM.dirty = false
+					if not p.always_dirty then 
+						self.NM.dirty = false 
+					end
 				end
 			end
 		end
