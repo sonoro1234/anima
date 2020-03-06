@@ -970,11 +970,12 @@ function gui.DialogBox(name,autosaved)
 	function DB:draw()
 		for i,D in ipairs(self.dialogs) do
 			if ig.CollapsingHeader(D.name) then
-			--if imgui.igCollapsingHeader(D.name,0) then
+				ig.Indent(5)
 				ig.PushIDStr(D.name)
 				D.collapsed = false
 				D:draw()
 				ig.PopID()
+				ig.Unindent(5)
 			else
 				D.collapsed = true
 			end
