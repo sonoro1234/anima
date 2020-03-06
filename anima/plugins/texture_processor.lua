@@ -48,7 +48,7 @@ function mixer(GL,ntex,NM)
 	
 	function M:set_process(st)
 		self.program = GLSL:new():compile(vert_shad,frag..st..frag_shad)
-		local m = mesh.Quad(-1,-1,1,1)
+		local m = mesh.quad()
 		M.vao = VAO({Position=m.points,texcoords = m.texcoords},self.program,m.indexes)
 	end
 	
@@ -100,7 +100,6 @@ pp = mixer(GL,2,NM)
 function GL.init()
 	tex = GL:Texture():Load[[c:\luagl/media/estanque-001.jpg]]
 	tex2 = GL:Texture():Load[[c:\luagl/media/estanque-002.jpg]]
-	--pp:set_textures{tex,tex2}
 	pp:set_process[[vec4 process(vec2 pos){
 		return mix(c1,c2,alpha);
 	}

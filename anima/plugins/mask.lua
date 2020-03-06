@@ -95,8 +95,6 @@ function M.make(GL,name)
 		local mesh = par_shapes.create.disk(1,32,floats(0,0,0),floats(0,0,1))
 		LM.vao = VAO({Position=mesh.points},programfx,mesh.triangles,{Position=mesh.npoints*3},mesh.ntriangles*3)
 		
-		-- local m = mesh.Quad(-1,-1,1,1)
-		-- LM.vao = VAO({Position=m.points,texcoords = m.texcoords},programfx,m.indexes)
 		
 		LM.camera = newCamera(GL,true,"mask")
 		LM.inited = true
@@ -169,7 +167,7 @@ require"anima"
 GL = GLcanvas{H=700,aspect = 1.5}
 mask = M.make(GL)
 function GL:init()
-	textura = GL:Texture():Load[[D:\VICTOR\montajes_seleccion\_MG_6429.tif]]
+	textura = GL:Texture():Load[[c:\luagl\media\estanque3.jpg]]
 end
 function GL.draw(t,w,h)
 	ut.Clear()

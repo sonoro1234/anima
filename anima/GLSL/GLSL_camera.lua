@@ -413,7 +413,7 @@ void main()
 ]]
 require"anima"
 local GL = GLcanvas{H=800,aspect=1.5}
-local program,Quad
+local program
 local NM = GL:Dialog("shapes",
 {
 {"ksmin",0.1,guitypes.val,{min=0,max=0.5}},

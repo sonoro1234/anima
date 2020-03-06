@@ -73,7 +73,7 @@ function M.make(GL)
 		--if not GL.PPFBO then GL:init_PPFBO() end
 		fbo = GL:initFBO()
 		programfx = GLSL:new():compile(vert_shad,frag_shad)
-		local m = mesh.Quad(-1,-1,1,1)
+		local m = mesh.quad(-1,-1,1,1)
 		LM.vao = VAO({Position=m.points,texcoords = m.texcoords},programfx,m.indexes)
 		LM.inited = true
 	end
@@ -152,7 +152,7 @@ require"anima"
 GL = GLcanvas{fps=25,H=700,aspect=3/2}
 liquid = M.make(GL)
 function GL.init()
-	textura = Texture():Load([[C:\luagl\animacion\resonator6\resonator-001.jpg]])
+	textura = GL:Texture():Load([[C:\luagl\media\estanque3.jpg]])
 end
 function GL.draw(t,w,h)
 	ut.Clear()

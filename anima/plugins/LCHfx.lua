@@ -217,8 +217,7 @@ function M.photofx(GL,args)
 		Luts = {LUTx,LUTy,LUTz}
 		
 		local mesh = require"anima.mesh"
-		--local m = mesh.Quad(-1,1,1,-1)
-		local m = mesh.Quad(-1,-1,1,1)
+		local m = mesh.quad(-1,-1,1,1)
 		LM.vao = VAO({Position=m.points,texcoords = m.texcoords},programfx,m.indexes)
 
 		LM.inited = true

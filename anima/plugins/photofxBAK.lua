@@ -168,8 +168,7 @@ function M.photofx(GL,args)
 		LUTy = GL:Texture1D(LUTsize,glc.GL_R32F,LUTdatay,glc.GL_RED)
 		LUTz = GL:Texture1D(LUTsize,glc.GL_R32F,LUTdataz,glc.GL_RED)
 		local mesh = require"anima.mesh"
-		--local m = mesh.Quad(-1,1,1,-1)
-		local m = mesh.Quad(-1,-1,1,1)
+		local m = mesh.quad(-1,-1,1,1)
 		LM.vao = VAO({Position=m.points,texcoords = m.texcoords},programfx,m.indexes)
 
 		LM.inited = true

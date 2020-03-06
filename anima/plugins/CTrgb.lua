@@ -44,7 +44,7 @@ void main()
 	
 	vec3 color = tcolor.rgb;
 
-	color += vec3(whitepoint.x,whitepoint.y,-whitepoint.x);
+	color += vec3(whitepoint.x,whitepoint.y,-whitepoint.x)*0.1;
 	
 	vec3 collab = XYZ2LAB(RGB2XYZ(color),D65);
 
@@ -222,8 +222,7 @@ function M.photofx(GL,args)
 		Luts = {LUTx,LUTy,LUTz}
 		
 		local mesh = require"anima.mesh"
-		--local m = mesh.Quad(-1,1,1,-1)
-		local m = mesh.Quad(-1,-1,1,1)
+		local m = mesh.quad(-1,-1,1,1)
 		LM.vao = VAO({Position=m.points,texcoords = m.texcoords},programfx,m.indexes)
 
 		LM.inited = true

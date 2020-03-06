@@ -37,7 +37,7 @@ local function make_texcrop_prog()
 	]]
 	
 		self.program = GLSL:new():compile(vert_shad,frag_shad)
-		local m = mesh.Quad(-1,-1,1,1)
+		local m = mesh.quad(-1,-1,1,1)
 		self.vao = VAO({pos=m.points},self.program,m.indexes)
 		self.inited = true
 	end
@@ -87,7 +87,7 @@ local function make_texflip_prog()
 	]]
 	
 		self.program = GLSL:new():compile(vert_shad,frag_shad)
-		local m = mesh.Quad(-1,-1,1,1)
+		local m = mesh.quad(-1,-1,1,1)
 		self.vao = VAO({pos=m.points},self.program,m.indexes)
 		self.inited = true
 	end
@@ -146,7 +146,7 @@ local function make_texrotate_prog()
 	]]
 	
 		self.program = GLSL:new():compile(vert_shad,frag_shad)
-		local m = mesh.Quad(-1,-1,1,1)
+		local m = mesh.quad(-1,-1,1,1)
 		self.vao = VAO({pos=m.points},self.program,m.indexes)
 		self.inited = true
 	end
@@ -239,7 +239,7 @@ end
 
 function M.fusion(A,B,C,D)
 	local pp = GLSL:new():compile(vert_shad,frag_fus)
-	local m = mesh.Quad(-1,-1,1,1)
+	local m = mesh.quad(-1,-1,1,1)
 	local vao = VAO({pos=m.points},pp,m.indexes)
 	local fbo = A:make_fbo()
 	fbo:Bind()

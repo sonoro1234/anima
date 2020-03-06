@@ -125,7 +125,7 @@ end},
 
 		progrgb = GLSL:new():compile(vert_shad,frag_shad)
 
-		local m = mesh.Quad(-1,-1,1,1)
+		local m = mesh.quad(-1,-1,1,1)
 		LM.vao = VAO({Position=m.points,texcoords = m.texcoords},progrgb,m.indexes)
 		self.inited = true
 	end
@@ -210,7 +210,7 @@ local textura
 function GL.init()
 	textura = GL:Texture()
 	print(textura)
-	textura = textura:Load[[C:\luagl\animacion\resonator6\resonator-038.jpg]]
+	textura = textura:Load[[C:\luagl\media\cara2.png]]
 end
 
 function GL.draw(t,w,h)

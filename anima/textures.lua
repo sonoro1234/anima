@@ -543,7 +543,7 @@ local function make_tex_prog()
 	
 		self.program = GLSL:new():compile(vert_shad,frag_shad)
 		--prtable(mesh)
-		local m = mesh.Quad(-1,-1,1,1)
+		local m = mesh.quad(-1,-1,1,1)
 		self.vao = VAO({Position=m.points,texcoord=m.texcoords},self.program,m.indexes)
 		print"tex_prog compiled"
 		self.inited = true
@@ -594,7 +594,7 @@ local function make_tex_progSRGB()
 	]]
 	
 		self.program = GLSL:new():compile(vert_shad,frag_shad)
-		local m = mesh.Quad(-1,-1,1,1)
+		local m = mesh.quad(-1,-1,1,1)
 		self.vao = VAO({Position=m.points,texcoord=m.texcoords},self.program,m.indexes)
 		print"tex_progSRGB compiled"
 		self.inited = true
@@ -646,7 +646,7 @@ local function make_tex_greyprog()
 	]]
 	
 		self.program = GLSL:new():compile(vert_shad,frag_shad)
-		local m = mesh.Quad(-1,-1,1,1)
+		local m = mesh.quad(-1,-1,1,1)
 		self.vao = VAO({Position=m.points,texcoord=m.texcoords},self.program,m.indexes)
 		print"tex_greyprog compiled"
 		self.inited = true
@@ -690,7 +690,7 @@ local function make_tex_negprog()
 	}
 	]]
 		self.program = GLSL:new():compile(vert_shad,frag_shad)
-		local m = mesh.Quad(-1,-1,1,1)
+		local m = mesh.quad(-1,-1,1,1)
 		self.vao = VAO({Position=m.points,texcoord=m.texcoords},self.program,m.indexes)
 		print"tex_negprog compiled"
 		self.inited = true

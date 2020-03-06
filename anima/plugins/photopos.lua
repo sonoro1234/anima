@@ -39,8 +39,6 @@ function M.make(GL)
 
 	function LM.init()
 		programfx = GLSL:new():compile(vert_shad,frag_shad)
-		--local m = mesh.Quad(-1,-1,1,1)
-		--LM.vao = VAO({Position=m.points,texcoords = m.texcoords},programfx,m.indexes)
 		LM.inited = true
 	end
 	
