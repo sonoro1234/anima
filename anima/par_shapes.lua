@@ -22,6 +22,7 @@ par_shapes_mesh* par_shapes_create_octahedron();
 par_shapes_mesh* par_shapes_create_tetrahedron();
 par_shapes_mesh* par_shapes_create_cube();
 
+par_shapes_mesh* par_shapes_create_klein_bottle(int slices, int stacks);
 par_shapes_mesh* par_shapes_create_parametric_sphere(int slices, int stacks);
 par_shapes_mesh* par_shapes_create_subdivided_sphere(int nsubdivisions);
 par_shapes_mesh* par_shapes_create_cylinder(int slices, int stacks);
