@@ -381,7 +381,7 @@ end
 local GL = GLcanvas{H=500,aspect=1,DEBUG=true}
 --local camara = newCamera(GL,"ident")
 local function update(n) print("update spline",n) end
-local edit = Editor(GL,update,{region=false})
+local edit = Editor(GL,update,{region=false,doblend=true})
 local plugin = require"anima.plugins.plugin"
 edit.fb = plugin.serializer(edit)
 --GL.use_presets = true
