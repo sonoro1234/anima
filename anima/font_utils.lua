@@ -211,8 +211,10 @@ FW_HEAVY =900
 local function error_win(lvl)
         local errcode = ffi.C.GetLastError()
         local str = ffi.new("char[?]",1024)
-        local numout = ffi.C.FormatMessageA(bit.bor(ffi.C.FORMAT_MESSAGE_FROM_SYSTEM,
-            ffi.C.FORMAT_MESSAGE_IGNORE_INSERTS), nil, errcode, 0, str, 1023, nil)
+		local FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
+        local FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
+        local numout = ffi.C.FormatMessageA(bit.bor(FORMAT_MESSAGE_FROM_SYSTEM,
+            FORMAT_MESSAGE_IGNORE_INSERTS), nil, errcode, 0, str, 1023, nil)
         if numout == 0 then
             error("Windows Error: (Error calling FormatMessage)", lvl)
         else
