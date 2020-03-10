@@ -2,8 +2,9 @@ local M = {}
 --local par_shapes = require"anima.par_shapes"
 local ffi = require"ffi"
 local mat = require"anima.matrixffi"
+local vec3 = mat.vec3
 
-
+--not good it is CW
 function M.Quad(left,top,right,bottom)
 	--left = left or
 	local m = {}
@@ -65,13 +66,50 @@ function M.quad(left,bottom,right,top)
 	end
 	return m
 end
-function M.plane_vao(w,h,program)
-
-	local mesh1 = par_shapes.create.plane(w,h)
+function M.plane_vao(divs,aspect,program)
+	local w,h
+	if aspect > 1 then
+		w,h = divs*aspect,divs
+	else
+		w,h = divs,divs/aspect
+	end
+	local par_shapes = require"anima.par_shapes"
+	local mesh1 = par_shapes.create.plane(h,w) --dont know why it is inverted
 	mesh1:translate(-0.5,-0.5,0)
-	local vao = VAO({position=mesh1.points,normal=mesh1.normals},program, mesh1.triangles,{position=mesh1.npoints*3,normal=mesh1.npoints*3},mesh1.ntriangles*3)
+	mesh1:scale(aspect,1,1)
+	local vao = VAO({position=mesh1.points,texcoords=mesh1.tcoords,normal=mesh1.normals},program, mesh1.triangles,{position=mesh1.npoints*3,texcoords=mesh1.npoints*2,normal=mesh1.npoints*3},mesh1.ntriangles*3)
 	return vao
 end
+
+function M.grid(divs,aspect)
+	local w,h
+	if aspect > 1 then
+		w,h = math.ceil(divs*aspect),divs
+	else
+		w,h = divs,math.ceil(divs/aspect)
+	end
+	
+	local points = {}
+	local tcoords = {}
+	local stepx,stepy = 1/w,1/h
+	for i=0,w do
+		local x = (i*stepx - 0.5)*aspect
+		local xc = i/w
+		for j=0,h do
+			local y =  j*stepy - 0.5		
+			local p = mat.vec3(x,y,0)
+			points[#points+1] = p
+			tcoords[#tcoords+1] = mat.vec2(xc,j/h)
+		end
+	end
+	-- tr indexes for grid
+	local indexes = mesh.triangs(h+1,w+1)
+	
+	local mesh1 = mesh.mesh({points=points,tcoords=tcoords,triangles=indexes}) 
+	return mesh1
+end
+
+
 ffi.cdef[[void* malloc (size_t size); void* realloc (void* ptr, size_t size); void free (void* ptr);]]
 function M.par_shapes_tube(section,stacks)
 
@@ -336,6 +374,13 @@ function M.mesh(t)
 			self.points[i] = self.points[i]*f
 		end
 	end
+	function mesh:calc_centroid()
+		local centroid = vec3(0,0,0)
+		for i=1,#self.points do
+			centroid = centroid + self.points[i]
+		end
+		self.centroid = centroid/#self.points
+	end
 	function mesh:vao(program)
 		local tt = {}
 		tt.position = mat.vec2vao(mesh.points)
@@ -362,6 +407,7 @@ function M.par_shapes2mesh(pm)
 		mesh.points[i+1] = pm:point(i)
 	end
 	if pm.tcoords ~=nil then
+	mesh.tcoords = {}
 	for i=0,pm.npoints-1 do
 		mesh.tcoords[i+1] = pm:tcoord(i)
 	end
