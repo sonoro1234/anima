@@ -8,7 +8,8 @@ local function Editor(GL)
 	local  blurfbo
 	local blur3 = require"anima.plugins.gaussianblur3"(GL)
 	blur3.NM.invisible = true
-	local spline = require"anima.plugins.Spline"(GL,nil,{region=true})
+	local function update() blur3.NM.dirty = true end
+	local spline = require"anima.plugins.Spline"(GL,update,{region=true})
 	
 	local DBox = GL:DialogBox("blurmask")
 	DBox:add_dialog(spline.NM)
@@ -23,24 +24,27 @@ local function Editor(GL)
 		blurfbo = GL:initFBO({no_depth=true})
 	end
 
-	function M:process(_,w,h)
+	function M:draw(_,w,h)
 
 		w,h = w or self.res[1],h or self.res[2]
 
-		spline:process_fbo(blurfbo,nil,w,h)
-		
+		blurfbo:Bind()
+		ut.Clear()
+		spline:draw()
+		blurfbo:UnBind()
+
 
 		blur3.NM.vars.stdevs[0] = 3.5
 		blur3.NM.vars.radio[0] = math.min(39*2,math.max(1,DBox.dialogs[2].feather*GL.W))
 		blur3:update()
 
-		if blur3.NM.radio == 0 then
+		if DBox.dialogs[2].feather == 0 then
 			blurfbo:tex():drawcenter(w,h)
 		else
 			blur3:process(blurfbo:tex(),w,h)
 		end
-		
-		DBox.dialogs[2].dirty = false 
+
+		--DBox.dialogs[2].dirty = false 
 	end
 	function M:save()
 		local pars = {}
@@ -73,7 +77,7 @@ function GL.draw(t,w,h)
 	ut.Clear()
 	fbo:Bind()
 
-	edit:process(nil)
+	edit:draw(_,w,h)
 	fbo:UnBind()
 	fbo:tex():drawcenter()
 end
@@ -132,10 +136,12 @@ function GL.draw(t,w,h)
 
 	blur:process_fbo(fboblur,tex,w,h)
 	
-	--fbomask:Bind()
+	fbomask:Bind()
 	--ut.Clear()
-	edit:process_fbo(fbomask) --draw(t,w,h)
-	--fbomask:UnBind()
+	edit:draw(t,w,h)
+	-- edit:process_fbo(fbomask) --draw(t,w,h)
+	fbomask:UnBind()
+	fbomask:tex():inc_signature()
 	--edit.NM.dirty = false
 
 	fboproc:Bind() --only needed if DirtyWrap is used

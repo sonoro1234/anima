@@ -102,7 +102,7 @@ local function Editor(GL,updatefunc,args)
 	local plugin = require"anima.plugins.plugin"
 	local M = plugin.new{res={GL.W,GL.H}}
 	
-	if args.doblend then M.always_dirty = true end --always draw
+	--if args.doblend then M.always_dirty = true end --always draw
 	
 	local numsplines = 1
 	local NM 
@@ -197,7 +197,7 @@ local function Editor(GL,updatefunc,args)
 	{"clear",0,guitypes.button,function() M:newshape() end,{sameline=true}},
 	}
 	
-	if args.region then table.insert(vars,{"drawregion",false,guitypes.toggle}) end
+	if args.region then table.insert(vars,{"drawregion",false,guitypes.toggle,function() updatefunc(M) end}) end
 	NM = GL:Dialog("spline",vars)
 
 	M.NM = NM
@@ -302,13 +302,14 @@ local function Editor(GL,updatefunc,args)
 		vaoT[ii]:set_indexes(indexes)
 	end
 	
-	function M:process(_,w,h)
+	function M:draw(_,w,h)
+
 		if NM.collapsed then return end
 		w,h = w or self.res[1],h or self.res[2]
 
 		gl.glDisable(glc.GL_DEPTH_TEST)
 		gl.glViewport(0, 0, w, h)
-		if not args.doblend then ut.Clear() end --when not blending
+		--if not args.doblend then ut.Clear() end --when not blending
 		program:use()
 
 		if NM.drawregion  then
@@ -381,7 +382,7 @@ end
 local GL = GLcanvas{H=500,aspect=1,DEBUG=true}
 --local camara = newCamera(GL,"ident")
 local function update(n) print("update spline",n) end
-local edit = Editor(GL,update,{region=false,doblend=true})
+local edit = Editor(GL,update,{region=false})--,doblend=true})
 local plugin = require"anima.plugins.plugin"
 edit.fb = plugin.serializer(edit)
 --GL.use_presets = true
@@ -394,7 +395,7 @@ function GL.draw(t,w,h)
 	ut.Clear()
 	fbo:Bind()
 	ut.Clear()
-	edit:process(nil)
+	edit:draw(nil)
 	fbo:UnBind()
 	fbo:tex():drawcenter()
 end
@@ -441,6 +442,7 @@ function GL.init()
 			return mix(c1,c2,c3.r);
 	}
 	]]
+	--GL:DirtyWrap()
 end
 
 function GL.draw(t,w,h)
@@ -451,7 +453,7 @@ function GL.draw(t,w,h)
 
 	fbomask:Bind()
 	ut.Clear()
-	edit:process() --draw(t,w,h)
+	edit:draw()
 	fbomask:UnBind()
 	edit.NM.dirty = false
 
