@@ -380,6 +380,19 @@ function M.mesh(t)
 			centroid = centroid + self.points[i]
 		end
 		self.centroid = centroid/#self.points
+		return self.centroid
+	end
+	function mesh:bounds()
+		local minx,maxx,miny,maxy,minz,maxz = math.huge,-math.huge,math.huge,-math.huge,math.huge,-math.huge
+		for i,p in ipairs(self.points) do
+			minx = p.x < minx and p.x or minx
+			maxx = p.x > maxx and p.x or maxx
+			miny = p.y < miny and p.y or miny
+			maxy = p.y > maxy and p.y or maxy
+			minz = p.z < minz and p.z or minz
+			maxz = p.z > maxz and p.z or maxz
+		end
+		return vec3(minx,miny,minz),vec3(maxx,maxy,maxz)
 	end
 	function mesh:vao(program)
 		local tt = {}
