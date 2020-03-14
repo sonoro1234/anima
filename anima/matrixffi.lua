@@ -77,50 +77,50 @@ vec3 = ffi.metatype('vec3', {
 		-- return ffi.new(tp,x,y,z,w)
 	-- end,
 	__eq = function(a,b) return a.x == b.x and a.y == b.y and a.z == b.z end,
-  __add = function(a, b) return vec3(a.x + b.x, a.y + b.y, a.z + b.z) end,
-  __sub = function(a, b) return vec3(a.x - b.x, a.y - b.y, a.z - b.z) end,
-  __unm = function(a) return vec3(-a.x,-a.y,-a.z) end,
-  __mul = function(a, b)
-	if not ffi.istype(vec3, a) then a,b=b,a end
-    if not ffi.istype(vec3, b) then 
-		return vec3(a.x * b, a.y * b, a.z * b) 
-	end
-    return a.x * b.x + a.y * b.y + a.z * b.z
-  end,
-  __div = function(a, b)
-    if not ffi.istype(vec3, b) then
-    return vec3(a.x / b, a.y / b, a.z / b) end
-    return vec3(a.x / b.x, a.y / b.y, a.z / b.z)
-  end,
-  __pow = function(a, b) -- dot product
-    if not ffi.istype(vec3, b) then
-    return vec3(a.x ^ b, a.y ^ b, a.z ^ b) end
-    return a.x * b.x + a.y * b.y + a.z * b.z
-  end,
-  __index = function(v, i)
-    if i == 'gl' then return glFloatv(3, v.x, v.y, v.z) end
-	if i == 'xy' then return vec2(v.x, v.y) end
-	if i == 'norm' then return sqrt(v*v) end
-	if i == 'normalize' then return v/sqrt(v*v) end
-	if i == 'cross' then
-		return function(_,w)
-					return vec3(v.y*w.z-v.z*w.y, v.z*w.x-v.x*w.z, v.x*w.y-v.y*w.x)
-				end
-	end
-	if i == 'set' then
-		return function(_,w)
-			v.x,v.y,v.z = w.x,w.y,w.z
+	__add = function(a, b) return vec3(a.x + b.x, a.y + b.y, a.z + b.z) end,
+	__sub = function(a, b) return vec3(a.x - b.x, a.y - b.y, a.z - b.z) end,
+	__unm = function(a) return vec3(-a.x,-a.y,-a.z) end,
+	__mul = function(a, b)
+		if not ffi.istype(vec3, a) then a,b=b,a end
+		if not ffi.istype(vec3, b) then 
+			return vec3(a.x * b, a.y * b, a.z * b) 
 		end
-	end
-	--if i == 0 then return v end
-	return nil
-  end,
-  -- __newindex = function(v, i, val)
-	-- if i == 0 then 
-		-- v.x = val.x;v.y=val.y;v.z=val.z 
-	-- end
-  --end,
-  __tostring = function(v) return '<'..v.x..','..v.y..','..v.z..'>' end
+		return a.x * b.x + a.y * b.y + a.z * b.z
+	end,
+	__div = function(a, b)
+		if not ffi.istype(vec3, b) then
+		return vec3(a.x / b, a.y / b, a.z / b) end
+		return vec3(a.x / b.x, a.y / b.y, a.z / b.z)
+	end,
+	__pow = function(a, b) -- dot product
+		if not ffi.istype(vec3, b) then
+		return vec3(a.x ^ b, a.y ^ b, a.z ^ b) end
+		return a.x * b.x + a.y * b.y + a.z * b.z
+	end,
+	__index = function(v, i)
+		if i == 'gl' then return glFloatv(3, v.x, v.y, v.z) end
+		if i == 'xy' then return vec2(v.x, v.y) end
+		if i == 'norm' then return sqrt(v*v) end
+		if i == 'normalize' then return v/sqrt(v*v) end
+		if i == 'cross' then
+			return function(_,w)
+						return vec3(v.y*w.z-v.z*w.y, v.z*w.x-v.x*w.z, v.x*w.y-v.y*w.x)
+					end
+		end
+		if i == 'set' then
+			return function(_,w)
+				v.x,v.y,v.z = w.x,w.y,w.z
+			end
+		end
+		--if i == 0 then return v end
+		return nil
+	end,
+	-- __newindex = function(v, i, val)
+		-- if i == 0 then 
+			-- v.x = val.x;v.y=val.y;v.z=val.z 
+		-- end
+	--end,
+	__tostring = function(v) return '<'..v.x..','..v.y..','..v.z..'>' end
 })
 local vec4
 vec4 = ffi.metatype('vec4', {
@@ -223,6 +223,11 @@ mat3 = ffi.metatype('mat3', {
     if i == 'mat2' then
       return mat2(m.m11, m.m21,
                   m.m12, m.m22)
+	elseif i == 'mat4' then
+		return M.mat4(m.m11, m.m21, m.m31, 0,
+					m.m12, m.m22, m.m32, 0,
+					m.m13, m.m23, m.m33, 0,
+					0    ,     0,     0, 1)
     elseif i == 't' then
       return mat3(m.m11, m.m12, m.m13,
                   m.m21, m.m22, m.m23,
@@ -539,6 +544,14 @@ function M.rotAB(A,B)
 	
 	return M.identity3() + V + (1/(1+cose))*V2
 end
+
+--useful for aligning two reference frames A,C -> B,D
+function M.rotABCD(A,B,C,D)
+	local r1 = M.rotAB(A,B)
+	local r2 = M.rotAB(r1*C,D)
+	return r2*r1
+end
+
 function M.sin2d(a,b)
 	a = a.normalize
 	b = b.normalize
@@ -547,7 +560,7 @@ end
 function M.vec2vao(t,n)
 	--print("vec2vao",t,n,t[1])
 	n = n or (ffi.istype(vec3,t[1]) and 3) or (ffi.istype(vec2,t[1]) and 2) 
-	or error("vec2vao wants vec2 or vec3 but is receiving "..ffi.typeof(t[1]))
+	or error("vec2vao wants vec2 or vec3 but is receiving "..tostring(ffi.typeof(t[1])))
 
 	local lp = ffi.new("float[?]",#t*n)
 	if n == 3 then
