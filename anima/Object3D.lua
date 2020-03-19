@@ -45,7 +45,9 @@ void main()
 local R = require"anima.rotations"
 local program, progmesh
 local inimesh,initex
-local function Object(GL,camera)
+local function Object(GL,camera,args)
+	args = args or {}
+	
 	local O = {}
 	O.frame = {X=vec3(1,0,0),Y=vec3(0,1,0),Z=vec3(0,0,1),center=vec3(0,0,0)}
 	
@@ -98,7 +100,7 @@ local function Object(GL,camera)
 			inimesh.tcoords = {vec2(0,0),vec2(0,1),vec2(1/3,1),vec2(1/3,0),vec2(1,0),vec2(1,1),vec2(2/3,1),vec2(2/3,0)}
 		end
 
-		self:setMesh(inimesh,initex)
+		if args.doinit then self:setMesh(inimesh,initex) end
 	end
 	
 	local vao,vaomesh,vaoframe,ModelM
