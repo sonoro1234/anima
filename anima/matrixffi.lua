@@ -215,10 +215,15 @@ mat3 = ffi.metatype('mat3', {
                 a.m12 * b, a.m22 * b, a.m32 * b,
                 a.m13 * b, a.m23 * b, a.m33 * b)
   end,
+  __unm = function(a) return mat3(-a.m11 , -a.m21 , -a.m31,
+                                  -a.m12 , -a.m22 , -a.m32,
+                                  -a.m13 , -a.m23 , -a.m33)
+			end,
   __add = function(a, b) return mat3(a.m11 + b.m11, a.m12 + b.m12, a.m13 + b.m13,
 									a.m21 + b.m21, a.m22 + b.m22, a.m23 + b.m23,
 									a.m31 + b.m31, a.m32 + b.m32, a.m33 + b.m33) 
 	end,
+  __sub = function(a,b) return a + (-b) end,
   __index = function(m, i)
     if i == 'mat2' then
       return mat2(m.m11, m.m21,
@@ -511,6 +516,20 @@ function M.lookAt(eye,center,up)
 				Y.x,Y.y,Y.z,-(Y*eye),
 				Z.x,Z.y,Z.z,-(Z*eye),
 				0,0,0,1.0)
+end
+function M.matToLookAt(MV)
+	--frame.X = vec3(MV.m11,MV.m21,MV.m31)
+	local Y = vec3(MV.m12,MV.m22,MV.m32)
+	local Z = vec3(MV.m13,MV.m23,MV.m33)
+	--eye in LookAt
+	local eye = MV.mat3.inv * (-vec3(MV.m41, MV.m42, MV.m43))
+	return eye,eye-Z,Y
+end
+function M.gl2mat4(f)
+	return mat4(f[0], f[4], f[8],  f[12],
+                f[1], f[5], f[9],  f[13],
+                f[2], f[6], f[10], f[14],
+                f[3], f[7], f[11], f[15])
 end
 function M.perspective(fovy, aspect, n, f)
    local t = n * math.tan(fovy * math.pi / 360.0)
