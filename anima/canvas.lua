@@ -375,6 +375,7 @@ end
 
 
 require"anima.camera"
+require"anima.camera2"
 require"anima.animation"
 local function GuiInitSDL(GL)
 	GL.Impl = ig.Imgui_Impl_SDL_opengl3()
