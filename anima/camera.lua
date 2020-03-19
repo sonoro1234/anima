@@ -1,8 +1,9 @@
-
+local mat = require"anima.matrixffi"
+local vec3 = mat.vec3
 
 --http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
 --rotates point(x,y,z) om radians around (u,v,w)
-function Twist(x,y,z,u,v,w,om)
+local function Twist(x,y,z,u,v,w,om)
 	local norm = math.sqrt(u*u+v*v+w*w)
 	u = u/norm
 	v = v/norm
@@ -100,7 +101,7 @@ function newCamera(GL,cam_type, name,initialDist)
 		local near = cam.NMC.nearZ
 		local dir = cam:MP().inv * (mat.vec4(ndc.x,ndc.y,-1,1)*near)
 		dir = dir/dir.w
-		dir = mat.vec3(dir.x,dir.y,dir.z).normalize
+		dir = vec3(dir.x,dir.y,dir.z).normalize
 		self:set_dir3(dir)
 	end
 	function cam:CalcCameraLookat()
@@ -109,11 +110,11 @@ function newCamera(GL,cam_type, name,initialDist)
 		local center = NMC.center
 		local dir
 		if NMC.use_dir then
-			dir = mat.vec3(center[0],center[1],center[2])
+			dir = vec3(center[0],center[1],center[2])
 		else
-			dir = mat.vec3(center[0]-pos[0],center[1]-pos[1],center[2]-pos[2])
+			dir = vec3(center[0]-pos[0],center[1]-pos[1],center[2]-pos[2])
 		end
-		local side = -dir:cross(mat.vec3(0,1,0))
+		local side = -dir:cross(vec3(0,1,0))
 		local upv = dir:cross(side)
 		local upX,upY,upZ = Twist(upv.x,upv.y,upv.z,dir.x,dir.y,dir.z,NMC.twist)
 		if NMC.use_dir then
@@ -154,6 +155,12 @@ function newCamera(GL,cam_type, name,initialDist)
 		local vec3 = MA.vec3
 		return MA.lookAt(vec3(pars[1],pars[2],pars[3]),vec3(pars[4],pars[5],pars[6]),vec3(pars[7],pars[8],pars[9]))
 	end
+	function cam:setMV(MV)
+		local eye,center,up = mat.matToLookAt(MV)
+		--only for lookat camera now, twist not done
+		self.NM.vars.position:set(eye)
+		self.NM.vars.center:set(center)
+	end
 	function cam:MP()
 		local NMC = self.NMC
 		local w,h = self.drawsize.w or GL.W, self.drawsize.h or GL.H
@@ -168,8 +175,19 @@ function newCamera(GL,cam_type, name,initialDist)
 			else
 				focal = 360*math.atan(math.tan(NMC.focal*math.pi/360)/NMC.focal_fac)/math.pi
 			end
+			self.focal = focal
 			return MA.perspective(focal,w/h,NMC.nearZ,NMC.farZ)
 		end
+	end
+	function cam:frame()
+		local MV = cam:MV()
+		local frame = {}
+		frame.X = vec3(MV.m11,MV.m21,MV.m31)
+		frame.Y = vec3(MV.m12,MV.m22,MV.m32)
+		frame.Z = vec3(MV.m13,MV.m23,MV.m33)
+		--eye in LookAt
+		frame.center = MV.mat3.inv * (-vec3(MV.m41, MV.m42, MV.m43))
+		return frame
 	end
 	function cam:MVP()
 		return self:MP()*self:MV()
@@ -207,6 +225,7 @@ function newCamera(GL,cam_type, name,initialDist)
 				focal = 360*math.atan(math.tan(NMC.focal*math.pi/360)/NMC.focal_fac)/math.pi
 				--print(focal,NMC.focal_fac)
 			end
+			self.focal = focal
 			glu.gluPerspective(focal,aspect,NMC.nearZ,NMC.farZ)
 		end
 		gl.glMatrixMode(glc.GL_MODELVIEW)
@@ -232,7 +251,7 @@ function newCamera(GL,cam_type, name,initialDist)
 	cam.drawsize = {}
 	cam.type = cam_type
 	local zforh = initialDist or 0.5/math.tan(0.5*math.pi*35/180)
-	if cam_type=="tps" or cam_type=="fps" or cam_type==true then
+	if cam_type=="tps" or cam_type=="fps" or (type(cam_type)=="boolean" and cam_type==true) then
 		cam.CalcCamera = cam.CalcCameraEuler
 		cam.set_dir3 = cam.set_dir3Euler
 		cam.shooter = cam_type
