@@ -3,10 +3,17 @@ project(tvl1)
 
 find_package(OpenMP REQUIRED)
 
-set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "-std=c11 -Wall ${OpenMP_C_FLAGS}")
-set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wvla -Wall ${OpenMP_CXX_FLAGS}")
+if(MSVC)
+		#set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} /std:c17)#" ${OpenMP_C_FLAGS}")
+		set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "/std:c++17")#" ${OpenMP_C_FLAGS}")
+else() 
+		set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "-std=c11 -Wall ${OpenMP_C_FLAGS}")
+		set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wvla -Wall ${OpenMP_CXX_FLAGS}")
+endif()
 
-message(STATUS "openmp flas" ${OpenMP_C_FLAGS} ${OpenMP_CXX_FLAGS})
+
+
+message(STATUS "openmp flags" ${OpenMP_C_FLAGS} ${OpenMP_CXX_FLAGS})
 
 include_directories(tvl1flow_3 . )
 
