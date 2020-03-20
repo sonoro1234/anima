@@ -13,6 +13,7 @@ if(WIN32)
 	add_definitions(-DLUA_BUILD_AS_DLL)
 else()
 	set(LUA_LIBRARY_L "")
+	set_property(TARGET simplexnoise PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
 TARGET_LINK_LIBRARIES(simplexnoise ${LUA_LIBRARY_L} simplexnoisecpp)
 
