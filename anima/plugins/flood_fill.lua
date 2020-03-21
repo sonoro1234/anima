@@ -190,22 +190,22 @@ local function Flood_fill(tex,tex2,point,threshold)
 	local ini_ti = secs_now()
 	local X,Y = math.floor(point[0]+0.5),math.floor(point[1]+0.5)
 	local data = tex:get_pixels(glc.GL_FLOAT,glc.GL_RED)
-	print("tex dims",tex.width,tex.height)
+	--print("tex dims",tex.width,tex.height)
 	local pd = vicim.pixel_data(data,tex.width,tex.height,1)
 	local pd2 = vicim.pixel_data(nil,pd.w, pd.h, 4)
 	
 	threshold = threshold or pd:get_pix(X,Y)[0]
-	print("pd:get_pix(X,Y)[0]",pd:get_pix(X,Y)[0])
+	--print("pd:get_pix(X,Y)[0]",pd:get_pix(X,Y)[0])
 	--assert(pd:get_pix(X,Y)[0]==0)
 	flood_fill(pd,pd2,X,Y,threshold)
 	
-	--set alpha 0.5
+	--set alpha 0.5 for R > 0
 	for i,j,pix in pd2:iterator() do
 		if pix[0]>0 then pix[3] = 0.5 end
 	end
 	
 	tex2:set_data(pd2.data, 4, 4)
-	print("time",secs_now()-ini_ti)
+	print("flood_fill time",secs_now()-ini_ti)
 	return pd2
 end
 
@@ -260,7 +260,7 @@ local function FloodF(GL)
 	local DOFINDCOMPONENTS
 	local fbo, adder
 	local NM = GL:Dialog("flood_fill",{
-	{"threshold",0.1,guitypes.val,{min=0,max=1}},
+	{"threshold",0.1,guitypes.val,{min=0,max=1},function() DOFINDCOMPONENTS=true end},
 	{"pick",0,guitypes.button,function(this) 
 
 		GL.mouse_pick = {action=function(X,Y)
@@ -295,9 +295,17 @@ end},
 		adder = require"anima.plugins.texture_processor"(GL,2,NM)
 		adder:set_process[[vec4 process(vec2 pos){
 			if(op==2)
-			return c1 + c2;
-			if(op==3)
-			return c1 - c2;
+			return max(c1,c2);
+			if(op==3){
+			   if(c1.r >=1){
+					if(c2.r>=1)
+						return c1 - c2;
+					else
+						return c1;
+			   }else
+					return c1;
+					
+			}
 		}]]
 	end
 	
@@ -348,11 +356,11 @@ local GL = GLcanvas{H=700,aspect=1,DEBUG=false,fbo_nearest=false}
 
 
 local path = require"anima.path"
---fileName = [[C:\luaGL\frames_anima\msquares\imagen2.tif]]
+fileName = [[C:\luaGL\frames_anima\msquares\imagen.png]]
 --fileName = [[C:\luaGL\frames_anima\im_test\Cosmos_original.jpg]]
 --fileName = path.this_script_path()..[[\imagenes\unnamed0.jpg]]
 --fileName=[[C:\luagl\animacion\resonator6\resonator-038.jpg]]
-fileName = [[C:\LuaGL\frames_anima\flood_fill\dummy.png]]
+--fileName = [[C:\LuaGL\frames_anima\flood_fill\dummy.png]]
 --fileName = path.this_script_path()..[[\labyrinth.png]]
 local texture
 local FF,mixer,fbo
