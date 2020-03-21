@@ -1,5 +1,7 @@
 # anima
 my tools for making videos with opengl
+watch them at:
+https://vimeo.com/user67846254
 
 anima folder should be in lua folder and then
 
