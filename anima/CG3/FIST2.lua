@@ -20,7 +20,7 @@ local function leftmostvertexInd(poly)
 end
 
 -----------------------------------------------------------------------
-local algo = require"anima.CG3.algorithm"
+local algo = require"anima.algorithm.algorithm"
 
 --with holes
 local function lexicografic_sort_ind(P)
@@ -339,7 +339,7 @@ CG.PolySimplifyNC_Ind = PolySimplifyNC_Ind
 
 local function InsertHoles(Ind,skip_check)
 
-	local algo = require"anima.CG3.algorithm"
+	local algo = require"anima.algorithm.algorithm"
 	local holes = Ind.holes
 	
 	---[=[

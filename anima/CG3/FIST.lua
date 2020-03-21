@@ -148,7 +148,7 @@ end
 
 local function InsertHoles(poly,skip_check)
 
-	local algo = require"anima.CG3.algorithm"
+	local algo = require"anima.algorithm.algorithm"
 	local holes = poly.holes
 	--[[
 	print"removing bad points in holes---------------------"

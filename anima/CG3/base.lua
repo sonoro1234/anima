@@ -272,7 +272,7 @@ function M.lexicografic_compare(a,b)
 		return (a.x < b.x) or ((a.x == b.x) and (a.y < b.y))
 	end
 	
-local algo = require"anima.CG3.algorithm"
+local algo = require"anima.algorithm.algorithm"
 function M.lexicografic_sort(P)
 	algo.quicksort(P,1,#P,M.lexicografic_compare)
 	P.sorted = true
