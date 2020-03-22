@@ -810,7 +810,7 @@ function gui.Dialog(name,vars,func, invisible)
 			end
 			
 			if v[3] == guitypes.val then
-				if imgui.igSliderFloat(v[1], pointers[v[1]], v[4].min, v[4].max, "%.3f", 1.0) then
+				if ig.SliderFloat(v[1], pointers[v[1]], v[4].min, v[4].max, v[4].format or "%.3f",v[4].power or 1.0) then
 					self.dirty = true
 					namevar = v[1]
 					if v[5] then 
