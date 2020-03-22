@@ -1051,7 +1051,7 @@ function Texture(w,h,formato,pTexor,args)
 	function tex:get_signature()
 		return tostring(self)..self.instance
 	end
-	set_table__gc(tex,function(t) print("__gcdelete texture",t.tex,t);t:delete() end)
+	set_table__gc(tex,function(t) t:delete() end)
 	return tex
 end
 function LoadTextures2(fileNames,GLparams,mipmaps)

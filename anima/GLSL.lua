@@ -716,7 +716,7 @@ function initFBO(wFBO,hFBO,args)
 		gl.glViewport(0,0,self.w,self.h)
 	end
 	--print"done initFBO"
-	set_table__gc(thefbo,function(t) print("_gc deleting fbo",t.fb[0]);t:delete() end)
+	set_table__gc(thefbo,function(t) t:delete() end)
 	return thefbo
 end
 fbostatus = {[[GL_FRAMEBUFFER_UNDEFINED]],
