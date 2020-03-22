@@ -70,12 +70,12 @@ vec2 = ffi.metatype('vec2', {
 })
 local vec3
 vec3 = ffi.metatype('vec3', {
-	-- __new = function(tp,x,y,z,w)
-		-- if ffi.istype(vec2,x) then
-			-- return ffi.new(tp,x.x,x.y,y or 0)
-		-- end
-		-- return ffi.new(tp,x,y,z,w)
-	-- end,
+	__new = function(tp,x,y,z)
+		if ffi.istype(vec2,x) then
+			return ffi.new(tp,x.x,x.y,y or 0)
+		end
+		return ffi.new(tp,x,y,z)
+	end,
 	__eq = function(a,b) return a.x == b.x and a.y == b.y and a.z == b.z end,
 	__add = function(a, b) return vec3(a.x + b.x, a.y + b.y, a.z + b.z) end,
 	__sub = function(a, b) return vec3(a.x - b.x, a.y - b.y, a.z - b.z) end,
@@ -637,6 +637,11 @@ bb = aa.normalize
 cc = aa + math.sqrt(12)*bb
 print(aa,bb,cc)
 --]]
---print(mat4(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16))
+
+--mmgl = mat4(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16).gl
+--print(mmgl,ffi.istype("float[16]",mmgl))
+
+--print(vec3(vec2(1,2)),vec3(1,2,3))
+--print(vec4(1,2,3,4),vec4(vec3(1,2,3),4))
 			
 return M
