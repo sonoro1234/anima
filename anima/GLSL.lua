@@ -918,6 +918,9 @@ function VAO(t,program,indices,tsize,isize)
 		if type(v)=="table" then
 			if v.isVBO then
 				attribs[#attribs + 1]  = {name = k,vbo=v}
+			elseif ffi.istype(mat.vec3,v[1]) or ffi.istype(mat.vec2,v[1]) then
+				local lp = mat.vec2vao(v)
+				attribs[#attribs + 1] = {name = k, ffivalues=lp, b_size = ffi.sizeof(lp)}
 			else
 				local ffivalues = ffi.new("GLfloat[?]",#v,v)
 				local b_size = ffi.sizeof(ffivalues)
