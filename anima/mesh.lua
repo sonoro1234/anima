@@ -3,6 +3,7 @@ local M = {}
 local ffi = require"ffi"
 local mat = require"anima.matrixffi"
 local vec3 = mat.vec3
+local vec2 = mat.vec2
 
 --not good it is CW
 function M.Quad(left,top,right,bottom)
@@ -66,6 +67,40 @@ function M.quad(left,bottom,right,top)
 	end
 	return m
 end
+
+function M.quad2(left,bottom,right,top)
+	left = left or -1
+	bottom = bottom or -1
+	right = right or 1
+	top = top or 1
+	
+	local m = {}
+	m.points = {
+        vec3(left,bottom, 0),
+		vec3(left,top, 0),
+        vec3(right,bottom, 0),
+        vec3(right,top, 0),
+    }
+	m.normals = {
+		vec3(0,0,1),
+		vec3(0,0,1),
+		vec3(0,0,1),
+		vec3(0,0,1)
+	}
+	m.tcoords = {
+        vec2(0, 0),
+        vec2(0, 1),
+        vec2(1, 0),
+        vec2(1, 1),
+    }
+	m.triangles = { 2,1,0,2,3,1 }
+	
+	-- function m:vao(prog)
+		-- return VAO({position=self.points,normal=self.normals,texcoords=self.texcoords},prog,self.indexes)
+	-- end
+	return M.mesh(m)
+end
+
 function M.plane_vao(divs,aspect,program)
 	local w,h
 	if aspect > 1 then
@@ -97,9 +132,9 @@ function M.grid(divs,aspect)
 		local xc = i/w
 		for j=0,h do
 			local y =  j*stepy - 0.5		
-			local p = mat.vec3(x,y,0)
+			local p = vec3(x,y,0)
 			points[#points+1] = p
-			tcoords[#tcoords+1] = mat.vec2(xc,j/h)
+			tcoords[#tcoords+1] = vec2(xc,j/h)
 		end
 	end
 	-- tr indexes for grid
@@ -187,12 +222,11 @@ function M.roundedQuad(r1,steps,radio)
 	local function arc(center,iniang,endang,radio,steps,Q)
 		for i=0,steps do
 			local ang = iniang + (endang-iniang)*i/(steps)
-			local point = center + mat.vec2(math.cos(ang),math.sin(ang))*radio
+			local point = center + vec2(math.cos(ang),math.sin(ang))*radio
 			Q[#Q+1] = {point=point}
 		end
 	end
 
-	local vec2 = mat.vec2
 	radio = radio or 0.5
 	r1 = radio*r1
 	local lat = radio - r1
@@ -215,10 +249,10 @@ function M.roundedQuad(r1,steps,radio)
 end
 --CCW
 function M.tb2section(tb)
-	local centroid = mat.vec2(0,0)
+	local centroid = vec2(0,0)
 	local Q = {}
 	for i,v in ipairs(tb) do
-		local point = mat.vec2(v.x,v.y)
+		local point = vec2(v.x,v.y)
 		Q[#Q+1] = {point=point}
 		centroid = centroid + point
 	end
@@ -235,10 +269,10 @@ function M.tb2section(tb)
 	return Q
 end
 function M.tb2sectionCW(tb)
-	local centroid = mat.vec2(0,0)
+	local centroid = vec2(0,0)
 	local Q = {}
 	for i,v in ipairs(tb) do
-		local point = mat.vec2(v.x,v.y)
+		local point = vec2(v.x,v.y)
 		Q[#Q+1] = {point=point}
 		centroid = centroid + point
 	end
@@ -284,8 +318,9 @@ end
 function M.mesh(t)
 	t = t or {}
 	local mesh = {}
-	mesh.points = t.points or {mat.vec3(0,0,0)}
+	mesh.points = t.points or {vec3(0,0,0)}
 	mesh.triangles = t.triangles or {}
+	mesh.indexes = mesh.triangles -- alias for quad compability
 	mesh.ntriangles = #mesh.triangles/3
 	mesh.normals = t.normals --or {}
 	mesh.tcoords = t.tcoords --or {mat.vec2(0,0)}
@@ -314,7 +349,7 @@ function M.mesh(t)
 	end
 	function mesh:compute_normals()
 		local normals = {}
-		local zerovec = mat.vec3(0,0,0)
+		local zerovec = vec3(0,0,0)
 		--local alltris = {}
 		for i=1,self.ntriangles do
 			local tri = self:triangle(i)
@@ -343,16 +378,16 @@ function M.mesh(t)
 	function mesh:clone()
 		local points = {}
 		for i,v in ipairs(self.points) do
-			points[i] = mat.vec3(v.x,v.y,v.z)
+			points[i] = vec3(v.x,v.y,v.z)
 		end
 		local tcoords = {}
 		for i,v in ipairs(self.tcoords) do
-			tcoords[i] = mat.vec2(v.x,v.y)
+			tcoords[i] = vec2(v.x,v.y)
 		end
 		if self.normals then
 		local normals = {}
 		for i,v in ipairs(self.normals) do
-			normals[i] = mat.vec3(v.x,v.y,v.z)
+			normals[i] = vec3(v.x,v.y,v.z)
 		end
 		end
 		local triangles = {}
