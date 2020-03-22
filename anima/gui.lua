@@ -375,93 +375,6 @@ function ToolBox(GL)
 	return toolbox
 end
 gui.ToolBox = ToolBox
-local sin, cos, atan2, pi, max, min,acos,sqrt = math.sin, math.cos, math.atan2, math.pi, math.max, math.min,math.acos,math.sqrt
-
-local function dial(label,value_p,sz, fac)
-	--local ig = require"imgui"
-	local imgui = ig.lib
-
-	fac = fac or 1
-	sz = sz or 36
-	local style = ig.GetStyle()
-	
-	local p = ig.GetCursorScreenPos();
-
-	local radio =  sz*0.5
-	local center = ig.ImVec2(p.x + radio, p.y + radio)
-	
-	local x2 = cos(value_p[0]/fac)*radio + center.x
-	local y2 = sin(value_p[0]/fac)*radio + center.y
-	
-	ig.InvisibleButton(label.."t",ig.ImVec2(sz, sz)) 
-	local is_active = ig.IsItemActive()
-	local is_hovered = ig.IsItemHovered()
-	
-	local touched = false
-	if is_active then 
-		touched = true
-		local m = ig.GetIO().MousePos
-		local md = ig.GetIO().MouseDelta
-		if md.x == 0 and md.y == 0 then touched=false end
-		local mp = ig.ImVec2(m.x - md.x, m.y - md.y)
-		local ax = mp.x - center.x
-		local ay = mp.y - center.y
-		local bx = m.x - center.x
-		local by = m.y - center.y
-		local ma = sqrt(ax*ax + ay*ay)
-		local mb = sqrt(bx*bx + by*by)
-		local ab  = ax * bx + ay * by;
-		local vet = ax * by - bx * ay;
-		ab = ab / (ma * mb);
-		if not (ma == 0 or mb == 0 or ab < -1 or ab > 1) then
-
-			if (vet>0) then
-				value_p[0] = value_p[0] + acos(ab)*fac;
-			else 
-				value_p[0] = value_p[0] - acos(ab)*fac;
-			end
-		end
-	end
-	
-	local col32idx = is_active and imgui.ImGuiCol_FrameBgActive or (is_hovered and imgui.ImGuiCol_FrameBgHovered or imgui.ImGuiCol_FrameBg)
-	local col32 = ig.GetColorU32(col32idx, 1) 
-	local col32line = ig.GetColorU32(imgui.ImGuiCol_SliderGrabActive, 1) 
-	local draw_list = ig.GetWindowDrawList();
-	draw_list:AddCircleFilled( center, radio, col32, 16);
-	draw_list:AddLine( center, ig.ImVec2(x2, y2), col32line, 1);
-	ig.SameLine()
-	ig.PushItemWidth(50)
-	if ig.InputFloat(label, value_p, 0.0, 0.1) then
-		touched = true
-	end
-	ig.PopItemWidth()
-	return touched
-end
-
-gui.dial = dial
-
-function gui.pad(label,value,sz)
-	sz = sz or 200
-	local canvas_pos = ig.GetCursorScreenPos();
-	ig.InvisibleButton(label.."t",ig.ImVec2(sz, sz)) -- + style.ItemInnerSpacing.y))
-	local is_active = ig.IsItemActive()
-	local is_hovered = ig.IsItemHovered()
-	local touched = false
-	if is_active then
-		touched = true
-		local m = imgui.igGetIO().MousePos
-		local md = imgui.igGetIO().MouseDelta
-		if md.x == 0 and md.y == 0 and not ig.IsMouseClicked(0,false) then touched=false end
-		value[0] = ((m.x - canvas_pos.x)/sz)*2 - 1
-		value[1] = (1.0 - (m.y - canvas_pos.y)/sz)*2 - 1
-	end
-	local draw_list = imgui.igGetWindowDrawList();
-	draw_list:AddRect(canvas_pos,canvas_pos+ig.ImVec2(sz,sz),ig.U32(1,0,0,1))
-	draw_list:AddLine(canvas_pos + ig.ImVec2(0,sz/2),canvas_pos + ig.ImVec2(sz,sz/2) ,ig.U32(1,0,0,1))
-	draw_list:AddLine(canvas_pos + ig.ImVec2(sz/2,0),canvas_pos + ig.ImVec2(sz/2,sz) ,ig.U32(1,0,0,1))
-	draw_list:AddCircleFilled(canvas_pos + ig.ImVec2((1+value[0])*sz,((1-value[1])*sz)+1)*0.5,5,ig.U32(1,0,0,1))
-	return touched
-end
 
 local function HoverActionFactory(dur,minv,maxv)
 
@@ -584,41 +497,6 @@ local mat = require"anima.matrixffi"
 guitypes = {val=1,dial=2,toggle=3,button=4,valint=5,drag=6,combo=7,color=8,curve=9,slider_enum=10}
 gui.types = guitypes
 
-function gui.Curve(name,numpoints,LUTsize,pressed_on_modified)
-	if pressed_on_modified == nil then pressed_on_modified=true end
-	numpoints = numpoints or 10
-	LUTsize = LUTsize or 720
-	local M = {name = name,numpoints=numpoints,LUTsize=LUTsize}
-	M.LUT = ffi.new("float[?]",LUTsize)
-	M.LUT[0] = -1
-	M.points = ffi.new("ImVec2[?]",numpoints)
-	M.points[0].x = -1
-	function M:getpoints()
-		local pts = {}
-		for i=0,numpoints-1 do
-			pts[i+1] = {x=M.points[i].x,y=M.points[i].y}
-		end
-		return pts
-	end
-	function M:setpoints(pts)
-		assert(#pts<=numpoints)
-		for i=1,#pts do
-			M.points[i-1].x = pts[i].x
-			M.points[i-1].y = pts[i].y
-		end
-		M.LUT[0] = -1
-		imgui.CurveGetData(M.points, numpoints,M.LUT, LUTsize )
-	end
-	function M:get_data()
-		M.LUT[0] = -1
-		imgui.CurveGetData(M.points, numpoints,M.LUT, LUTsize )
-	end
-	function M:draw()
-		local sz = 200
-		return imgui.Curve(name, ig.ImVec2(sz*2,sz),M.points, M.numpoints,M.LUT, M.LUTsize,pressed_on_modified) 
-	end
-	return M
-end
 local array_mt = {
 	__new = function(tp,t)
 			if type(t)=="table" then
@@ -877,7 +755,7 @@ function gui.Dialog(name,vars,func, invisible)
 					end
 				end
 			elseif  v[3] == guitypes.dial then
-				if dial(v[1], pointers[v[1]], 20, v[4] and v[4].fac) then
+				if ig.dial(v[1], pointers[v[1]], 20, v[4] and v[4].fac) then
 					self.dirty = true
 					namevar = v[1]
 					if v[5] then 
@@ -1138,6 +1016,13 @@ function gui.SetImGui(GL)
 		ig = require"imgui.glfw"
 	end
 	imgui = ig.lib
+	------now in LuaJIT-ImGui
+	gui.Curve = ig.Curve
+	gui.dial = ig.dial
+	gui.pad = ig.pad
+	gui.Plotter = ig.Plotter
+	-----------------------
+	
 	GL.imguimodals =  {}
 	
 	if GL.use_log then
@@ -1482,59 +1367,5 @@ function gui.Histogram(GL,bins,linear)
 	end, Histogram1
 end
 
-function gui.Plotter(xmin,xmax,nvals)
-	local Graph = {xmin=xmin or 0,xmax=xmax or 1,nvals=nvals or 400}
-	function Graph:init()
-		self.values = ffi.new("float[?]",self.nvals)
-	end
-	function Graph:itox(i)
-		return self.xmin + i/(self.nvals-1)*(self.xmax-self.xmin)
-	end
-	function Graph:calc(func,ymin1,ymax1)
-		local vmin = math.huge
-		local vmax = -math.huge
-		for i=0,self.nvals-1 do
-			self.values[i] = func(self:itox(i))
-			vmin = (vmin < self.values[i]) and vmin or self.values[i]
-			vmax = (vmax > self.values[i]) and vmax or self.values[i]
-		end
-		self.ymin = ymin1 or vmin
-		self.ymax = ymax1 or vmax
-	end
-	function Graph:draw()
-	
-		local regionsize = ig.GetContentRegionAvail()
-		local desiredY = regionsize.y - ig.GetFrameHeightWithSpacing()
-		ig.PushItemWidth(-1)
-		ig.PlotLines("##grafica",self.values,self.nvals,nil,nil,self.ymin,self.ymax,ig.ImVec2(0,desiredY))
-		local p = ig.GetCursorScreenPos() 
-		p.y = p.y - ig.GetStyle().FramePadding.y
-		local w = ig.CalcItemWidth()
-		self.origin = p
-		self.size = ig.ImVec2(w,desiredY)
-		
-		local draw_list = ig.GetWindowDrawList()
-		for i=0,4 do
-			local ylab = i*desiredY/4 --+ ig.GetStyle().FramePadding.y
-			draw_list:AddLine(ig.ImVec2(p.x, p.y - ylab), ig.ImVec2(p.x + w,p.y - ylab), ig.U32(1,0,0,1))
-			local valy = self.ymin + (self.ymax - self.ymin)*i/4
-			local labelY = string.format("%0.3f",valy)
-			-- - ig.CalcTextSize(labelY).x
-			draw_list:AddText(ig.ImVec2(p.x , p.y -ylab), ig.U32(0,1,0,1),labelY)
-		end
-	
-		for i=0,10 do
-			local xlab = i*w/10
-			draw_list:AddLine(ig.ImVec2(p.x + xlab,p.y), ig.ImVec2(p.x + xlab,p.y - desiredY), ig.U32(1,0,0,1))
-			local valx = self:itox(i/10*(self.nvals -1))
-			draw_list:AddText(ig.ImVec2(p.x + xlab,p.y + 2), ig.U32(0,1,0,1),string.format("%0.3f",valx))
-		end
-		
-		ig.PopItemWidth()
-		
-		return w,desiredY
-	end
-	Graph:init()
-	return Graph
-end
+
 return gui
