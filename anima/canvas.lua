@@ -1189,6 +1189,14 @@ function GLcanvas(GL)
 		h = h*self.scale
 		return self.W*(X - x)/w,self.H*(Y - y)/h
 	end
+	function GL:ViewportToScreen(X,Y)
+		local x,y,w,h = unpack(self.stencil_sizes)
+		x= x + self.offX
+		y= y + self.offY
+		w = w*self.scale
+		h = h*self.scale
+		return X*w/self.W + x, Y*h/self.H + y
+	end
 	--makes ScreenToViewport return the same values for X and Y after fac in GL.scale
 	function GL:GlassOffsets(X,Y,fac)
 		local x,y,w,h = unpack(self.stencil_sizes)
