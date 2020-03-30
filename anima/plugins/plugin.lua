@@ -41,7 +41,15 @@ function plugin.serializer(M)
 		fb.loader.draw()
 	end
 	if M.NM then
-		if not M.NM.func then M.NM.func = function() fb.draw() end end
+		if not M.NM.func then 
+			M.NM.func = function() fb.draw() end
+		else
+			local oldNMfunc = M.NM.func
+			M.NM.func = function(...)
+					oldNMfunc(...)
+					fb.draw()
+				end
+		end
 	end
 	return fb
 end
