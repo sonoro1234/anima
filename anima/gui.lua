@@ -581,7 +581,11 @@ function gui.Dialog(name,vars,func, invisible)
 			else
 				pointers[v[1]] = float_p(v[2])
 			end
-			defs[v[1]] = {default= v[2],type=v[3],args=v[4], size=size, sizeN=sizeN}
+			if v[4] and v[4].olddrag then
+				defs[v[1]] = {default= v[2],type=v[3],args=v[4], size=size, sizeN=sizeN}
+			else
+				defs[v[1]] = {default= v[2],type=v[3],args=v[4], size=size, sizeN=sizeN,MVE = gui.MultiValueEdit(v[1],size)}
+			end
 		elseif v[3] == guitypes.color then
 			local size, sizeN = 1,""
 			if type(v[2])=="table" then --is array
@@ -683,8 +687,10 @@ function gui.Dialog(name,vars,func, invisible)
 		
 			if (v[3] == guitypes.button or v[3] == guitypes.toggle or v[3] == guitypes.color) then
 				if v[5] and v[5].sameline then ig.SameLine() end
-			elseif v[4].sameline then 
-				ig.SameLine() 
+				if v[5] and v[5].separator then ig.Separator() end
+			else
+				if v[4].sameline then ig.SameLine() end
+				if v[4].separator then ig.Separator() end 
 			end
 			
 			if v[3] == guitypes.val then
@@ -696,23 +702,34 @@ function gui.Dialog(name,vars,func, invisible)
 					end
 				end
 			elseif v[3] == guitypes.drag then
-				local vspeed = v[4].precission or 0.003
-				if defs[v[1]].size > 1 then
-				if imgui["igDragFloat"..defs[v[1]].sizeN](v[1], pointers[v[1]].data,vspeed, v[4].min or ig.FLT_MAX , v[4].max or ig.FLT_MAX , "%.3f", 1.0) then
-					self.dirty = true
-					namevar = v[1]
-					if v[5] then 
-						v[5](pointers[v[1]],self) 
+				if v[4] and v[4].olddrag then
+					local vspeed = v[4].precission or 0.003
+					if defs[v[1]].size > 1 then
+						if imgui["igDragFloat"..defs[v[1]].sizeN](v[1], pointers[v[1]].data,vspeed, v[4].min or ig.FLT_MAX , v[4].max or ig.FLT_MAX , "%.3f", 1.0) then
+							self.dirty = true
+							namevar = v[1]
+							if v[5] then 
+								v[5](pointers[v[1]],self) 
+							end
+						end
+					else
+						if imgui.igDragFloat(v[1], pointers[v[1]],vspeed, v[4].min, v[4].max, "%.3f", 1.0) then
+							self.dirty = true
+							namevar = v[1]
+							if v[5] then 
+								v[5](pointers[v[1]],self) 
+							end
+						end
 					end
-				end
 				else
-					if imgui.igDragFloat(v[1], pointers[v[1]],vspeed, v[4].min, v[4].max, "%.3f", 1.0) then
-					self.dirty = true
-					namevar = v[1]
-					if v[5] then 
-						v[5](pointers[v[1]],self) 
+					local pp = defs[v[1]].size > 1 and pointers[v[1]].data or pointers[v[1]]
+					if defs[v[1]].MVE:Draw(pp,v[4].min, v[4].max,v[4].precission or 0.1,nil,nil) then
+						self.dirty = true
+						namevar = v[1]
+						if v[5] then 
+							v[5](pointers[v[1]],self) 
+						end
 					end
-				end
 				end
 			elseif v[3] == guitypes.color then
 				if defs[v[1]].size == 3 then
@@ -763,12 +780,8 @@ function gui.Dialog(name,vars,func, invisible)
 					end
 				end
 			elseif v[3] == guitypes.toggle then
-				-- local text = (pointers[v[1]][0] > 0 and v[1].." x") or v[1]
-				-- if imgui.igSmallButton(text) then
-					-- pointers[v[1]][0] = (pointers[v[1]][0] > 0 and 0) or 1
-					-- if v[4] then v[4](pointers[v[1]][0]) end
-				-- end
-				if imgui.igCheckbox(v[1],pointers[v[1]]) then 
+				if gui.ToggleButton(v[1],pointers[v[1]]) then
+				--if ig.Checkbox(v[1],pointers[v[1]]) then 
 					self.dirty = true
 					namevar = v[1]
 					if v[4] then
@@ -1022,7 +1035,12 @@ function gui.SetImGui(GL)
 	gui.pad = ig.pad
 	gui.Plotter = ig.Plotter
 	-----------------------
-	
+	local W = require"anima.igwidgets"
+	for k,v in pairs(W) do
+		assert(not gui[k])
+		gui[k] = v
+	end
+	-------------------------
 	GL.imguimodals =  {}
 	
 	if GL.use_log then
