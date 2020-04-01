@@ -57,13 +57,12 @@ local function imgui_cameraDialog(name,zforh,GL, invisible,cam)
 							GL.mouse_pick = nil
 						end}
 		end},
-		{"distfac",1,guitypes.drag,{min=0.01,max=1000,precission=0.1}},
 		{"dist",zforh,guitypes.drag,{min=0,max=zforh*5,precission=0.1}},
-		--{"pos",{0,0,0},guitypes.drag,{min=-5,max=5,precission=0.1}},
-		{"xcamL",0,guitypes.drag,{min=-5,max=5,precission=0.1}},
-		{"ycamL",0,guitypes.drag,{min=-5,max=5,precission=0.1}},
-		{"zcamL",0,guitypes.dial,{min=-5*zforh,max=5*zforh}},
-		{"focal",35,guitypes.drag,{min=0,max=180,precission=0.1}},
+		{"pos",{0,0,0},guitypes.drag,{min=-5,max=5,precission=0.1}},
+		-- {"xcamL",0,guitypes.drag,{min=-5,max=5,precission=0.1}},
+		-- {"ycamL",0,guitypes.drag,{min=-5,max=5,precission=0.1}},
+		-- {"zcamL",0,guitypes.dial,{min=-5*zforh,max=5*zforh}},
+		{"focal",35,guitypes.drag,{min=0,max=180,precission=0.1,separator=true}},
 		{"focal_fac",1,guitypes.drag,{min=0.01,max=5,precission=0.1}},
 		{"nearZ",0.1,guitypes.drag,{min=0.01,max=1,precission=0.1}},
 		{"farZ",1000,guitypes.drag,{min=1,max=1000,precission=0.1}},
@@ -130,7 +129,7 @@ function Camera(GL,cam_type, name,initialDist)
 	end
 	function cam:CalcCameraEuler(dist, azim,elev,twist)
 		local NMC = self.NMC
-		dist = dist or (NMC.dist*(NMC.distfac or 1))
+		dist = dist or NMC.dist
 		dist = dist * NMC.focal_fac
 		azim = azim or NMC.azimuth
 		elev = elev or NMC.elevation
@@ -138,7 +137,7 @@ function Camera(GL,cam_type, name,initialDist)
 		
 		local Rot = R.ZXYE( -twist, elev,-azim)
 		
-		local xL,yL,zL = NMC.xcamL,NMC.ycamL,NMC.zcamL
+		local xL,yL,zL = NMC.pos[0],NMC.pos[1],NMC.pos[2]
 		if self.shooter=="fps" then
 			return  Rot.mat4*mat.translate(-xL,-yL,-zL)
 		else
@@ -165,16 +164,18 @@ function Camera(GL,cam_type, name,initialDist)
 				local Ri = MV.mat3.t.mat4 --inverse of rotation part
 				local tt = Ri*MV
 				local tran = vec3(tt.m41,tt.m42,tt.m43)
-				self.NM.vars.xcamL[0] = -tran.x
-				self.NM.vars.ycamL[0] = -tran.y
-				self.NM.vars.zcamL[0] = -tran.z
+				-- self.NM.vars.xcamL[0] = -tran.x
+				-- self.NM.vars.ycamL[0] = -tran.y
+				-- self.NM.vars.zcamL[0] = -tran.z
+				self.NM.vars.pos:set{-tran.x,-tran.y,-tran.z}
 			else --tps
 				local Ri = MV.mat3.t.mat4 --inverse of rotation part
 				local tt = MV*Ri
 				local tran = vec3(tt.m41,tt.m42,tt.m43)
-				self.NM.vars.xcamL[0] = -tran.x
-				self.NM.vars.ycamL[0] = -tran.y
-				self.NM.vars.zcamL[0] = -tran.z - self.NM.dist
+				-- self.NM.vars.xcamL[0] = -tran.x
+				-- self.NM.vars.ycamL[0] = -tran.y
+				-- self.NM.vars.zcamL[0] = -tran.z - self.NM.dist
+				self.NM.vars.pos:set{-tran.x,-tran.y,-tran.z - self.NM.dist}
 			end
 		end
 	end
