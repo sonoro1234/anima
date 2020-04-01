@@ -510,7 +510,8 @@ function serializeTable(name, value, saved)
 				table.insert(string_table, serializeTable(fieldname, v, saved))
 			end
 		end
-	--else
+	else --cant save value so delete key
+		string_table[#string_table] = nil
 		--error("cannot save a " .. type(value))
 	end
 	
