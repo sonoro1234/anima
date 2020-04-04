@@ -98,6 +98,8 @@ local function Object(GL,camera,args)
 			inimesh:M4(mat.translate(-cent))
 			local vec2 = mat.vec2
 			inimesh.tcoords = {vec2(0,0),vec2(0,1),vec2(1/3,1),vec2(1/3,0),vec2(1,0),vec2(1,1),vec2(2/3,1),vec2(2/3,0)}
+			self.MF = mat.identity4
+			self.MFinv = mat.identity4
 		end
 
 		if args.doinit then self:setMesh(inimesh,initex) end
