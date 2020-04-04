@@ -11,8 +11,10 @@ function W.ToggleButton(str_id, v)
     local width = height * 1.55;
     local radius = height * 0.50;
 	
+	local ret = false
     if (ig.InvisibleButton(str_id, ig.ImVec2(width, height))) then
         v[0] = not v[0]
+		ret = true
 	end
     local col_bg;
     if (ig.IsItemHovered()) then
@@ -24,6 +26,7 @@ function W.ToggleButton(str_id, v)
     draw_list:AddRectFilled(p, ig.ImVec2(p.x + width, p.y + height), col_bg, height * 0.5);
     draw_list:AddCircleFilled(ig.ImVec2(v[0] and (p.x + width - radius) or (p.x + radius), p.y + radius), radius - 1.5, IM_COL32(255, 255, 255, 255));
 	ig.SameLine();ig.Text(str_id)
+	return ret
 end
 
 function W.SingleValueEdit()
