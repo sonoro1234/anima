@@ -30,7 +30,8 @@ end
 
 
 
-local function Editor(GL,camera)
+local function Editor(GL,camera,updatefunc)
+	updatefunc = updatefunc or function() end
 	local M = {}
 	
 	local NM = GL:Dialog("CDTins",
@@ -233,6 +234,7 @@ local function Editor(GL,camera)
 		end
 		self.mesh = mesh.mesh({points=points_add,tcoords=tcoords,triangles=indexes})
 		self.mesh.centroid = cent
+		updatefunc(self)
 	end
 	
 	function M:draw(t,w,h)
@@ -317,8 +319,8 @@ local tproc
 NM = GL:Dialog("proc",{{"showmask",false,guitypes.toggle}})
 
 function GL.init()
-	fboblur = initFBO(GL.W,GL.H,{no_depth=true})
-	fbomask = initFBO(GL.W,GL.H,{no_depth=true})
+	fboblur = GL:initFBO({no_depth=true})
+	fbomask = GL:initFBO({no_depth=true})
 	tex = GL:Texture():Load[[c:\luagl\media\estanque3.jpg]]
 	tproc = require"anima.plugins.texture_processor"(GL,3,NM)
 	tproc:set_textures{tex,fboblur:GetTexture(),fbomask:GetTexture()}
