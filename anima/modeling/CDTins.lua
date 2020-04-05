@@ -239,7 +239,7 @@ local function Editor(GL,camera,updatefunc)
 	end
 	
 	function M:draw(t,w,h)
-		if NM.collapsed then return end
+		if NM.collapsed or Dbox.collapsed then return end
 		gl.glDisable(glc.GL_DEPTH_TEST)
 		gl.glViewport(0, 0, w, h)
 		program:use()
