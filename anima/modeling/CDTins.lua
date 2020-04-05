@@ -64,10 +64,11 @@ local function Editor(GL,camera,updatefunc)
 	local SE = require"anima.plugins.Spline"(GL,update)--,{doblend=true})
 	M.SE = SE
 	
-	local Dbox = GL:DialogBox"CDTins"
+	local Dbox = GL:DialogBox("CDTins",true) --autosaved
 	--Dbox:add_dialog(camera.NMC)
 	Dbox:add_dialog(SE.NM)
 	Dbox:add_dialog(NM)
+	Dbox.plugin = M
 	
 	M.NM = Dbox
 	--NM.plugin = M
