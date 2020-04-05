@@ -24,27 +24,12 @@ void main()
 
 ]]
 
-local vertclean = [[
-in vec3 position;
-void main()
-{
-	gl_Position =  vec4(position,1);
-}
-]]
-fragclean = [[
-
-void main()
-{
-	gl_FragColor = vec4(0.5,0.5,0.5,1);
-}
-
-]]
 
 local mesh = require"anima.mesh"
 local mat = require"anima.matrixffi"
 
 
-local programI,prclean
+local programI
 
 local function MeshRectify(GL,camara,tex,facdim)
 	facdim = facdim or 0.5
@@ -52,7 +37,7 @@ local function MeshRectify(GL,camara,tex,facdim)
 	
 	local meshcyl_eye
 	local camMP
-	local vao_makeimage,vao_triang, quadclean, fboim,fboim_inter
+	local vao_makeimage,vao_triang, fboim,fboim_inter
 	local MOrtho = mat.ortho(0,1,0,1,-1,1)
 	
 	local vxpos,vypos,vW,vH = getAspectViewport(GL.W,GL.H,tex.width, tex.height)
@@ -112,7 +97,6 @@ function MR:MeshRectifyTriang(num)
 		texcoords[i] = mat.vec2(sc.x*GL.W/NM.vW,sc.y*GL.H/NM.vH) - mat.vec2(NM.vxpos/NM.vW,NM.vypos/NM.vH) 
 	end
 	--local plN = (pr_co[2] - pr_co[1]):cross(pr_co[3] - pr_co[1])
-
 	local vpointX, vpointY
 	
 	vpointX = (p1 - p3)
@@ -125,7 +109,7 @@ function MR:MeshRectifyTriang(num)
 
 	vpointX=vpointX *negX 
 	vpointY=vpointY *negX 
-	
+
 	local P = mat.rotAB(vline,mat.vec3(0,0,1))
 	local uA = P * vpointX --/vpointX.z
 	local vA = P * vpointY --/vpointY.z
@@ -138,7 +122,7 @@ function MR:MeshRectifyTriang(num)
 	
 	local R = rotAB2d(uA.xy,mat.vec2(1,0))
 	
-	local A1 = shearH(R*vA,true) 
+	local A1 = shearH(R*vA,true)
 			
 	local UU =  A1*R*P 
 	
@@ -201,6 +185,7 @@ function MR:MeshRectifyTriang(num)
 	
 	local MP = mat.frustum(minx,maxx,miny,maxy,minz,maxz+0.01)
 	programI.unif.MP:set(MP.gl)
+	
 	fboim_inter:viewport()
 
 	if has_nans then
@@ -220,27 +205,14 @@ function MR:MeshRectifyTriang(num)
 
 	
 	fboim:Bind()
-	gl.glEnable(glc.GL_BLEND)
-	glext.glBlendEquation(glc.GL_FUNC_ADD)
-	gl.glBlendFunc(glc.GL_SRC_ALPHA, glc.GL_DST_ALPHA)
-	
-	
 	programI:use()
 	programI.unif.tex:set{0}
 	fboim_inter:tex():Bind()
-	--fboim_inter:tex():gen_mipmap()
-	fboim_inter:tex():min_filter(glc.GL_LINEAR)
+
 	programI.unif.MP:set(MOrtho.gl)
-	
 	fboim:viewport()
 	
-	--la incerteza de si esta en un triangulo o en otro 
-	--se arregla dibujando ambos con blend
-	vao_triang:set_buffer("tcoords",{0,0,1,0,0,1})
 	vao_triang:draw(glc.GL_TRIANGLES,3)
-	vao_triang:set_buffer("tcoords",{1,1,0,1,1,0})
-	vao_triang:draw(glc.GL_TRIANGLES,3)
-	gl.glDisable(glc.GL_BLEND)
 	
 	fboim:UnBind()
 end
@@ -266,39 +238,23 @@ function MR:MeshRectify(mesh)
 	for i=1,meshcyl_eye.ntriangles do
 		self:MeshRectifyTriang(i)	
 	end
-	---[[
-	--limpiar puntitos con alfa = 0
-	--where dest alpha is zero do grey color
-	fboim:Bind()
-	gl.glEnable(glc.GL_BLEND)
-	glext.glBlendEquation(glc.GL_FUNC_ADD)
-	gl.glBlendFunc(glc.GL_ONE_MINUS_DST_ALPHA, glc.GL_DST_ALPHA)
-	prclean:use()
-	quadclean:draw_elm()
-	fboim:UnBind()
-	gl.glDisable(glc.GL_BLEND)
-	--]]
 	
-	gl.glClearColor(0,0,0,0)
+	
 	fboim:delete()
 	fboim_inter:delete()
-	self.texR:Bind()
 	self.texR:gen_mipmap()
 	print"done rectify"
 end
 
 
 	MR.texR = GL:Texture(tex.width,tex.height,glc.GL_RGBA32F)
-	tex:Bind()
-	tex:gen_mipmap()
+
 	MR.camara = camara
 	
 	if not programI then programI = GLSL:new():compile(vertRI_sh,fragRI_sh) end
-	if not prclean then prclean = GLSL:new():compile(vertclean,fragclean) end
 	
 	vao_makeimage = VAO({position={0,0,0,0,0,0,0,0,0},tcoords={0,0,0,0,0,0}},programI)
-	vao_triang = VAO({position={0,0,0,0,0,0,0,0,0},tcoords={0,0,0,0,0,0}},programI)
-	quadclean = mesh.quad():vao(prclean)
+	vao_triang = VAO({position={0,0,0,0,0,0,0,0,0},tcoords={0,0,1,0,0,1}},programI)
 
 	--GL:add_plugin(MR,"mesh_rectifier")
 	return MR
