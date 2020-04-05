@@ -250,16 +250,15 @@ function gui.FileBrowser(filename_p, args, funcOK)
 	local function filechooser()
 	
 		
-		--if (imgui.igBeginPopupModal(args.key, nil, 0)) then
 		if (imgui.igBeginPopupModal(args.key, nil, ffi.C.ImGuiWindowFlags_AlwaysAutoResize)) then
-			--imgui.igText(curr_dir);
+
 			local tsize = ig.CalcTextSize(curr_dir_ed, nil,false, -1.0);
-			imgui.igPushItemWidth(tsize.x + imgui.igGetStyle().ItemInnerSpacing.x * 2)
-			if imgui.igInputText("##dir",curr_dir_ed,256,0,nil,nil) then
+			ig.PushItemWidth(tsize.x + ig.GetStyle().ItemInnerSpacing.x * 2)
+			if ig.InputText("##dir",curr_dir_ed,256,0,nil,nil) then
 				curr_dir = ffi.string(curr_dir_ed)
 				curr_dir_done = false 
 			end
-			imgui.igPopItemWidth()
+			ig.PopItemWidth()
 			
 			if not curr_dir_done then
 				curr_dir_files , curr_dir_dirs = {},{} 
@@ -272,8 +271,8 @@ function gui.FileBrowser(filename_p, args, funcOK)
 			ig.BeginChild("files", ig.ImVec2(0,desiredY), true, 0)
 			
 			for i,v in ipairs(curr_dir_dirs) do
-				if(ig.Selectable(v.name.." ->",false,imgui.ImGuiSelectableFlags_AllowDoubleClick,ig.ImVec2(0,0))) then 
-					if (imgui.igIsMouseDoubleClicked(0)) then
+				if(ig.Selectable(v.name.." ->",false,ig.lib.ImGuiSelectableFlags_AllowDoubleClick,ig.ImVec2(0,0))) then 
+					if (ig.IsMouseDoubleClicked(0)) then
 							ffi.copy(save_file_name, "")
 							curr_dir = pathut.abspath(v.path)
 							ffi.copy(curr_dir_ed,curr_dir)
@@ -282,8 +281,8 @@ function gui.FileBrowser(filename_p, args, funcOK)
 				end
 			end
 			for i,v in ipairs(curr_dir_files) do
-				if(ig.Selectable(v.name,false,imgui.ImGuiSelectableFlags_AllowDoubleClick,ig.ImVec2(0,0))) then
-					if (imgui.igIsMouseDoubleClicked(0)) then
+				if(ig.Selectable(v.name,false,ig.lib.ImGuiSelectableFlags_AllowDoubleClick,ig.ImVec2(0,0))) then
+					if (ig.IsMouseDoubleClicked(0)) then
 						ffi.copy(save_file_name, v.name)
 					end
 				end
@@ -291,8 +290,8 @@ function gui.FileBrowser(filename_p, args, funcOK)
 			end
 			ig.EndChild()
 			
-			ig.InputText("file",save_file_name,256,0,nil,nil)
-			if imgui.igInputText("pattern",pattern_ed,32,0,nil,nil) then curr_dir_done = false end
+			ig.InputText("file",save_file_name,256,0)
+			if ig.InputText("pattern",pattern_ed,32,ig.lib.ImGuiInputTextFlags_EnterReturnsTrue) then curr_dir_done = false end
 			local doit = false
 			
 			if ig.Button("OK") then
@@ -874,8 +873,9 @@ function gui.DialogBox(name,autosaved)
 	end
 	if autosaved then
 		function DB:GetValues()
-			vals = {}
+			local vals = {}
 			for i,D in ipairs(self.dialogs) do
+				print(self.name,"DB:Getvalues on",D.name,D.plugin and D.plugin.save)
 				if D.plugin and D.plugin.save then
 					vals[D.name] = D.plugin:save()
 				else
@@ -888,10 +888,10 @@ function gui.DialogBox(name,autosaved)
 			for i,D in ipairs(self.dialogs) do
 				if pars[D.name] then
 					if D.plugin and D.plugin.load then
-						--print("Dbox call load on",D.name)
+						print(self.name,"Dbox call load on",D.name)
 						D.plugin:load(pars[D.name])
 					else
-						--print("Dbox call setvalues on",D.name)
+						print(self.name,"Dbox call setvalues on",D.name)
 						D:SetValues(pars[D.name])
 						if D.plugin and D.plugin.update then
 							D.plugin:update()
