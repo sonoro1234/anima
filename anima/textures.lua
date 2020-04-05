@@ -969,6 +969,17 @@ function Texture(w,h,formato,pTexor,args)
 		gl.glGetTexImage(glc.GL_TEXTURE_2D, 0, format, type, pixelsUserData)
 		return pixelsUserData
 	end
+	function tex:save(filename,formato)
+		formato = formato or "PNG"
+		local pixelsUserData = self:get_pixels()
+		local image = im.ImageCreateFromOpenGLData(w, h, glc.GL_RGBA, pixelsUserData); 
+		local err = image:FileSave(filename,formato)
+		if (err and err ~= im.ERR_NONE) then
+			print("saved",filename)
+			error(im.ErrorStr(err))
+		end
+		image:Destroy()
+	end
 	function tex:blit(w,h)
 		w = w or self.width
 		h = h or self.height
