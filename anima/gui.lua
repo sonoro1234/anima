@@ -1113,6 +1113,29 @@ function gui.SetImGui(GL)
 		file:write(table.concat(str))
 		file:close()
 	end)
+	
+	function GL:preset_load(fname)
+		local func,err = loadfile(fname)
+		if not func then print(err); return end
+		local NMs = func()
+		--prtable("NMs",NMs)
+		for k,v in ipairs(GL.imguimodals) do
+			if NMs[v.name] then
+				--prtable("NMs[v.name]",NMs[v.name])
+				if v.plugin and v.plugin.load then
+					print("plugin.load",v.name)
+					v.plugin:load(NMs[v.name])
+				else
+					print("setvalues",v.name)
+					v:SetValues(NMs[v.name])
+					if v.plugin and v.plugin.update then
+						v.plugin:update()
+					end
+				end
+			end
+		end
+	end
+	
 	local PresetLoader =  gui.FileBrowser(nil,{filename="preset",key="load_preset"},function(filename)  
 			local func,err = loadfile(filename)
 			if not func then print(err); return end
