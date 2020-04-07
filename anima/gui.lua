@@ -1230,18 +1230,53 @@ function gui.SetImGui(GL)
 		ig.End()
 	end
 	GL.show_imgui = true
+	
+	local function MainDockSpace1()
+		if not GL.has_imgui_viewport then return end
+		if (bit.band(ig.GetIO().ConfigFlags , imgui.ImGuiConfigFlags_DockingEnable)==0) then return end
+		
+		--ig.GetIO().ConfigDockingWithShift=true
+		local window_flags = 0--bit.bor(ig.lib.ImGuiWindowFlags_MenuBar , );
+        window_flags = bit.bor(window_flags, ig.lib.ImGuiWindowFlags_NoDocking, ig.lib.ImGuiWindowFlags_NoTitleBar, ig.lib.ImGuiWindowFlags_NoCollapse, ig.lib.ImGuiWindowFlags_NoResize, ig.lib.ImGuiWindowFlags_NoMove)
+        window_flags = bit.bor(window_flags, ig.lib.ImGuiWindowFlags_NoBringToFrontOnFocus, ig.lib.ImGuiWindowFlags_NoNavFocus)
+		--if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
+        window_flags = bit.bor(window_flags, ig.lib.ImGuiWindowFlags_NoBackground)
+		
+		local viewport = ig.GetMainViewport();
+        ig.SetNextWindowPos(viewport:GetWorkPos());
+        ig.SetNextWindowSize(viewport:GetWorkSize());
+        ig.SetNextWindowViewport(viewport.ID);
+		
+        ig.PushStyleVar(ig.lib.ImGuiStyleVar_WindowRounding, 0.0);
+        ig.PushStyleVar(ig.lib.ImGuiStyleVar_WindowBorderSize, 0.0);
+		ig.PushStyleVar(ig.lib.ImGuiStyleVar_WindowPadding, ig.ImVec2(0.0, 0.0));
+		ig.Begin("anima DockSpace", nil, window_flags);
+		ig.PopStyleVar();
+		ig.PopStyleVar(2);
+		
+		local dockspace_id = ig.GetIDStr("anima MyDockSpace");
+		local dockspace_flags = bit.bor(ig.lib.ImGuiDockNodeFlags_NoDockingInCentralNode, ig.lib.ImGuiDockNodeFlags_AutoHideTabBar, ig.lib.ImGuiDockNodeFlags_PassthruCentralNode, ig.lib.ImGuiDockNodeFlags_NoTabBar, ig.lib.ImGuiDockNodeFlags_HiddenTabBar) --ImGuiDockNodeFlags_NoSplit
+		ig.DockSpace(dockspace_id, ig.ImVec2(0.0, 0.0), dockspace_flags);
+		ig.End()
+	end
+	
+	local function MainDockSpace()
+		if not GL.has_imgui_viewport then return end
+		if (bit.band(ig.GetIO().ConfigFlags , imgui.ImGuiConfigFlags_DockingEnable)==0) then return end
+		
+		local dockspace_flags = bit.bor(ig.lib.ImGuiDockNodeFlags_NoDockingInCentralNode, ig.lib.ImGuiDockNodeFlags_AutoHideTabBar, ig.lib.ImGuiDockNodeFlags_PassthruCentralNode, ig.lib.ImGuiDockNodeFlags_NoTabBar, ig.lib.ImGuiDockNodeFlags_HiddenTabBar) --ImGuiDockNodeFlags_NoSplit
+		ig.DockSpaceOverViewport(nil, dockspace_flags);
+	end
+	
 	function GL:postdraw() 
 		if GL.show_imgui then
 
 			GL:makeContextCurrent()
 			
-			--[[
-			if (bit.band(ig.GetIO().ConfigFlags , imgui.ImGuiConfigFlags_DockingEnable)~=0) then
-				local dockspace_id = ig.GetIDStr("MyDockSpace");
-				ig.DockSpace(dockspace_id)--, ImVec2(0.0f, 0.0f), dockspace_flags);
-			end
---]]
+
 			self.Impl:NewFrame()
+			
+			MainDockSpace()
 
 			if self.Log then self.Log:Draw() end
 		
