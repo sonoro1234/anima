@@ -306,11 +306,12 @@ local function CatmulRom(p0,p1,p2,p3,alpha)
 end
 --spline animatables
 spl_anim = {is_spl_anim = true}
-function spl_anim:new(object,segments)
+function spl_anim:new(object,segments,hook)
 	local o =  {} 
 	--assert(object)
 	o.object = object or pointer()
 	o.segmentsO = segments or {}
+	o.hook = hook
 	setmetatable(o, self)
 	self.__index = self
 	return o
@@ -354,6 +355,7 @@ function spl_anim:dofunc(time)
 		else
 			self.object[0] = self.curr_val
 		end
+		if self.hook then self:hook() end
 	end
 	return self.curr_val
 end
