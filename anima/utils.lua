@@ -326,7 +326,7 @@ end
 --ok with cycles
 function ToStr(t,dometatables)
 	local strTG = {}
-	local basicToStr= basicSerialize --tostring
+	--local basicToStr= basicSerialize --tostring
 	if type(t) ~="table" then  return basicToStr(t) end
 	local recG = 0
 	local nameG="SELF"..recG
@@ -474,9 +474,25 @@ function tbl_compare(t1,t2)
 	return _comp(t2,t1)
 end
 
---from the lua manual
+
 function basicSerialize (o)
-    if type(o) == "number" or type(o)=="boolean" then
+    if type(o) == "number" then
+		return string.format("%.17g", o)
+	elseif type(o)=="boolean" then
+        return tostring(o)
+    elseif type(o) == "string" then
+        return string.format("%q", o)
+	elseif o.__serialize then
+		return o.__serialize(o)
+	else
+		return tostring(o) --"nil"
+    end
+end
+
+function basicToStr (o)
+    if type(o) == "number" then
+		return string.format("%.17g", o)
+	elseif type(o)=="boolean" then
         return tostring(o)
     elseif type(o) == "string" then
         return string.format("%q", o)
@@ -497,7 +513,8 @@ function serializeTable(name, value, saved)
 	
 	saved = saved or {}       -- initial value
 	
-	if type(value) == "number" or type(value) == "string" or type(value)=="boolean" then
+	--if type(value) == "number" or type(value) == "string" or type(value)=="boolean" then
+	if type(value)~= "table" then
 		table.insert(string_table,basicSerialize(value).."\n")
 	elseif type(value) == "table" then
 		if saved[value] then    -- value already saved?
@@ -528,7 +545,8 @@ function serializeTableF(value,name,saved)
 
 	table.insert(string_table, name.." = ")
 	
-	if type(value) == "number" or type(value) == "string" or type(value)=="boolean" then
+	--if type(value) == "number" or type(value) == "string" or type(value)=="boolean" then
+	if type(value)~= "table" then
 		table.insert(string_table,basicSerialize(value).."\n")
 	elseif type(value) == "table" then
 		if saved[value] then    -- value already saved?

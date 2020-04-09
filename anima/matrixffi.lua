@@ -64,6 +64,11 @@ vec2 = ffi.metatype('vec2', {
 					 return v.x*w.y-v.y*w.x
 				end
 	end
+	if i == '__serialize' then 
+		return function(v) 
+			return table.concat{"loadstring ('return mat.vec2(",v.x,",",v.y,")' )()"}
+		end
+	end
     return nil
   end,
   __tostring = function(v) return '<'..v.x..','..v.y..'>' end
@@ -76,7 +81,9 @@ vec3 = ffi.metatype('vec3', {
 		end
 		return ffi.new(tp,x,y,z)
 	end,
-	__eq = function(a,b) return a.x == b.x and a.y == b.y and a.z == b.z end,
+	__eq = function(a,b)
+		if not ffi.istype(vec3,b) then return false end
+		return a.x == b.x and a.y == b.y and a.z == b.z end,
 	__add = function(a, b) return vec3(a.x + b.x, a.y + b.y, a.z + b.z) end,
 	__sub = function(a, b) return vec3(a.x - b.x, a.y - b.y, a.z - b.z) end,
 	__unm = function(a) return vec3(-a.x,-a.y,-a.z) end,
@@ -112,6 +119,12 @@ vec3 = ffi.metatype('vec3', {
 				v.x,v.y,v.z = w.x,w.y,w.z
 			end
 		end
+		if i == '__serialize' then 
+			return function(v) 
+				return table.concat{"loadstring ('return mat.vec3(",v.x,",",v.y,",",v.z,")' )()"}
+			end
+		end
+		--if i == '__serialize' then return function(v) return string.dump(function() return vec3(v.x,v.y,v.z) end) end end
 		--if i == 0 then return v end
 		return nil
 	end,
@@ -120,7 +133,8 @@ vec3 = ffi.metatype('vec3', {
 			-- v.x = val.x;v.y=val.y;v.z=val.z 
 		-- end
 	--end,
-	__tostring = function(v) return '<'..v.x..','..v.y..','..v.z..'>' end
+	__tostring = function(v) return '<'..v.x..','..v.y..','..v.z..'>' end,
+	
 })
 local vec4
 vec4 = ffi.metatype('vec4', {
@@ -153,6 +167,11 @@ vec4 = ffi.metatype('vec4', {
     if i == 'gl' then return glFloatv(4, v.x, v.y, v.z, v.w) end
 	if i == 'xyz' then return vec3(v.x, v.y, v.z) end
 	if i == 'xy' then return vec2(v.x, v.y) end
+	if i == '__serialize' then 
+			return function(v) 
+				return table.concat{"loadstring ('return mat.vec4(",v.x,",",v.y,",",v.z,",",v.w,")' )()"}
+			end
+		end
     return nil
   end,
   __tostring = function(v) return '<'..v.x..','..v.y..','..v.z..','..v.w..'>' end
