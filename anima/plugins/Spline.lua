@@ -177,7 +177,8 @@ local function Editor(GL,updatefunc,args)
 		end
 	end},
 	
-	{"set_last",0,guitypes.button,function() 
+	{"set_last",0,guitypes.button,function(val,this)
+		this.vars.points[0] = 0
 		local mousepick = {action=function(X,Y)
 							X,Y = GL:ScreenToViewport(X,Y)
 							local touched = -1
@@ -194,7 +195,7 @@ local function Editor(GL,updatefunc,args)
 						end}
 		GL.mouse_pick = mousepick
 	end},
-	{"clear",0,guitypes.button,function() M:newshape() end,{sameline=true}},
+	{"clear spline",0,guitypes.button,function() M:newshape() end,{sameline=true}},
 	}
 	
 	if args.region then table.insert(vars,{"drawregion",false,guitypes.toggle,function() updatefunc(M) end}) end

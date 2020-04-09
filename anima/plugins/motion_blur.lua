@@ -77,9 +77,8 @@ function M.make(GL)
 	local fbo
 	local mixfbos = {}
 	local mixindex = 0
-	local FBOrep
-	function Clip:init()
 
+	function Clip:init()
 		fbo = GL:initFBO()
 		mixfbos[0] = GL:initFBO()
 		mixfbos[1] = GL:initFBO()
@@ -87,16 +86,13 @@ function M.make(GL)
 		program[1] = GLSL:new():compile(vert_shad,frag_shad);
 		program[2] = GLSL:new():compile(vert_shad,frag_shad2);
 		program[3] = GLSL:new():compile(vert_shad,frag_shad3);
-		FBOrep = ut.FBOReplicator()
-		FBOrep:init()
 		Clip.inited = true
 	end
 
 
 
 	function Clip:draw(timebegin,w,h,args)
-		--prtable(args)
-		--print"mblur"
+
 		if not self.inited then self:init() end
 		
 		--alpha = math.pow(alpha,GL.fps/GL.FPS.fpsec)
@@ -108,7 +104,6 @@ function M.make(GL)
 		
 		local program = program[NM.mode]
 
-		---[[
 		program:use()
 		mixindex = (mixindex + 1)%2
 		mixfbos[mixindex]:Bind()
@@ -132,21 +127,14 @@ function M.make(GL)
 
 		ut.project(w,h)
 		ut.DoQuad(w,h)
-		--]]
+
 		mixindex = (mixindex + 1)%2
-		FBOrep:replicate(GL,mixfbos[mixindex].color_tex[0],old_framebuffer)
-		--FBOrep:replicate(GL,fbo.color_tex[0],old_framebuffer)
-		--[[
-		--------ms tosingle fbo
-		glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER,  old_framebuffer);   -- Make sure no FBO is set as the draw framebuffer
-		glext.glBindFramebuffer(glc.GL_READ_FRAMEBUFFER,  mixfbos[mixindex].fb[0]); -- Make sure your multisampled FBO is the read framebuffer
-		if old_framebuffer == 0 then
-			gl.glDrawBuffer(glc.GL_BACK);                       -- Set the back buffer as the draw buffer
-		else
-			gl.glDrawBuffer(glc.GL_COLOR_ATTACHMENT0); 
-		end
-		glext.glBlitFramebuffer(0, 0, w, h, 0, 0, w, h, glc.GL_COLOR_BUFFER_BIT, glc.GL_LINEAR);
-		--]]
+		
+		fbo:UnBind()
+		ut.Clear()
+		mixfbos[mixindex]:tex():drawcenter(w,h)
+		
+
 	end
 	GL:add_plugin(Clip)
 	return Clip
