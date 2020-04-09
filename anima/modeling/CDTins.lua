@@ -61,7 +61,8 @@ local function Editor(GL,camera,updatefunc)
 		M:process_all()
 	end
 	M.update = update
-	local SE = require"anima.plugins.Spline"(GL,update)--,{doblend=true})
+	--local SE = require"anima.plugins.Spline"(GL,update)--,{doblend=true})
+	local SE = require"anima.modeling.Spline"(GL,update)--,{doblend=true})
 	M.SE = SE
 	
 	local Dbox = GL:DialogBox("CDTins",true) --autosaved
@@ -101,6 +102,7 @@ local function Editor(GL,camera,updatefunc)
 	end
 	
 	function M:takespline(v2)
+		local v2 = v2*2/mat.vec2(GL.W,GL.H) - mat.vec2(1,1)
 		local eyepoint = MPinv * mat.vec4(v2.x,v2.y,-1,1)
 		--print(ndc,eyepoint)
 		eyepoint = eyepoint/eyepoint.w
