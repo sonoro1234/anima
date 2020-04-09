@@ -559,6 +559,7 @@ end
 ----------------------------------
 --Rodriges rotation 3d
 --gives matrix rotating A to B
+--about axis AxB
 function M.rotAB(A,B)
 	local a,b = A.normalize, B.normalize
 	local v = a:cross(b)
