@@ -474,6 +474,15 @@ function tbl_compare(t1,t2)
 	return _comp(t2,t1)
 end
 
+local function cdataSerialize(cd)
+	if ffi.istype("float[1]", cd) then
+		return table.concat{[[loadstring ("return ffi.new('float[1]',]],cd[0],[[)" )()]]}
+	elseif ffi.istype("int[1]", cd) then
+		return table.concat{[[loadstring ("return ffi.new('int[1]',]],cd[0],[[)" )()]]}
+	else
+		print(cd,"not serialized")
+	end
+end
 
 function basicSerialize (o)
     if type(o) == "number" then
@@ -482,8 +491,10 @@ function basicSerialize (o)
         return tostring(o)
     elseif type(o) == "string" then
         return string.format("%q", o)
-	elseif o.__serialize then
+	elseif pcall(function() return o.__serialize end) then
 		return o.__serialize(o)
+	elseif type(o)=="cdata" then
+		return cdataSerialize(o)
 	else
 		return tostring(o) --"nil"
     end
