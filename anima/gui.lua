@@ -870,6 +870,7 @@ function gui.DialogBox(name,autosaved)
 				D.collapsed = true
 			end
 		end
+		if self.func then self:func() end
 	end
 	if autosaved then
 		function DB:GetValues()
