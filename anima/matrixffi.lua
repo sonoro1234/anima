@@ -78,6 +78,8 @@ vec3 = ffi.metatype('vec3', {
 	__new = function(tp,x,y,z)
 		if ffi.istype(vec2,x) then
 			return ffi.new(tp,x.x,x.y,y or 0)
+		elseif ffi.istype(glFloatv,x) and ffi.sizeof(x)==3*ffi.sizeof"float" then
+			return ffi.new(tp,x[0],x[1],x[2])
 		end
 		return ffi.new(tp,x,y,z)
 	end,
