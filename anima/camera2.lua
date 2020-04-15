@@ -2,7 +2,9 @@
 ----camera2.lua will have many changes and dont manages opengl2
 
 local mat = require"anima.matrixffi"
+local vec2 = mat.vec2
 local vec3 = mat.vec3
+local vec4 = mat.vec4
 local R = require"anima.rotations"
 
 --http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
@@ -105,6 +107,16 @@ function Camera(GL,cam_type, name,initialDist)
 		dir = vec3(dir.x,dir.y,dir.z).normalize
 		self:set_dir3(dir)
 	end
+	------------------coordinate transforms
+	function cam:Viewport2Eye(v2,MPinv)
+		MPinv = MPinv or self:MP().inv
+		local v2 = v2*2/vec2(GL.W,GL.H) - vec2(1,1)
+		local eyepoint = MPinv * vec4(v2.x,v2.y,-1,1)
+		eyepoint = eyepoint/eyepoint.w
+		eyepoint = (-1*(eyepoint/eyepoint.z)).xyz
+		return eyepoint
+	end
+	----------------------------------
 	function cam:CalcCameraLookat()
 		local NMC = self.NMC
 		local pos = NMC.position
