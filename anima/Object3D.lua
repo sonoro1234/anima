@@ -185,10 +185,10 @@ local function Object(GL,camera,args)
 	function O:setMesh(mesh,tex,frame)
 		O.bounds = {mesh:bounds()}
 		O.mesh = mesh
-		O.tex = tex or O.tex
+		O.tex = tex or O.tex or initex
 		O.tex:Bind()
 		O.tex:gen_mipmap()
-		O.frame = frame or {X=vec3(1,0,0),Y=vec3(0,1,0),Z=vec3(0,0,1),center=vec3(0,0,0)}
+		O.frame = frame or {X=vec3(1,0,0),Y=vec3(0,1,0),Z=vec3(0,0,1),center=mesh:calc_centroid()}
 		
 
 		local MF = mat.translate(-self.frame.center)
