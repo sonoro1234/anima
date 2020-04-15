@@ -19,7 +19,6 @@ local function Editor(GL,updatefunc,args)
 	local numsplines = 1
 	M.sccoors = {}
 	M.ps = {}
-	M.good_indexes = {}
 	M.alpha = {}
 	M.divs = {}
 	
@@ -115,7 +114,7 @@ local function Editor(GL,updatefunc,args)
 			if igio.MouseClicked[0] and not igio.MouseDownOwned[0] then
 				table.insert(M.sccoors[NM.curr_spline],mposvp)
 				M:calc_spline()
-				updatefunc(M)
+				if M:numpoints(ii)>2 then updatefunc(M) end
 			end
 		elseif this.points == 3 then --edit
 			if doingedit then
@@ -156,7 +155,6 @@ local function Editor(GL,updatefunc,args)
 	function M:newshape()
 		self.sccoors[NM.curr_spline] = {}
 		self.ps[NM.curr_spline] = {}
-		M.good_indexes[NM.curr_spline] = true
 		M.alpha[NM.curr_spline] = ffi.new("float[1]",0.5)
 		M.divs[NM.curr_spline] = ffi.new("int[1]",3)
 	end
@@ -210,8 +208,8 @@ local function Editor(GL,updatefunc,args)
 	end
 	
 	function M:triangulate(ii)
-		local indexes
-		indexes,self.good_indexes[ii] = CG.EarClipSimple(self.ps[ii])
+		local indexes,good = CG.EarClipSimple(self.ps[ii])
+		return indexes,good
 	end
 	
 	function M:save()
