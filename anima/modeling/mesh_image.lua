@@ -248,6 +248,7 @@ function MR:MeshRectify(mesh)
 	fboim:delete()
 	fboim_inter:delete()
 	self.texR:gen_mipmap()
+	gl.glClearColor(0,0,0,0)
 	print"done rectify"
 end
 
