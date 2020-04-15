@@ -26,6 +26,7 @@ function CG.CDTinsertion(P,indexes,Polind,delout)
 		
 		local function ClasifyVerts(c,d,sc,sd,Pu,Pl)
 			if sc > 0 then
+			--if sc < 0 then
 				Pu[#Pu+1] = c
 				Pl[#Pl+1] = d
 			else
@@ -195,9 +196,16 @@ function CG.CDTinsertion(P,indexes,Polind,delout)
 					Pl = reverse(Pl)
 					Tpseudo(Ed,P,Pl,b,a)
 					if delout then
-						for i=1,#Pl do 
-							if not IsPointInPoly(Pol,P[Pl[i]]) then
-								Pdelout[Pl[i]] = true 
+						--CW poly
+						-- for i=1,#Pl do 
+							-- if not IsPointInPoly(Pol,P[Pl[i]]) then
+								-- Pdelout[Pl[i]] = true 
+							-- end
+						-- end
+						--CCW poly
+						for i=1,#Pu do 
+							if not IsPointInPoly(Pol,P[Pu[i]]) then
+								Pdelout[Pu[i]] = true 
 							end
 						end
 					end

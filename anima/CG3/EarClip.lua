@@ -131,13 +131,12 @@ local function check_crossings_ind(poly,ind,verbose)
 	return has_cros
 end
 
-local function EarClipSimple(poly)
+local function EarClipSimple(poly,CW)
 	
-	--print("EarClip begins with",#poly)
-	local hasC,hasR = M.check_simple(poly)--,true)
+	local CWfac = CW and -1 or 1
+	--local hasC,hasR = M.check_simple(poly)--,true)
 	--if hasC then error"not simple polygon" end
 	
-	--prtable(poly)
 	local ind = {}
 	local tr = {}
 	for i,v in ipairs(poly) do ind[i] = i end
@@ -145,9 +144,7 @@ local function EarClipSimple(poly)
 	--finc ear_tip
 	local badcross = false
 	while #ind > 2 do
-	--print("EarClip",#ind)
 		local initind = #ind
-		local not_convex = true
 		
 		local hasC = check_crossings_ind(poly,ind)
 		if hasC then badcross=true;break; end
@@ -155,25 +152,21 @@ local function EarClipSimple(poly)
 		for i,v in ipairs(ind) do
 			--is convex?
 			local a,b,c = ind[mod(i-1,#ind)],ind[i],ind[mod(i+1,#ind)]
-			local s = Sign(poly[a],poly[b],poly[c])
-			if s < 0 then --convex
-				not_convex = false
+			local s = Sign(poly[a],poly[b],poly[c])*CWfac
+			if s > 0 then --convex
 				local empty = true
-				
-				if s <0 then
 				--test empty
 				local jlimit = mod(i-1,#ind)
 				local j = mod(i+2,#ind)
 				while j~=jlimit do
 					local intri = IsPointInTri(poly[ind[j]],poly[a],poly[b],poly[c])
 					if intri 
-					and Sign(poly[ind[mod(j-1,#ind)]],poly[ind[j]],poly[ind[mod(j+1,#ind)]])>0 
+					--and Sign(poly[ind[mod(j-1,#ind)]],poly[ind[j]],poly[ind[mod(j+1,#ind)]])>0 
 					then
 						empty = false
 						break
 					end
 					j = mod(j+1,#ind)
-				end
 				end
 				
 				if empty then
@@ -181,10 +174,6 @@ local function EarClipSimple(poly)
 					table.insert(tr,a-1)
 					table.insert(tr,b-1)
 					table.insert(tr,c-1)
-					--remove i-1 if equals i+1
-					-- while poly[ind[mod(i,#ind)]] == poly[ind[mod(i-1,#ind)]] do
-						-- table.remove(ind,mod(i,#ind))
-					-- end
 					break
 				end
 			end
@@ -192,22 +181,6 @@ local function EarClipSimple(poly)
 		if (initind == #ind) then
 			--print("failed to find ear, no convex is",not_convex,#ind) 
 			local repaired = false
-			--check convex
-			for i=1,#ind do
-				local a,b,c = ind[mod(i-1,#ind)],ind[i],ind[mod(i+1,#ind)]
-				local s = Sign(poly[a],poly[b],poly[c])
-				--print("check convex",i,s)
-				local jlimit = mod(i-1,#ind)
-				local j = mod(i+2,#ind)
-				while j~=jlimit do
-					if IsPointInTri(poly[ind[j]],poly[a],poly[b],poly[c]) then
-						--print(j,"is inside")
-						break
-					end
-					j = mod(j+1,#ind)
-				end
-			end
-			---[=[
 			--find consecutive repeated
 			for i=1,#ind do
 				local j = mod(i+1,#ind)
@@ -234,26 +207,6 @@ local function EarClipSimple(poly)
 				end
 			end
 			end
-
-			--find crossings
-			if not repaired then
-			for i=1,#ind do
-				local a,b = poly[ind[i]],poly[ind[mod(i+1,#ind)]]
-				local jlimit = mod(i-2,#ind)
-				local j = mod(i+2,#ind)
-				while j~=jlimit do
-					local c,d = poly[ind[j]],poly[ind[mod(j+1,#ind)]]
-					local inters,sc,sd = M.SegmentIntersect(a,b,c,d)
-					--print("find crossin",i,j,"vals",inters,sc,sd)
-					if inters then
-						--print("self crossing",a,b,c,d)
-						has_cros = true
-					end
-					j = mod(j+1,#ind)
-				end
-			end
-			end
-			--]=]
 			--------------
 			if not repaired then
 				local restpoly = {}

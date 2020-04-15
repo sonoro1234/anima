@@ -18,8 +18,8 @@ end
 M.Sign = Sign
 
 local acos = math.acos
-local function Angle(p1,p2,p3,CCW)
-	if CCW then p1,p3 = p3,p1 end
+local function Angle(p1,p2,p3,CW)
+	if not CW then p1,p3 = p3,p1 end
 	assert(p1~=p2 and p2~=p3) --would give nan as angle
 	if p1==p2 or p2==p3 then
 		print("Angle called with p1==p2 or p2==p3")
@@ -206,11 +206,8 @@ local function IsPointInPolyWn(V,P)
 end
 
 M.IsPointInPoly = IsPointInPolyCn
+M.IsPointInPolyWn = IsPointInPolyWn
 
---with CW orientarion
-local function IsConvex(a,b,c)
-	return Sign(a,b,c) <=0
-end
 --triangulation of polygon as a table of vertices
 --EarClip helpers
 --find intersection of c+(1,0) with a-b
