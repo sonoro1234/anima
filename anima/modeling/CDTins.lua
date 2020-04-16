@@ -34,13 +34,16 @@ local function Editor(GL,camera,updatefunc)
 	updatefunc = updatefunc or function() end
 	local M = {}
 	
+	local DIRTYISHEIGHT = false
 	local NM = GL:Dialog("CDTins",
 	{{"set_cam",0,guitypes.button,function() M:set_cam() end},
 	{"zplane",-1,guitypes.val,{min=-20,max=-0.2}, function()
 			M.update(M.SE)
 			--M:process_all() 
 			end },
-	{"height",0,guitypes.val,{min=0,max=0.2},function() M:set_vaos() end},
+	{"height",0,guitypes.val,{min=0,max=0.2},function(val) 
+		if val> 0 then DIRTYISHEIGHT=true end
+		M:set_vaos() end},
 	{"proy_height",false,guitypes.toggle,function() M:set_vaos() end},
 	{"lineheight",true,guitypes.toggle,function() M:set_vaos() end},
 	{"grid",3,guitypes.valint,{min=1,max=30},function() M:set_vaos() end},
@@ -132,7 +135,9 @@ local function Editor(GL,camera,updatefunc)
 	local CG = require"anima.CG3" --CG2bis
 		
 	local CDTinsertion = CG.CDTinsertion
-	
+	local heights = {}
+	local Plength = 0
+	local maxh = 0
 	local function HeightSet(P,Pol)
 		if NM.height == 0 then return end
 		local function dist2seg(a,b,c)
@@ -152,22 +157,27 @@ local function Editor(GL,camera,updatefunc)
 				return math.abs(abn*ac)
 			end
 		end
-		local heights = {}
-		for i=1,#P do
-			local p = P[i]
-			heights[i] = math.huge
-			for j=1,#Pol do
-				local a = P[Pol[j]]
-				local b = P[Pol[mod(j+1,#Pol)]]
-
-				local dis = dist2seg(a,b,p)
-				heights[i] = (dis < heights[i]) and dis or heights[i]
+		if not DIRTYISHEIGHT or #P~=Plength then
+			Plength = #P
+			heights = {}
+			for i=1,#P do
+				local p = P[i]
+				heights[i] = math.huge
+				for j=1,#Pol do
+					local a = P[Pol[j]]
+					local b = P[Pol[mod(j+1,#Pol)]]
+	
+					local dis = dist2seg(a,b,p)
+					heights[i] = (dis < heights[i]) and dis or heights[i]
+				end
+			end
+			maxh = 0
+			for i,v in ipairs(heights) do
+				maxh = (v > maxh) and v or maxh
 			end
 		end
-		local maxh = 0
-		for i,v in ipairs(heights) do
-			maxh = (v > maxh) and v or maxh
-		end
+		DIRTYISHEIGHT = false
+		
 		--print("maxh",maxh)
 		for i,he in ipairs(heights) do
 			local alt 
