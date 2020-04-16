@@ -1,5 +1,6 @@
 --Robust EarClip with holes
 --with lexicografic ordered set for SignI consistency
+--much slower than FIST1 more robust
 local CG = require"anima.CG3"--.base"
 
 
@@ -132,7 +133,7 @@ end
 
 local acos = math.acos
 local function AngleI(Ind,i1,i2,i3)
-
+	i1,i3 = i3,i1 --CCW
 	--assert(p1~=p2 and p2~=p3) --would give nan as angle
 	if i1==i2 or i2==i3 then
 		error("Angle called with p1==p2 or p2==p3")
