@@ -309,8 +309,92 @@ function M.Delaunay(P,tr)
 	return tr2,Et
 end
 
+local function mod(a,b)
+	return ((a-1)%b)+1
+end
+function M.DeleteEdgesOutPoly(P,Ed,Poli)
+		--local a = 0
+		local function delete_not_fixed(E,a,b)
+			local e = E[a][b]
+			if e then --and not e.fixed then
+				CG.DeleteEdge(E,a,b) 
+			end
+		end
+		local Pol = {}
+		for i,v in ipairs(Poli) do
+			Pol[i] = P[v]
+		end
+		
+		--marcar los del poligono como fijos
+		-- for i=1,#Poli do
+			-- local a = Poli[i]
+			-- local b = Poli[mod(i+1,#Poli)]
+			-- local e = Ed[a][b]
+			-- if e then e.fixed = true end
+		-- end
+		
+		local count = 0
+		for i=1,#Poli do
+			local a = Poli[i]
+			local b = Poli[mod(i+1,#Poli)]
+			
+			local c = Ed[a][b] --or 
+			local d = Ed[b][a]
+			if c or d then -- if in triangulation
+				if c then
+					local bari = (P[a] + P[b] + P[c])/3
+					if not CG.IsPointInPoly(Pol,bari) then 
+							--delete_not_fixed(Ed,c,a)
+							--delete_not_fixed(Ed,c,b)
+							CG.deleteTriangle(Ed,a,b,c)
+							--print("out polu1",c,a) 
+					end
+				--[[
+					local mid = (P[c] + P[a])*0.5
+					if not CG.IsPointInPoly(Pol,mid) then 
+							CG.DeleteEdge(Ed,CG.EdgeKey(c,a))
+							print("out polu1",c,a) 
+					end
+	
+					local mid = (P[c] + P[b])*0.5
+					if not CG.IsPointInPoly(Pol,mid) then 
+							CG.DeleteEdge(Ed,CG.EdgeKey(c,b))
+							print("out polu2",c,b) 
+					end
+					--]]
+				end
 
-
+				if d then
+					local bari = (P[b] + P[a] + P[d])/3
+					if not CG.IsPointInPoly(Pol,bari) then 
+							-- delete_not_fixed(Ed,d,a)
+							-- delete_not_fixed(Ed,d,b)
+							CG.deleteTriangle(Ed,b,a,d)
+							--print("out polu1",c,a) 
+					end
+					--[[
+					local mid = (P[d] + P[a])*0.5
+					if not CG.IsPointInPoly(Pol,mid) then 
+							CG.DeleteEdge(Ed,CG.EdgeKey(d,a))
+							print("out polu3",d,a) 
+					end
+					local mid = (P[d] + P[b])*0.5
+					if not CG.IsPointInPoly(Pol,mid) then 
+							--print("out polu4a",e[2],e.edge[2])
+							CG.DeleteEdge(Ed,CG.EdgeKey(d,b))
+							print("out polu4b",d,b) 
+					end
+					--]]
+				end
+			else
+				print(i,a,b,"not in triangul")
+			end
+			--]=]
+		end
+		--print("zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzBorrados",count,#Poli)
+		--recreate triangulation
+		return CG.Ed2TR(Ed),Ed
+	end
 ----------------DelaunayInc
 
 local abs = math.abs

@@ -222,6 +222,7 @@ local function intersectSegmentX(p0, p1, c)
       return mat.vec2(p1.x + t * (p0.x - p1.x),y)
 	end
 end
+M.intersectSegmentX = intersectSegmentX
 
 
 local function check_point_repetition(poly,verbose)

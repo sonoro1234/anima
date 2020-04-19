@@ -354,6 +354,7 @@ local function InsertHoles(poly,skip_check)
 	poly.bridges = bridges
 	return poly
 end
+CG.InsertHoles = InsertHoles
 
 local function check_collinear(poly,ind,msg)
 

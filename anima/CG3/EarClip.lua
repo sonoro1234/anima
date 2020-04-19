@@ -36,7 +36,7 @@ local function InsertHoles2(poly)
 			if (a.x < Mp.x and b.x < Mp.x) then goto CONTINUE end
 			if a.x > I.x and b.x > I.x then goto CONTINUE end
 			if (a.y <= Mp.y and Mp.y <= b.y) or (b.y <= Mp.y and Mp.y <= a.y) then
-				local Ite = intersectSegmentX(a,b,Mp)
+				local Ite = CG.intersectSegmentX(a,b,Mp)
 				if Ite.x < I.x then
 					edge = i
 					I = Ite
@@ -70,7 +70,8 @@ local function InsertHoles2(poly)
 			local Ri
 			for i=1,#poly do
 				local a,b,c = poly[mod(i-1,#poly)],poly[i],poly[mod(i+1,#poly)]
-				if IsConvex(a,b,c) then
+				--if IsConvex(a,b,c) then
+				if CG.Sign(a,b,c) > 0 then
 					if M.IsPointInTri(b,Mp,I,P) then
 						--keep angle
 						local MR = b-Mp
@@ -379,6 +380,7 @@ function CG.triang_sweept(P)
 	local last
 	--first triangle
 	local sign = Sign(P[1],P[2],P[3])
+	--if sign >= 0 then 
 	if sign > 0 then
 		Q[1],Q[2],Q[3] = 1,2,3
 		tr = {0,1,2}

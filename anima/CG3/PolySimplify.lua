@@ -480,7 +480,7 @@ function CG.PolySimplifyNC2(poly,eps)
 	eps = eps or math.sqrt(2)*0.5 --half diagonal pixel length, good after image vectorization
 	
 	local removed = 0
-	local pset = Pset2()
+	local pset = CG.Pset2()
 	for i,pt in ipairs(poly) do
 		pset:add(pt)
 	end
