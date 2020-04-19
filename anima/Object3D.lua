@@ -198,8 +198,10 @@ local function Object(GL,camera,args)
 		O.MFinv = MF.inv
 		
 		self:make_model_mat()
+		if vao then vao:delete() end
 		vao = mesh:vao(program)
-		vaomesh = mesh:vao(progmesh)
+		if vaomesh then vaomesh:delete() end
+		vaomesh = mesh:vao(progmesh, true)
 		
 		-- vaoframe
 		local dims = self.bounds[2] - self.bounds[1]
