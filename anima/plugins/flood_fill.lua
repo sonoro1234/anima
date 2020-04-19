@@ -356,12 +356,11 @@ local GL = GLcanvas{H=700,aspect=1,DEBUG=false,fbo_nearest=false}
 
 
 local path = require"anima.path"
-fileName = [[C:\luaGL\frames_anima\msquares\imagen.png]]
+--fileName = [[C:\luaGL\frames_anima\msquares\imagen.png]]
 --fileName = [[C:\luaGL\frames_anima\im_test\Cosmos_original.jpg]]
 --fileName = path.this_script_path()..[[\imagenes\unnamed0.jpg]]
 --fileName=[[C:\luagl\animacion\resonator6\resonator-038.jpg]]
---fileName = [[C:\LuaGL\frames_anima\flood_fill\dummy.png]]
---fileName = path.this_script_path()..[[\labyrinth.png]]
+fileName = [[C:\LuaGL\frames_anima\flood_fill\labyrinth.png]]
 local texture
 local FF,mixer,fbo
 function GL.init()
@@ -370,7 +369,7 @@ function GL.init()
 	--texture = texture:resample_fac(0.25)
 	GL:set_WH(texture.width,texture.height)
 	FF = FloodF(GL)
-	mixer = require"anima.plugins.mixer"(GL,2)
+	--mixer = require"anima.plugins.mixer"(GL,2)
 	fbo = GL:initFBO{no_depth=true}
 	GL:DirtyWrap()
 end
