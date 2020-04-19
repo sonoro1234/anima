@@ -131,7 +131,7 @@ function M.grid(divs,aspect)
 		local x = (i*stepx - 0.5)*aspect
 		local xc = i/w
 		for j=0,h do
-			local y =  j*stepy - 0.5		
+			local y =  j*stepy - 0.5
 			local p = vec3(x,y,0)
 			points[#points+1] = p
 			tcoords[#tcoords+1] = vec2(xc,j/h)
@@ -139,7 +139,37 @@ function M.grid(divs,aspect)
 	end
 	-- tr indexes for grid
 	local indexes = mesh.triangs(h+1,w+1)
+	local bounds = {vec2(-0.5*aspect,-0.5),vec2(0.5*aspect,0.5)}
+	local mesh1 = mesh.mesh({points=points,tcoords=tcoords,triangles=indexes}) 
+	return mesh1, bounds
+end
+
+function M.gridB(divs,bounds,zval)
+	local minb,maxb = bounds[1],bounds[2]
+	local diff = maxb-minb
+	local aspect = diff.x/diff.y
+	local w,h
+	if aspect > 1 then
+		w,h = math.ceil(divs*aspect),divs
+	else
+		w,h = divs,math.ceil(divs/aspect)
+	end
 	
+	local points = {}
+	local tcoords = {}
+	local stepx,stepy = diff.x/w,diff.y/h
+	for i=0,w do
+		local x = i==w and maxb.x or (minb.x + i*stepx)
+		local xc = i/w
+		for j=0,h do
+			local y =  j==h and maxb.y or (minb.y + j*stepy)
+			local p = vec3(x,y,zval)
+			points[#points+1] = p
+			tcoords[#tcoords+1] = vec2(xc,j/h)
+		end
+	end
+	-- tr indexes for grid
+	local indexes = mesh.triangs(h+1,w+1)
 	local mesh1 = mesh.mesh({points=points,tcoords=tcoords,triangles=indexes}) 
 	return mesh1
 end
@@ -429,18 +459,18 @@ function M.mesh(t)
 		end
 		return vec3(minx,miny,minz),vec3(maxx,maxy,maxz)
 	end
-	function mesh:vao(program)
+	function mesh:vao(program,notcoords)
 		local tt = {}
 		tt.position = mat.vec2vao(mesh.points)
 		tt.normal = self.normals and mat.vec2vao(self.normals) or nil
-		tt.texcoords = self.tcoords and mat.vec2vao(self.tcoords) or nil
+		if not notcoords then tt.texcoords = self.tcoords and mat.vec2vao(self.tcoords) or nil end
 		local vao =  VAO(tt,program, mesh.triangles)
 		function vao:reset_mesh(mesh1)
 			self:set_buffer("position",mat.vec2vao(mesh1.points))
 			if self.normals then
 				self:set_buffer("normal",mat.vec2vao(mesh1.normals))
 			end
-			self:set_buffer("texcoords",mat.vec2vao(mesh1.tcoords))
+			if not notcoords then self:set_buffer("texcoords",mat.vec2vao(mesh1.tcoords)) end
 			self:set_indexes(mesh1.triangles)
 			vao:check_counts()
 		end
