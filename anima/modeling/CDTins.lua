@@ -1,3 +1,5 @@
+
+--------------
 require"anima"
 local mat = require"anima.matrixffi"
 local TA = require"anima.TA"
@@ -44,12 +46,11 @@ local function Editor(GL,camera,updatefunc)
 	{"height",0,guitypes.val,{min=0,max=0.2},function(val) 
 		if val> 0 then DIRTYISHEIGHT=true end
 		M:set_vaos() end},
-	{"proy_height",false,guitypes.toggle,function() M:set_vaos() end},
-	{"lineheight",true,guitypes.toggle,function() M:set_vaos() end},
+	{"proy_height",true,guitypes.toggle,function() M:set_vaos() end},
+	{"lineheight",false,guitypes.toggle,function() M:set_vaos() end,{sameline=true}},
 	{"grid",3,guitypes.valint,{min=1,max=30},function() M:set_vaos() end},
-	{"delaunay",true,guitypes.toggle,function() M:set_vaos() end},
-	{"CDT",true,guitypes.toggle,function() M:set_vaos() end},
-	{"outpoly",true,guitypes.toggle,function() M:set_vaos() end},
+	{"delaunay",false,guitypes.toggle,function() M:set_vaos() end},
+	--{"outpoly",true,guitypes.toggle,function() M:set_vaos() end},
 	})
 
 
@@ -197,36 +198,61 @@ local function Editor(GL,camera,updatefunc)
 	
 	function M:set_vaoT()
 
-		---[[
+		if #self.ps < 3 then return end
 		--generate grid mesh based on spline bounds
-		local points_add = {}
 		local minb,maxb = CG.bounds(self.ps)
-		local diff = maxb-minb
-		local step = diff/NM.grid
 		
-		for i=0,NM.grid do
-			local x = i==NM.grid and maxb.x or (minb.x + i*step.x)
-			for j=0,NM.grid do
-				local y = j==NM.grid and maxb.y or (minb.y + j*step.y)
-				local p = mat.vec3(x,y,NM.zplane)
-				points_add[#points_add+1]=p
-			end
-			--case j=NM.grid avoid roundings
-			--points_add[#points_add+1]= mat.vec3(x,maxb.y,NM.zplane)
-		end
-		-- tr indexes for grid
-		local indexes = mesh.triangs(NM.grid+1,NM.grid+1)
+		local grid = mesh.gridB(NM.grid,{minb,maxb},NM.zplane)
+		local points_add = grid.points
+		local indexes = grid.triangles
 		
 		--local inipadd = #points_add
 		local Polind --= TA():series(#self.ps,inipadd+1)
-		if NM.delaunay then
-			Polind = CG.AddPoints2Mesh(self.ps,points_add,indexes)
-			if NM.CDT then
-				indexes,E =	CDTinsertion(points_add,indexes,Polind,NM.outpoly)
-			end
-			HeightSet(points_add,Polind)
-		end
 		
+		if NM.delaunay then
+			--delete points out poly
+			local points_add2 = {}
+			for i,v in ipairs(points_add) do
+				if CG.IsPointInPoly(self.ps,v) then
+					points_add2[#points_add2+1] = v
+				end
+			end
+			-----------------
+			local Pollen = #self.ps
+			points_add = {}
+			for i,v in ipairs(self.ps) do
+				points_add[#points_add + 1] = v
+			end
+			for i,v in ipairs(points_add2) do
+				points_add[#points_add + 1] = v
+			end
+			--ordenar y guardar indices polygono
+			local Pi = {}
+			for i,v in ipairs(points_add) do
+				Pi[i] = {v=v,i=i}
+			end
+			local algo = require"anima.algorithm.algorithm"
+			algo.quicksort(Pi,1,#Pi,function(a,b) 
+				return (a.v.x < b.v.x) or ((a.v.x == b.v.x) and (a.v.y < b.v.y))
+			end)
+			for i,v in ipairs(Pi) do points_add[i] = v.v end
+			points_add.sorted = true
+			Polind = {}
+			for i=1,#Pi do
+				if Pi[i].i <= Pollen then
+					Polind[Pi[i].i] = i
+				end
+			end
+			------------------
+			local CH,tr = CG.triang_sweept(points_add)
+			local Ed
+			indexes,Ed = CG.Delaunay(points_add,tr)
+			indexes = CG.DeleteEdgesOutPoly(points_add,Ed,Polind)
+		else
+			Polind = CG.AddPoints2Mesh(self.ps,points_add,indexes)
+			indexes =	CDTinsertion(points_add,indexes,Polind, true) --NM.outpoly)
+		end
+		HeightSet(points_add,Polind)
 		--centroid
 		local cent = mat.vec3(0,0,0)
 		for i,v in ipairs(points_add) do
@@ -238,13 +264,15 @@ local function Editor(GL,camera,updatefunc)
 		local lps = vec2vao(points_add)
 		vaoT:set_buffer("position",lps,(#points_add)*3)
 		vaoT:set_indexes(indexes)
+		
 		--make tcoords
+		local diff = maxb-minb
 		local tcoords = {}
 		for i,v in ipairs(points_add) do
 			local vv = v.xy - minb
 			 tcoords[i] = mat.vec2(vv.x/diff.x,vv.y/diff.y)
-			 --print(tcoords[i])
 		end
+
 		self.mesh = mesh.mesh({points=points_add,tcoords=tcoords,triangles=indexes})
 		self.mesh.centroid = cent
 		updatefunc(self)
