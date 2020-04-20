@@ -42,7 +42,7 @@ function W.SingleValueEdit()
 		--local InputEditStateFlags = {ResetToDefault=0,Finished=1,Started=2,Modified=3,Nothing=4}
         local InputEditStateFlags = {ResetToDefault=false,Finished=false,Started=false,Modified=true,Nothing=false}
 
-		local SVE = {_state = JogDialStates.Inactive, _jogDialText = "", _numberFormat = "{0:0.00}"}
+		local SVE = {_state = JogDialStates.Inactive, _jogDialText = "", _numberFormat = "%.3f"}
 		
 		function SVE:FormatValueForButton(value)
             return string.format(self._numberFormat, value);
@@ -66,8 +66,6 @@ function W.SingleValueEdit()
             local color1 = ig.GetColorU32(ig.lib.ImGuiCol_Text);
             local keepPos = ig.GetCursorScreenPos();
             ig.Button("##dial"..tostring(self), size);
-			ig.PushID(ffi.new"void*")
-			ig.PopID()
             ig.GetWindowDrawList():AddText(keepPos + ig.ImVec2(4, 4), color1, label);
 
         end
@@ -83,7 +81,7 @@ function W.SingleValueEdit()
             min = min or (- ig.FLT_MAX)
 			max = max or (ig.FLT_MAX)
 			scale = scale or 1
-			format = format or "%.3f" --"{0:0.00}"
+			format = format or "%.3f" 
 			self._numberFormat = format;
 			
 			local iog = ig.GetIO();
@@ -145,7 +143,7 @@ function W.SingleValueEdit()
                     return InputEditStateFlags.Finished;
                 end
 
-                self._editValue = math.floor((self._editValue * 100) + 0.5) / 100;
+                self._editValue = math.floor((self._editValue * 1000) + 0.5) / 1000;
                 return math.abs(self._editValue - self._startValue) > 0.0001 and InputEditStateFlags.Modified or InputEditStateFlags.Started;
             end
 
@@ -169,8 +167,8 @@ function W.SingleValueEdit()
             local Padding = 2;
 
             local SegmentSpeeds = {
-                                   (0.5 / math.pi),
-                                   (20 * 0.5 / math.pi)}
+                                   (0.15 / math.pi),
+                                   (10 * 0.5 / math.pi)}
 
             local SegmentColor = ig.U32(1, 1, 1, 0.2);
             local ActiveSegmentColor = ig.U32(1, 1, 1, 0.2);
