@@ -41,15 +41,14 @@ local function Editor(GL,camera,updatefunc)
 	{{"set_cam",0,guitypes.button,function() M:set_cam() end},
 	{"zplane",-1,guitypes.val,{min=-20,max=-0.2}, function()
 			M.update(M.SE)
-			--M:process_all() 
 			end },
 	{"height",0,guitypes.val,{min=0,max=0.2},function(val) 
 		if val> 0 then DIRTYISHEIGHT=true end
 		M:set_vaos() end},
-	{"proy_height",true,guitypes.toggle,function() M:set_vaos() end},
+	{"proy_height",false,guitypes.toggle,function() M:set_vaos() end},
 	{"lineheight",false,guitypes.toggle,function() M:set_vaos() end,{sameline=true}},
 	{"grid",3,guitypes.valint,{min=1,max=30},function() M:set_vaos() end},
-	{"delaunay",false,guitypes.toggle,function() M:set_vaos() end},
+	--{"delaunay",false,guitypes.toggle,function() M:set_vaos() end},
 	--{"outpoly",true,guitypes.toggle,function() M:set_vaos() end},
 	})
 
@@ -176,16 +175,20 @@ local function Editor(GL,camera,updatefunc)
 			for i,v in ipairs(heights) do
 				maxh = (v > maxh) and v or maxh
 			end
+			for i,v in ipairs(heights) do
+				heights[i] = v / maxh
+			end
 		end
 		DIRTYISHEIGHT = false
-		
-		--print("maxh",maxh)
+		local sqrt = math.sqrt
+		local NMheight = NM.height
 		for i,he in ipairs(heights) do
 			local alt 
 			if NM.lineheight then
-				alt = NM.height*he/maxh
+				alt = NMheight*he
 			else
-				alt = NM.height*math.sqrt(1-(1-he/maxh)^2)
+				--alt = NM.height*sqrt(1-(1-he)^2)
+				alt = NMheight*sqrt(he*(2-he))
 			end
 			if NM.proy_height then
 				P[i] = P[i]/P[i].z*(NM.zplane+alt)
@@ -206,10 +209,9 @@ local function Editor(GL,camera,updatefunc)
 		local points_add = grid.points
 		local indexes = grid.triangles
 		
-		--local inipadd = #points_add
-		local Polind --= TA():series(#self.ps,inipadd+1)
+		local Polind 
 		
-		if NM.delaunay then
+		if NM.delaunay then --cant be non-convex polygon, should implement generalized Delaunay
 			--delete points out poly
 			local points_add2 = {}
 			for i,v in ipairs(points_add) do
@@ -247,7 +249,7 @@ local function Editor(GL,camera,updatefunc)
 			local CH,tr = CG.triang_sweept(points_add)
 			local Ed
 			indexes,Ed = CG.Delaunay(points_add,tr)
-			indexes = CG.DeleteEdgesOutPoly(points_add,Ed,Polind)
+			--indexes = CG.DeleteEdgesOutPoly(points_add,Ed,Polind)
 		else
 			Polind = CG.AddPoints2Mesh(self.ps,points_add,indexes)
 			indexes =	CDTinsertion(points_add,indexes,Polind, true) --NM.outpoly)
