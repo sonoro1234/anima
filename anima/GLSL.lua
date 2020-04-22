@@ -484,7 +484,7 @@ function initFBO(wFBO,hFBO,args)
 	local thefbo = {w = wFBO, h = hFBO, GL=args.GL}
 	thefbo.fb = ffi.new("GLuint[1]")
 	glext.glGenFramebuffers(1, thefbo.fb);
-	print("initFBO",wFBO,hFBO,thefbo.fb[0],thefbo)
+	dprint("initFBO",wFBO,hFBO,thefbo.fb[0],thefbo)
 	glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, thefbo.fb[0]);
 	--the color textures
 	if not args.color_tex then
@@ -678,7 +678,7 @@ function initFBO(wFBO,hFBO,args)
 	function thefbo:delete(keep_tex)
 		--do return end
 		assert(self.GL:checkcontext())
-		print("deleting FBO",self.fb[0],self)
+		dprint("deleting FBO",self.fb[0],self)
 		---[[
 		self:Bind()
 		for i=0,args.num_tex-1 do
