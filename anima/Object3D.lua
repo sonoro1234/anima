@@ -52,17 +52,18 @@ local function Object(GL,camera,args)
 	O.frame = {X=vec3(1,0,0),Y=vec3(0,1,0),Z=vec3(0,0,1),center=vec3(0,0,0)}
 	
 	local NM = GL:Dialog("object",{
-		{"mat2",false,gui.types.toggle,function(val,this) O:switchmat(val) end},
+		--{"mat2",false,gui.types.toggle,function(val,this) O:switchmat(val) end},
 
 		{"scale",{1,1,1},guitypes.drag,{min=0.01,max=4},function() O:make_model_mat() end},
 		{"rot",{0,0,0},guitypes.drag,{},function() O:make_model_mat() end},
 		{"pos",{0,0,0},guitypes.drag,{},function() O:make_model_mat() end},
 		{"dodraw",true,guitypes.toggle},
-		{"showtex",false,guitypes.toggle,nil,{sameline=true}},
 		{"mesh",false,guitypes.toggle,nil,{sameline=true}},
+		{"points",false,guitypes.toggle,nil,{sameline=true}},
 		{"cull",false,guitypes.toggle},
 		{"mipmaps",false,guitypes.toggle,nil,{sameline=true}},
 		{"aniso",false,guitypes.toggle,nil,{sameline=true}},
+		{"showtex",false,guitypes.toggle},
 	})
 	
 	O.NM = NM
@@ -189,7 +190,6 @@ local function Object(GL,camera,args)
 		O.tex:Bind()
 		O.tex:gen_mipmap()
 		O.frame = frame or {X=vec3(1,0,0),Y=vec3(0,1,0),Z=vec3(0,0,1),center=mesh:calc_centroid()}
-		
 
 		local MF = mat.translate(-self.frame.center)
 		MF = mat.rotABCD(self.frame.Y, vec3(0,1,0), self.frame.X , vec3(1,0,0)).mat4 * MF
@@ -228,6 +228,16 @@ local function Object(GL,camera,args)
 		else
 			if vao then
 				gl.glViewport(0,0,GL.W,GL.H)
+				if NM.points then
+					progmesh:use()
+					local U = progmesh.unif
+					U.MVP:set(camera:MVP().gl)
+					U.ModelM:set(ModelM.gl)
+					U.color:set{1,0,0}
+					gl.glPointSize(5)
+					vaomesh:draw(glc.GL_POINTS)
+					gl.glPointSize(1)
+				end
 				if NM.mesh then
 					progmesh:use()
 					local U = progmesh.unif
@@ -261,7 +271,11 @@ local function Object(GL,camera,args)
 					else
 						self.tex:min_filter(glc.GL_LINEAR)
 					end
+					-- gl.glEnable(glc.GL_BLEND)
+					-- gl.glBlendFunc(glc.GL_SRC_ALPHA, glc.GL_ONE_MINUS_SRC_ALPHA)
+					-- glext.glBlendEquation(glc.GL_FUNC_ADD)
 					vao:draw_elm()
+					--gl.glDisable(glc.GL_BLEND)
 				end
 			end
 		end
@@ -277,10 +291,10 @@ require"anima.camera2"
 local camera = newCamera(GL,"tps")
 local object1,object2
 function GL:init()
-	object1 = Object(GL,camera)
+	object1 = Object(GL,camera,{doinit=true})
 	object1.NM.vars.pos:set{-1,0,-4}
 	object1:make_model_mat()
-	object2 = Object(GL,camera)
+	object2 = Object(GL,camera,{doinit=true})
 	object2.NM.vars.pos:set{1,1,-4}
 	object2:make_model_mat()
 end
