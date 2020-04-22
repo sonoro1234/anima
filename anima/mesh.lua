@@ -174,6 +174,26 @@ function M.gridB(divs,bounds,zval)
 	return mesh1
 end
 
+--takes points and indexes (0-based opengl)
+--deletes unused points, remap indexes
+--returns map to reindex other things
+function M.clean_points(points, indexes)
+local used, map = {}, {}
+	for i,p in ipairs(points) do used[i] = 0; map[i] = i end
+	for i,ind in ipairs(indexes) do
+		used[ind+1] = used[ind+1] + 1
+	end
+	for i=#used,1,-1 do
+		if used[i]==0 then table.remove(points,i); table.remove(map,i) end
+	end
+	local map2 = {}
+	for i,v in ipairs(map) do map2[v] = i end
+	--apply map2
+	for i,ind in ipairs(indexes) do
+		indexes[i] = map2[ind+1]-1
+	end
+	return map2
+end
 
 ffi.cdef[[void* malloc (size_t size); void* realloc (void* ptr, size_t size); void free (void* ptr);]]
 function M.par_shapes_tube(section,stacks)
