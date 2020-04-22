@@ -316,10 +316,10 @@ mat4 = ffi.metatype('mat4', {
         a.m13*b.x + a.m23*b.y + a.m33*b.z + a.m43*b.w,
         a.m14*b.x + a.m24*b.y + a.m34*b.z + a.m44*b.w)
     elseif ffi.istype(vec3, b) then
-      return vec3(
-        a.m11*b.x + a.m21*b.y + a.m31*b.z ,
-        a.m12*b.x + a.m22*b.y + a.m32*b.z ,
-        a.m13*b.x + a.m23*b.y + a.m33*b.z )
+        local v4 = vec4(b.x,b.y,b.z,1)
+		v4 = a*v4
+		v4 = v4/v4.w
+		return v4.xyz
     end
     return mat4(
       a.m11*b, a.m21*b, a.m31*b, a.m41*b,
