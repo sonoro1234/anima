@@ -16,7 +16,7 @@ local function Editor(GL,updatefunc,args)
 	local plugin = require"anima.plugins.plugin"
 	local M = plugin.new{res={GL.W,GL.H}}
 	
-	local numsplines = 1
+	local numsplines = 0
 	M.sccoors = {}
 	M.ps = {}
 	M.alpha = {}
@@ -26,17 +26,14 @@ local function Editor(GL,updatefunc,args)
 	
 	local vars = {
 	{"newspline",0,guitypes.button,function(this) 
-		numsplines=numsplines+1;
-		this.vars.curr_spline[0]=numsplines 
-		this.defs.curr_spline.args.max=numsplines 
-		M:newshape() end},
+		M:newspline() end},
 	{"orientation",0,guitypes.button,function() M:change_orientation(); M:process_all() end,{sameline=true}},
 	{"set_last",0,guitypes.toggle},
 	{"clear spline",0,guitypes.button,function(this) 
-			M:newshape()
+			M:clearshape()
 		end,
 		{sameline=true}},
-	{"curr_spline",1,guitypes.valint,{min=1,max=numsplines}},
+	{"curr_spline",0,guitypes.valint,{min=1,max=numsplines}},
 	{"points",1,guitypes.slider_enum,{"nil","set","edit","clear"}},
 	
 	}
@@ -57,6 +54,7 @@ local function Editor(GL,updatefunc,args)
 		return ig.ImVec2(X1,sh-Y1)
 	end
 	local function ShowSplines(NM)
+		--if numsplines==0 then return end
 		local igio = ig.GetIO()
 		local mpos = igio.MousePos
 		local dl = ig.GetBackgroundDrawList()
@@ -73,7 +71,15 @@ local function Editor(GL,updatefunc,args)
 				local scpoint = ViewportToScreen(p.x,p.y)
 				pointsI[j-1] = scpoint
 			end
-			dl:AddPolyline(pointsI,#M.ps[i],ig.U32(1,1,0,1),true, 1)
+			dl:AddPolyline(pointsI,#M.ps[i],ig.U32(0.5,1,0,1),true, 1)
+		end
+		if NM.points == 3 then --edit
+			local mposvp = vec2(ScreenToViewport(mpos.x, mpos.y))
+			for i,sc in ipairs(M.sccoors[NM.curr_spline]) do
+				if (sc-mposvp).norm < 3 then
+					dl:AddCircleFilled(ViewportToScreen(sc.x,sc.y), 4, ig.U32(1,1,1,1))
+				end
+			end
 		end
 		dl.Flags = keepflags
 	end
@@ -81,7 +87,7 @@ local function Editor(GL,updatefunc,args)
 	local doingedit = false
 	NM = GL:Dialog("spline",vars,function(this)
 		local NM = this
-		
+		if numsplines==0 then return end
 		if ig.SliderFloat("alpha",M.alpha[NM.curr_spline],0,1) then
 			M:process_all()
 		end
@@ -150,22 +156,42 @@ local function Editor(GL,updatefunc,args)
 
 	M.NM = NM
 	NM.plugin = M
-
-
-	function M:newshape()
+	function M:newspline(pts)
+		numsplines=numsplines+1;
+		NM.vars.curr_spline[0]=numsplines 
+		NM.defs.curr_spline.args.max=numsplines 
+		M:clearshape()
+		if pts then
+			for i,p in ipairs(pts) do
+				self.sccoors[NM.curr_spline][i] = p
+			end
+		end
+		--M:process_all()
+		return numsplines
+	end
+	
+	function M:deletespline(ii)
+		ii = ii or NM.curr_spline
+		table.remove(M.sccoors,ii)
+		table.remove(M.ps,ii)
+		table.remove(M.alpha,ii)
+		table.remove(M.divs,ii)
+		numsplines=numsplines-1;
+		NM.vars.curr_spline[0]=numsplines 
+		NM.defs.curr_spline.args.max=numsplines 
+		--M:process_all()
+		return numsplines
+	end
+	
+	function M:clearshape()
 		self.sccoors[NM.curr_spline] = {}
 		self.ps[NM.curr_spline] = {}
 		M.alpha[NM.curr_spline] = ffi.new("float[1]",0.5)
-		M.divs[NM.curr_spline] = ffi.new("int[1]",3)
+		M.divs[NM.curr_spline] = ffi.new("int[1]",1)
 	end
 	
 	
 	function M:process_all()
-		-- local scoorsO = self.sccoors[NM.curr_spline] 
-		-- self:newshape()
-		-- for i,v in ipairs(scoorsO) do
-			-- table.insert(self.sccoors[NM.curr_spline],v)
-		-- end
 		M:calc_spline()
 		updatefunc(self)
 	end
@@ -200,7 +226,7 @@ local function Editor(GL,updatefunc,args)
 			self.ps[ii] = CG.Spline(self.sccoors[ii],M.alpha[ii][0],M.divs[ii][0],true)
 		end
 	end
-	function M:set_all_splines()
+	function M:calc_all_splines()
 		for i=1,numsplines do
 			self:calc_spline(i)
 		end
@@ -214,6 +240,8 @@ local function Editor(GL,updatefunc,args)
 	
 	function M:save()
 		local pars = {sccoors=self.sccoors,VP={GL.W,GL.H}}
+		pars.alpha = self.alpha
+		pars.divs = self.divs
 		pars.dial = NM:GetValues()
 		pars.numsplines = numsplines
 		return pars
@@ -222,21 +250,24 @@ local function Editor(GL,updatefunc,args)
 		if not params then return end
 		for j,sc in ipairs(params.sccoors) do
 		for i,v in ipairs(sc) do
-			sc[i] = v/vec2(GL.W/params.VP[1],GL.H/params.VP[2])
+			sc[i] = v/vec2(params.VP[1]/GL.W,params.VP[2]/GL.H)
 		end
 		end
 		NM:SetValues(params.dial or {})
 		M.sccoors = params.sccoors
-		for j,sc in ipairs(params.sccoors) do
-			NM.vars.curr_spline[0] = j
-			self:process_all()
-		end
+		M.alpha = params.alpha
+		M.divs = params.divs
+		-- for j,sc in ipairs(params.sccoors) do
+			-- NM.vars.curr_spline[0] = j
+			-- self:process_all()
+		-- end
 		numsplines = params.numsplines
 		NM.defs.curr_spline.args.max=numsplines
 		NM.vars.points[0]=1 --no edit acction
+		M:calc_all_splines()
 	end
 	M.draw = function() end --dummy value for plugin
-	M:newshape()
+	M:clearshape()
 	return M
 end
 
