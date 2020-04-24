@@ -1173,6 +1173,7 @@ function gui.SetImGui(GL)
 		maxx_needed = 0
 		--ig.SetNextWindowSizeConstraints(ig.ImVec2(200,200),ig.ImVec2(ig.GetIO().DisplaySize.x,-1))
 		--if ig.Begin("params",nil,bit.bor(imgui.ImGuiWindowFlags_AlwaysAutoResize,imgui.ImGuiWindowFlags_HorizontalScrollbar)) then
+		ig.SetNextWindowSizeConstraints(ig.ImVec2(250,-1),ig.ImVec2(ig.FLT_MAX,ig.FLT_MAX))
 		if ig.Begin("params",nil,imgui.ImGuiWindowFlags_AlwaysAutoResize) then
 			if #GL.keyframers > 0 then
 				--imgui.igColumns(3, nil, false)

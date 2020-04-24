@@ -1414,7 +1414,7 @@ function GLcanvas(GL)
 		doinitCOMMON(self)
 	end
 	
-	
+	--GL.plugins will be used for calling init , for DirtyWrap and set_WH (not really done: sets p.res)
 	function GL:add_plugin(plugin,name)
 		if self.in_init then
 			plugin:init()
