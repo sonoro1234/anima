@@ -37,9 +37,9 @@ local function imgui_lookat_cameraDialog(name,zforh,GL, invisible,cam)
 		{"center",{0,0,-1},guitypes.drag,{min=-5,max=5}},
 		{"position",{0,0,0},guitypes.drag,{minv=-5,maxv=5}},
 		{"focal",35,guitypes.val,{min=0,max=180}},
-		{"focal_fac",1,guitypes.val,{min=0.01,max=5}},
+		{"focal_fac",1,guitypes.val,{min=0.01,max=5,sameline=true}},
 		{"nearZ",0.1,guitypes.val,{min=0.01,max=1}},
-		{"farZ",1000,guitypes.val,{min=1,max=1000}},
+		{"farZ",1000,guitypes.val,{min=1,max=1000,sameline=true}},
 		{"ortho",0,guitypes.toggle}}
 		,nil,invisible)
 		return NMC
@@ -65,9 +65,9 @@ local function imgui_cameraDialog(name,zforh,GL, invisible,cam)
 		-- {"ycamL",0,guitypes.drag,{min=-5,max=5,precission=0.1}},
 		-- {"zcamL",0,guitypes.dial,{min=-5*zforh,max=5*zforh}},
 		{"focal",35,guitypes.drag,{min=0,max=180,precission=0.1,separator=true}},
-		{"focal_fac",1,guitypes.drag,{min=0.01,max=5,precission=0.1}},
+		{"focal_fac",1,guitypes.drag,{min=0.01,max=5,precission=0.1,sameline=true}},
 		{"nearZ",0.1,guitypes.drag,{min=0.01,max=1,precission=0.1}},
-		{"farZ",1000,guitypes.drag,{min=1,max=1000,precission=0.1}},
+		{"farZ",1000,guitypes.drag,{min=1,max=1000,precission=0.1,sameline=true}},
 		{"ortho",0,guitypes.toggle}}
 		,nil,invisible)
 		return NMC
