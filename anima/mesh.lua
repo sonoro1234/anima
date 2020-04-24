@@ -448,10 +448,11 @@ function M.mesh(t)
 	end
 	function mesh:M4(MM)
 		for i=1,#self.points do
-			local vec = mat.vec4(self.points[i],1)
-			local pR = MM * vec
-			pR = pR/pR.w
-			self.points[i] = pR.xyz
+			-- local vec = mat.vec4(self.points[i],1)
+			-- local pR = MM * vec
+			-- pR = pR/pR.w
+			-- self.points[i] = pR.xyz
+			self.points[i] = MM * self.points[i]
 		end
 	end
 	function mesh:scale(f)
