@@ -1,30 +1,7 @@
 
 --------------
 require"anima"
-local mat = require"anima.matrixffi"
-local TA = require"anima.TA"
-local path = require"anima.path"
-path.require_here()
-local vert_sh = [[
-	in vec3 position;
-	uniform mat4 MP;
-	void main()
-	{
-		gl_Position = MP * vec4(position,1);
-	
-	}
-	]]
 
-local frag_sh = [[
-	uniform vec3 color = vec3(1);
-	void main()
-	{
-		gl_FragColor = vec4(color,1);
-	}
-	]]
-
-	
-local program
 
 local function mod(a,b)
 	return ((a-1)%b)+1
@@ -36,20 +13,19 @@ local function Editor(GL,camera,updatefunc)
 	updatefunc = updatefunc or function() end
 	local M = {}
 	
-	local DIRTYISHEIGHT = false
-	local NM = GL:Dialog("CDTins",
+	local SPLINEDIRTY = true
+	local NM = GL:Dialog("Height",
 	{{"set_cam",0,guitypes.button,function() M:set_cam() end},
 	{"zplane",-1,guitypes.val,{min=-20,max=-0.2}, function()
 			M.update(M.SE)
 			end },
-	{"height",0,guitypes.val,{min=0,max=0.2},function(val) 
-		if val> 0 then DIRTYISHEIGHT=true end
-		M:set_vaos() end},
-	{"proy_height",false,guitypes.toggle,function() M:set_vaos() end},
-	{"lineheight",false,guitypes.toggle,function() M:set_vaos() end,{sameline=true}},
-	{"grid",3,guitypes.valint,{min=1,max=30},function() M:set_vaos() end},
-	--{"delaunay",false,guitypes.toggle,function() M:set_vaos() end},
-	--{"outpoly",true,guitypes.toggle,function() M:set_vaos() end},
+	{"height",0,guitypes.val,{min=-1,max=1},function(val) 
+		--if val> 0 then DIRTYISHEIGHT=true end
+		M:process() end},
+	{"alpha",1,guitypes.drag,{min=0,max=6},function() M:process() end},
+	{"proy_height",false,guitypes.toggle,function() M:process() end},
+	{"curves",1,guitypes.slider_enum,{"line","circle","pow"},function() M:process() end},
+	{"grid",3,guitypes.valint,{min=1,max=30},function() M:process() end},
 	})
 
 
@@ -61,35 +37,25 @@ local function Editor(GL,camera,updatefunc)
 			ps[i] = M:takespline(pt)
 		end
 		M.ps = ps
-		M:process_all()
+		SPLINEDIRTY = true
+		M:process()
 	end
 	M.update = update
-	--local SE = require"anima.plugins.Spline"(GL,update)--,{doblend=true})
-	local SE = require"anima.modeling.Spline"(GL,update)--,{doblend=true})
+	local SE = require"anima.modeling.Spline"(GL,update)
 	M.SE = SE
 	
-	local Dbox = GL:DialogBox("CDTins",true) --autosaved
-	--Dbox:add_dialog(camera.NMC)
+	local Dbox = GL:DialogBox("SpHeight",true) --autosaved
 	Dbox:add_dialog(SE.NM)
 	Dbox:add_dialog(NM)
 	Dbox.plugin = M
 	
 	M.NM = Dbox
-	--NM.plugin = M
-	
-	local vaopoints, vaoT
+
 	function M:init()
-		if not program then
-			program = GLSL:new():compile(vert_sh,frag_sh)
-		end
-		vaopoints = VAO({position=TA():Fill(0,12)},program)
-		vaoT = VAO({position=TA():Fill(0,12)},program,{0,1,2,3})
 		self:save_cam()
 		self:newshape()
 	end
 	function M:newshape()
-		--self.eyepointsW = {}
-		self.eyepointsP = {}
 		self.ps = {}
 	end
 
@@ -107,32 +73,17 @@ local function Editor(GL,camera,updatefunc)
 	function M:takespline(v2)
 		local v2 = v2*2/mat.vec2(GL.W,GL.H) - mat.vec2(1,1)
 		local eyepoint = MPinv * mat.vec4(v2.x,v2.y,-1,1)
-		--print(ndc,eyepoint)
 		eyepoint = eyepoint/eyepoint.w
 		eyepoint = (NM.zplane*(eyepoint/eyepoint.z)).xyz
-		table.insert(self.eyepointsP,eyepoint)
 		return eyepoint
 	end
 	
-	function M:process_all()
-		M:set_vaos()
-	end
 	function M:numpoints()
-		return #self.eyepointsP
+		return #self.ps
 	end
-	
-	vec2vao = mat.vec2vao
 
 	
-	function M:set_vaos()
-		if #self.eyepointsP > 0 then
-			local lp = vec2vao(self.eyepointsP)
-			vaopoints:set_buffer("position",lp,(#self.eyepointsP)*3)
-		end
-		self:set_vaoT()
-	end
-	
-	local CG = require"anima.CG3" --CG2bis
+	local CG = require"anima.CG3" 
 		
 	local CDTinsertion = CG.CDTinsertion
 	local heights = {}
@@ -157,7 +108,8 @@ local function Editor(GL,camera,updatefunc)
 				return math.abs(abn*ac)
 			end
 		end
-		if not DIRTYISHEIGHT or #P~=Plength then
+		if SPLINEDIRTY or #P~=Plength then
+			--print("DIRT",not SPLINEDIRTY , #P~=Plength)
 			Plength = #P
 			heights = {}
 			for i=1,#P do
@@ -177,29 +129,39 @@ local function Editor(GL,camera,updatefunc)
 			end
 			for i,v in ipairs(heights) do
 				heights[i] = v / maxh
+				assert(heights[i]>=0 and heights[i]<=1)
 			end
+			local minhe,maxhe = math.huge,-math.huge
+			for i,v in ipairs(heights) do
+				minhe = minhe < heights[i] and minhe or heights[i]
+				maxhe = maxhe > heights[i] and maxhe or heights[i]
+			end
+			print("minhe,maxhe",minhe,maxhe)
 		end
-		DIRTYISHEIGHT = false
-		local sqrt = math.sqrt
+		SPLINEDIRTY = false
+		local sqrt,pow = math.sqrt, math.pow
 		local NMheight = NM.height
+		local alpha = NM.alpha
 		for i,he in ipairs(heights) do
 			local alt 
-			if NM.lineheight then
-				alt = NMheight*he
-			else
+			if NM.curves==1 then
+				alt = he
+			elseif NM.curves==2 then
 				--alt = NM.height*sqrt(1-(1-he)^2)
-				alt = NMheight*sqrt(he*(2-he))
+				alt = sqrt(he*(2-he))
+			else --3
+				alt = pow(he,alpha)
 			end
+			alt = NMheight*alt
 			if NM.proy_height then
 				P[i] = P[i]/P[i].z*(NM.zplane+alt)
 			else
 				P[i].z = NM.zplane  + alt
 			end
-			 
 		end
 	end
 	
-	function M:set_vaoT()
+	function M:process()
 
 		if #self.ps < 3 then return end
 		--generate grid mesh based on spline bounds
@@ -209,63 +171,24 @@ local function Editor(GL,camera,updatefunc)
 		local points_add = grid.points
 		local indexes = grid.triangles
 		
-		local Polind 
-		
-		if NM.delaunay then --cant be non-convex polygon, should implement generalized Delaunay
-			--delete points out poly
-			local points_add2 = {}
-			for i,v in ipairs(points_add) do
-				if CG.IsPointInPoly(self.ps,v) then
-					points_add2[#points_add2+1] = v
-				end
-			end
-			-----------------
-			local Pollen = #self.ps
-			points_add = {}
-			for i,v in ipairs(self.ps) do
-				points_add[#points_add + 1] = v
-			end
-			for i,v in ipairs(points_add2) do
-				points_add[#points_add + 1] = v
-			end
-			--ordenar y guardar indices polygono
-			local Pi = {}
-			for i,v in ipairs(points_add) do
-				Pi[i] = {v=v,i=i}
-			end
-			local algo = require"anima.algorithm.algorithm"
-			algo.quicksort(Pi,1,#Pi,function(a,b) 
-				return (a.v.x < b.v.x) or ((a.v.x == b.v.x) and (a.v.y < b.v.y))
-			end)
-			for i,v in ipairs(Pi) do points_add[i] = v.v end
-			points_add.sorted = true
-			Polind = {}
-			for i=1,#Pi do
-				if Pi[i].i <= Pollen then
-					Polind[Pi[i].i] = i
-				end
-			end
-			------------------
-			local CH,tr = CG.triang_sweept(points_add)
-			local Ed
-			indexes,Ed = CG.Delaunay(points_add,tr)
-			--indexes = CG.DeleteEdgesOutPoly(points_add,Ed,Polind)
-		else
-			Polind = CG.AddPoints2Mesh(self.ps,points_add,indexes)
-			indexes =	CDTinsertion(points_add,indexes,Polind, true) --NM.outpoly)
+		local Polind = CG.AddPoints2Mesh(self.ps,points_add,indexes)
+		indexes =	CDTinsertion(points_add,indexes,Polind, true) --NM.outpoly)
+		---------------------
+		--delete points not used
+		local map = mesh.clean_points(points_add, indexes)
+		for i,ind in ipairs(Polind) do
+			Polind[i] = map[ind]
 		end
-		HeightSet(points_add,Polind)
+		---------------------
 		--centroid
-		local cent = mat.vec3(0,0,0)
-		for i,v in ipairs(points_add) do
-			cent = cent + v
-		end
-		cent = cent/#points_add
-		self.centroid = cent
+		-- local cent = mat.vec3(0,0,0)
+		-- for i,v in ipairs(points_add) do
+			-- cent = cent + v
+		-- end
+		-- cent = cent/#points_add
+		-- self.centroid = cent
 		
-		local lps = vec2vao(points_add)
-		vaoT:set_buffer("position",lps,(#points_add)*3)
-		vaoT:set_indexes(indexes)
+		HeightSet(points_add,Polind)
 		
 		--make tcoords
 		local diff = maxb-minb
@@ -276,31 +199,13 @@ local function Editor(GL,camera,updatefunc)
 		end
 
 		self.mesh = mesh.mesh({points=points_add,tcoords=tcoords,triangles=indexes})
-		self.mesh.centroid = cent
+		--self.mesh.centroid = cent
 		updatefunc(self)
 	end
 	
+	--dummy draw
 	function M:draw(t,w,h)
-		if NM.collapsed or Dbox.collapsed then return end
-		gl.glDisable(glc.GL_DEPTH_TEST)
-		gl.glViewport(0, 0, w, h)
-		program:use()
-		local MP1 = camera:MP()
-		program.unif.MP:set(MP1.gl)
-
-		program.unif.color:set{1,1,1}
 		
-		if M:numpoints()>2 then
-		vaoT:draw_mesh()
-		end
-		
-		--gl.glEnable(glc.GL_BLEND)
-		--gl.glBlendFunc(glc.GL_ONE,glc.GL_ONE)
-		--glext.glBlendEquation(glc.GL_FUNC_ADD)
-		SE:draw(t,w,h)
-		--gl.glDisable(glc.GL_BLEND)
-		
-		gl.glEnable(glc.GL_DEPTH_TEST)
 	end
 	function M:save()
 		local pars = {}
@@ -314,8 +219,8 @@ local function Editor(GL,camera,updatefunc)
 		SE:load(params.SE)
 		M:set_cam()
 	end
-
-	GL:add_plugin(M,"CDTins")
+	M:init()
+	--GL:add_plugin(M,"SpHeight")
 	return M
 end
 
@@ -341,7 +246,7 @@ function GL.init()
 	GL:DirtyWrap()
 end
 function GL.draw(t,w,h)
-	--edit:set_vaos()
+	--edit:process()
 	ut.Clear()
 	edit:draw(t,w,h)
 end
