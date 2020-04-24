@@ -271,11 +271,11 @@ local function Object(GL,camera,args)
 					else
 						self.tex:min_filter(glc.GL_LINEAR)
 					end
-					-- gl.glEnable(glc.GL_BLEND)
-					-- gl.glBlendFunc(glc.GL_SRC_ALPHA, glc.GL_ONE_MINUS_SRC_ALPHA)
-					-- glext.glBlendEquation(glc.GL_FUNC_ADD)
+					gl.glEnable(glc.GL_BLEND)
+					gl.glBlendFunc(glc.GL_SRC_ALPHA, glc.GL_ONE_MINUS_SRC_ALPHA)
+					glext.glBlendEquation(glc.GL_FUNC_ADD)
 					vao:draw_elm()
-					--gl.glDisable(glc.GL_BLEND)
+					gl.glDisable(glc.GL_BLEND)
 				end
 			end
 		end
