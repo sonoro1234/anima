@@ -65,7 +65,8 @@ function CG.CDTinsertion(P,indexes,Polind,delout)
 
 			print("FindTriangleInterAB2 finds nothing")
 			print("")
-			error("FindTriangleInterAB2 finds nothing")
+			return false
+			--error("FindTriangleInterAB2 finds nothing")
 		end
 		
 		local function Walk(a,b,c,d,Pu,Pl)
@@ -172,6 +173,7 @@ function CG.CDTinsertion(P,indexes,Polind,delout)
 				local Pu,Pl = {},{} --{a},{a}
 				--primero buscar punto a y arista intersecada
 				local c,d,sc,sd =	FindTriangleInterAB2(a,b,Ed)
+				if not c then return CG.Ed2TR(Ed),Ed,false end
 				ClasifyVerts(c,d,sc,sd,Pu,Pl)
 				--ahora recorrer los triangulos hasta b
 				Walk(a,b,c,d,Pu,Pl)
