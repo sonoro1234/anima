@@ -183,7 +183,14 @@ local function Editor(GL,updatefunc,args)
 		return numsplines
 	end
 	
+	function M:deleteall()
+		for i=#M.sccoors,1,-1 do
+			self:deletespline(i)
+		end
+	end
+	
 	function M:clearshape()
+		if NM.curr_spline==0 then return end
 		self.sccoors[NM.curr_spline] = {}
 		self.ps[NM.curr_spline] = {}
 		M.alpha[NM.curr_spline] = ffi.new("float[1]",0.5)
@@ -193,11 +200,11 @@ local function Editor(GL,updatefunc,args)
 	
 	function M:process_all()
 		M:calc_spline()
-		updatefunc(self)
+		if M:numpoints()>2 then updatefunc(self) end
 	end
 	function M:numpoints(ind)
 		ind = ind or NM.curr_spline
-		return #self.sccoors[ind]
+		return self.sccoors[ind] and #self.sccoors[ind] or 0
 	end
 
 	function M:change_orientation()
@@ -257,6 +264,7 @@ local function Editor(GL,updatefunc,args)
 		M.sccoors = params.sccoors
 		M.alpha = params.alpha
 		M.divs = params.divs
+		M.ps = {}
 		-- for j,sc in ipairs(params.sccoors) do
 			-- NM.vars.curr_spline[0] = j
 			-- self:process_all()
@@ -264,10 +272,11 @@ local function Editor(GL,updatefunc,args)
 		numsplines = params.numsplines
 		NM.defs.curr_spline.args.max=numsplines
 		NM.vars.points[0]=1 --no edit acction
+		NM.vars.curr_spline[0] = 1
 		M:calc_all_splines()
 	end
 	M.draw = function() end --dummy value for plugin
-	M:clearshape()
+	--M:clearshape()
 	return M
 end
 
