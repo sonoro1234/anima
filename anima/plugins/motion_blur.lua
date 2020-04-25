@@ -1,10 +1,13 @@
 local plugin = require"anima.plugins.plugin"
 local vert_shad = [[
+in vec3 position;
+in vec2 texcoords;
+out vec2 f_tc;
 
 void main()
 {
-	gl_TexCoord[0] = gl_MultiTexCoord0;
-	gl_Position = ftransform();
+	f_tc = texcoords;
+	gl_Position = vec4(position,1);
 }
 
 ]]
@@ -12,12 +15,12 @@ local frag_shad = [[
 uniform sampler2D tex0,tex1;
 uniform float alpha;
 uniform int mode;
-
+in vec2 f_tc;
 void main()
 {
 	
-	vec4 color = texture2D(tex0,gl_TexCoord[0].st);
-	vec4 colorold = texture2D(tex1,gl_TexCoord[0].st);
+	vec4 color = texture2D(tex0,f_tc);
+	vec4 colorold = texture2D(tex1,f_tc);
 	//gl_FragColor = max(colorold *alpha,color);
 
 	
@@ -30,12 +33,12 @@ local frag_shad3 = [[
 uniform sampler2D tex0,tex1;
 uniform float alpha,alpha2;
 uniform int mode;
-
+in vec2 f_tc;
 void main()
 {
 	
-	vec4 color = texture2D(tex0,gl_TexCoord[0].st);
-	vec4 colorold = texture2D(tex1,gl_TexCoord[0].st);
+	vec4 color = texture2D(tex0,f_tc);
+	vec4 colorold = texture2D(tex1,f_tc);
 	vec4 colormax = max(colorold *alpha,color);
 	vec4 color1 = colorold * alpha + color*(1.0 - abs(alpha));
 	gl_FragColor = mix(color1,colormax,alpha2);
@@ -46,11 +49,12 @@ local frag_shad2 = [[
 uniform sampler2D tex0,tex1;
 uniform float alpha;
 uniform int mode;
+in vec2 f_tc;
 void main()
 {
 	
-	vec4 color = texture2D(tex0,gl_TexCoord[0].st);
-	vec4 colorold = texture2D(tex1,gl_TexCoord[0].st);
+	vec4 color = texture2D(tex0,f_tc);
+	vec4 colorold = texture2D(tex1,f_tc);
 	
 	//gl_FragColor = mix(colorold * alpha,color,color.a);
 	
@@ -77,7 +81,7 @@ function M.make(GL)
 	local fbo
 	local mixfbos = {}
 	local mixindex = 0
-
+	local quads = {}
 	function Clip:init()
 		fbo = GL:initFBO()
 		mixfbos[0] = GL:initFBO()
@@ -86,6 +90,9 @@ function M.make(GL)
 		program[1] = GLSL:new():compile(vert_shad,frag_shad);
 		program[2] = GLSL:new():compile(vert_shad,frag_shad2);
 		program[3] = GLSL:new():compile(vert_shad,frag_shad3);
+		for i=1,3 do
+			quads[i] = mesh.quad():vao(program[i])
+		end
 		Clip.inited = true
 	end
 
@@ -125,8 +132,7 @@ function M.make(GL)
 		gl.glClearColor(0.0, 0.0, 0.0, 0)
 		ut.Clear()
 
-		ut.project(w,h)
-		ut.DoQuad(w,h)
+		quads[NM.mode]:draw_elm()
 
 		mixindex = (mixindex + 1)%2
 		

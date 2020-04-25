@@ -569,7 +569,7 @@ function initFBO(wFBO,hFBO,args)
 		i = i or 0
 		j = j or i
 		glext.glActiveTexture(glc.GL_TEXTURE0 + i);
-		gl.glEnable( glc.GL_TEXTURE_2D );
+		if not self.GL.restricted then gl.glEnable( glc.GL_TEXTURE_2D ); end
 		gl.glBindTexture(glc.GL_TEXTURE_2D, self.color_tex[j])
 		--local modewrap = glc.GL_MIRRORED_REPEAT --glc.GL_CLAMP --glc.GL_REPEAT --glc.GL_MIRRORED_REPEAT
 		--gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_WRAP_S, modewrap); 
