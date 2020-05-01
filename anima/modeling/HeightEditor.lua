@@ -10,8 +10,9 @@ local function HeightEditor(GL,updatefunc)
 	local M = {psor={},ps={}}
 	
 	local SPLINEDIRTY = true
-	local NM = GL:Dialog("Height",
+	local NM = gui.Dialog("Height",
 	{
+	{"op",1,guitypes.slider_enum,{"curve","tube","poly"},function(val) M:process() end},
 	{"zplane",0,guitypes.val,{min=-20,max=0}, function() M:set_zplane();M:process() end },
 	{"height",0,guitypes.val,{min=-1,max=1},function(val) M:process() end},
 	{"alpha",1,guitypes.drag,{min=0,max=6},function() M:process() end},
@@ -124,6 +125,42 @@ local function HeightEditor(GL,updatefunc)
 	end
 	
 	function M:process()
+		if NM.op == 1 then
+			M:process_curves()
+		elseif NM.op == 2 then
+			M:process_tube()
+		elseif NM.op == 3 then
+			M:process_poly()
+		end
+	end
+	
+	function M:process_poly()
+		if #self.ps < 3 then return end
+		local minb,maxb = CG.bounds(self.ps)
+		local indexes = CG.EarClipSimple2(self.ps)
+		--make tcoords
+		local diff = maxb-minb
+		local tcoords = {}
+		for i,v in ipairs(self.ps) do
+			local vv = v.xy - minb
+			 tcoords[i] = mat.vec2(vv.x/diff.x,vv.y/diff.y)
+		end
+		self.mesh = mesh.mesh({points=self.ps,tcoords=tcoords,triangles=indexes})
+		updatefunc(self)
+	end
+	
+	function M:process_tube()
+		if #self.ps < 3 then return end
+		self.ps[#self.ps + 1] = self.ps[ 1]
+		local section = mesh.tb2section(self.ps)
+		self.ps[#self.ps] = nil
+		local meshW = mesh.tube(section,NM.grid)
+		meshW:M4(mat.translate(vec3(0,0,NM.zplane))*mat.scale(1,1,NM.height))
+		self.mesh = meshW
+		updatefunc(self)
+	end
+	
+	function M:process_curves()
 
 		if #self.ps < 3 then return end
 		--prtable(self.ps)
