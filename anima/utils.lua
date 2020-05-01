@@ -479,6 +479,12 @@ local function cdataSerialize(cd)
 		return table.concat{[[loadstring ("return ffi.new('float[1]',]],cd[0],[[)" )()]]}
 	elseif ffi.istype("int[1]", cd) then
 		return table.concat{[[loadstring ("return ffi.new('int[1]',]],cd[0],[[)" )()]]}
+	elseif ffi.istype("float[]",cd) then
+		local size = ffi.sizeof(cd)/ffi.sizeof"float"
+		local tab = {[[loadstring ("return ffi.new('float[?]',]],size}
+		for i=0,size-1 do tab[#tab+1] = ",";tab[#tab+1] = cd[i] end
+		tab[#tab+1] = [[)" )()]]
+		return table.concat(tab)
 	else
 		print(cd,"not serialized")
 	end
