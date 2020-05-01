@@ -251,13 +251,6 @@ function par_shapes.create.cone_tronco(a,b,r2,inv)
 		out[2] = inp[0]
 	end,a,b,nil)
 end
---[[
-		--local mesh = require"anima.mesh"
-		local meshesfere = par_shapes.create.cube()
-		print(meshesfere.npoints, meshesfere.ntriangles)
-		meshesfere:dump()
-		--local mesh1 = mesh.par_shapes2mesh(meshesfere)
-		meshesfere:free()
---]]
+
 return par_shapes
 

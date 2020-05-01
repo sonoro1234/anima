@@ -51,7 +51,7 @@ local function Object(GL,camera,args)
 	local O = {}
 	O.frame = {X=vec3(1,0,0),Y=vec3(0,1,0),Z=vec3(0,0,1),center=vec3(0,0,0)}
 	
-	local NM = GL:Dialog("object",{
+	local NM = GL:Dialog(args.name or "object",{
 		--{"mat2",false,gui.types.toggle,function(val,this) O:switchmat(val) end},
 
 		{"scale",{1,1,1},guitypes.drag,{min=0.01,max=4},function() O:make_model_mat() end},
@@ -82,7 +82,7 @@ local function Object(GL,camera,args)
 					float freq = 100;
 					vec2 dir = vec2(cos(angle),sin(angle));
 					float dis = dot(dir,pos);
-					return vec4(sin(dis*2*M_PI*freq)*0.5+0.5);
+					return vec4(vec3(sin(dis*2*M_PI*freq)*0.5+0.5),1);
 				}]]
 			local fbo = GL:initFBO({no_depth=true},300,300)
 			fbo:Bind()

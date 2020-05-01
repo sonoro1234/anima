@@ -241,7 +241,7 @@ local function Editor(GL,updatefunc,args)
 	end
 	
 	function M:triangulate(ii)
-		local indexes,good = CG.EarClipSimple(self.ps[ii])
+		local indexes,good = CG.EarClipSimple2(self.ps[ii])
 		return indexes,good
 	end
 	

@@ -59,8 +59,8 @@ local function imgui_cameraDialog(name,zforh,GL, invisible,cam)
 							GL.mouse_pick = nil
 						end}
 		end},
-		{"dist",zforh,guitypes.drag,{min=0,max=zforh*5,precission=0.1}},
-		{"pos",{0,0,0},guitypes.drag,{min=-5,max=5,precission=0.1}},
+		{"dist",zforh,guitypes.drag,{precission=0.1}},
+		{"pos",{0,0,0},guitypes.drag,{precission=0.1}},
 		-- {"xcamL",0,guitypes.drag,{min=-5,max=5,precission=0.1}},
 		-- {"ycamL",0,guitypes.drag,{min=-5,max=5,precission=0.1}},
 		-- {"zcamL",0,guitypes.dial,{min=-5*zforh,max=5*zforh}},
