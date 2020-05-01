@@ -124,8 +124,11 @@ function W.SingleValueEdit()
                                                                 or ig.U32(1,1,1,1));
                         ig.SetNextItemWidth(size.x);
 						local ttt = ffi.new("char[20]",self._jogDialText or "")
-                        ig.InputText("##dialInput"..tostring(self), ttt, 20);
-						self._jogDialText = ffi.string(ttt)
+						local tinput = false
+                        if ig.InputText("##dialInput"..tostring(self), ttt, 20) then
+							self._jogDialText = ffi.string(ttt)
+							tinput = true
+						end
                         ig.PopStyleColor();
 
                         if (ig.IsItemDeactivated()) then
@@ -136,6 +139,11 @@ function W.SingleValueEdit()
                         end
 
                         self._editValue = tonumber(self._jogDialText) or 0;
+						if tinput then
+							self._startValue = self._editValue
+							value[0] = self._editValue;
+							return true
+						end
                 end
 
                 value[0] = self._editValue;
