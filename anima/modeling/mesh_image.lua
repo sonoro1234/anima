@@ -223,11 +223,15 @@ function MR:MeshRectifyTriang(num)
 end
 
 
-function MR:MeshRectify(mesh)
+function MR:MeshRectify(mesh,newtex)
 	self.mesh = mesh
 	meshcyl_eye = self.mesh
 
 	camMP = camara:MP()
+	
+	if newtex then
+		MR.texR = GL:Texture(tex.width,tex.height,glc.GL_RGBA32F)
+	end
 
 	fboim = GL:initFBO({no_depth=true,color_tex=self.texR.pTex},tex.width,tex.height)
 	fboim:Bind()
@@ -250,6 +254,7 @@ function MR:MeshRectify(mesh)
 	self.texR:gen_mipmap()
 	gl.glClearColor(0,0,0,0)
 	print"done rectify"
+	return self.texR
 end
 
 
