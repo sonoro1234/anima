@@ -262,7 +262,39 @@ function M.par_shapes_tube(section,stacks)
     end
 
     mesh:compute_welded_normals();
+	--mesh:compute_normals();
     return mesh;
+
+end
+
+function M.tube(section,stacks)
+
+	local slices = #section - 1
+	
+	local mesh = M.mesh()
+	local npoints = (stacks + 1)*#section
+	
+	local points = {}
+	for i=0,stacks do
+		local u =  i / stacks;
+		for j=0,slices do
+			points[#points +1] = vec3(section[j + 1].point.x, section[j + 1].point.y, u)
+		end
+	end
+	
+	assert(npoints==#points)
+	
+	local tcoords = {}
+	for i=0,stacks do
+		local u =  i / stacks;
+		for j=0,slices do
+			local v = section[j + 1].v
+			tcoords[#tcoords+1] = vec2(u, v)
+		end
+	end
+
+    --mesh:compute_welded_normals();
+    return M.mesh({points=points,tcoords=tcoords,triangles=M.triangs(slices+1, stacks+1)});
 
 end
 
@@ -364,6 +396,10 @@ function M.par_shapes_program()
 	return GLSL:new():compile(vert,frag)
 end
 
+function M.move_frame(frame,MM)
+	local MMnor = MM.inv.t
+	return {X = MMnor*frame.X, Y = MMnor*frame.Y, Z=MMnor*frame.Z, center=MM*frame.center}
+end
 
 function M.mesh(t)
 	t = t or {}
