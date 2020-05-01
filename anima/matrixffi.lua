@@ -66,7 +66,7 @@ vec2 = ffi.metatype('vec2', {
 	end
 	if i == '__serialize' then 
 		return function(v) 
-			return table.concat{"loadstring ('return mat.vec2(",v.x,",",v.y,")' )()"}
+			return table.concat{"mat.vec2(",v.x,",",v.y,")"}
 		end
 	end
     return nil
@@ -123,11 +123,9 @@ vec3 = ffi.metatype('vec3', {
 		end
 		if i == '__serialize' then 
 			return function(v) 
-				return table.concat{"loadstring ('return mat.vec3(",v.x,",",v.y,",",v.z,")' )()"}
+				return table.concat{"mat.vec3(",v.x,",",v.y,",",v.z,")"}
 			end
 		end
-		--if i == '__serialize' then return function(v) return string.dump(function() return vec3(v.x,v.y,v.z) end) end end
-		--if i == 0 then return v end
 		return nil
 	end,
 	-- __newindex = function(v, i, val)
@@ -171,7 +169,7 @@ vec4 = ffi.metatype('vec4', {
 	if i == 'xy' then return vec2(v.x, v.y) end
 	if i == '__serialize' then 
 			return function(v) 
-				return table.concat{"loadstring ('return mat.vec4(",v.x,",",v.y,",",v.z,",",v.w,")' )()"}
+				return table.concat{"mat.vec4(",v.x,",",v.y,",",v.z,",",v.w,")"}
 			end
 		end
     return nil

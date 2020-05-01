@@ -237,9 +237,7 @@ function tablelength(T)
   for _ in pairs(T) do count = count + 1 end
   return count
 end
--- function basicToStr(a)
-	-- return tostring(a)
--- end
+
 function prOSC(t)
 	local strT = {}
 	local function _prOSC(t)
@@ -476,14 +474,14 @@ end
 
 local function cdataSerialize(cd)
 	if ffi.istype("float[1]", cd) then
-		return table.concat{[[loadstring ("return ffi.new('float[1]',]],cd[0],[[)" )()]]}
+		return table.concat{[[ffi.new('float[1]',]],cd[0],[[)]]}
 	elseif ffi.istype("int[1]", cd) then
-		return table.concat{[[loadstring ("return ffi.new('int[1]',]],cd[0],[[)" )()]]}
+		return table.concat{[[ffi.new('int[1]',]],cd[0],[[)]]}
 	elseif ffi.istype("float[]",cd) then
 		local size = ffi.sizeof(cd)/ffi.sizeof"float"
-		local tab = {[[loadstring ("return ffi.new('float[?]',]],size}
+		local tab = {[[ffi.new("float[?]",]],size}
 		for i=0,size-1 do tab[#tab+1] = ",";tab[#tab+1] = cd[i] end
-		tab[#tab+1] = [[)" )()]]
+		tab[#tab+1] = [[)]]
 		return table.concat(tab)
 	else
 		print(cd,"not serialized")
@@ -513,6 +511,16 @@ function basicToStr (o)
         return tostring(o)
     elseif type(o) == "string" then
         return string.format("%q", o)
+	elseif ffi.istype("float[]",o) then
+		local size = ffi.sizeof(o)/ffi.sizeof"float"
+		local tab = {[[float[]<]],o[0]}
+		for i=1,size-1 do tab[#tab+1] = ",";tab[#tab+1] = o[i] end
+		tab[#tab+1] = [[>]]
+		return table.concat(tab)
+	elseif ffi.istype("float[1]",o) then
+		return table.concat{[=[float[1]<]=],o[0],">"}
+	elseif ffi.istype("int[1]",o) then
+		return table.concat{[=[int[1]<]=],o[0],">"}
 	else
 		return tostring(o) --"nil"
     end
