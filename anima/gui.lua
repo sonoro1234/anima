@@ -537,7 +537,7 @@ local array_mt = {
 				ret[i+1] = a.data[i]
 			end
 			return ret
-		end
+		end,
 	}
 
 }
@@ -549,6 +549,8 @@ end
 
 local farray = makearray(ffi.typeof"float")
 local iarray = makearray(ffi.typeof"int")
+gui.farray = farray
+gui.iarray = iarray
 
 function gui.Dialog(name,vars,func, invisible)
 	
