@@ -213,7 +213,6 @@ function MR:MeshRectifyTriang(num)
 	programI:use()
 	programI.unif.tex:set{0}
 	fboim_inter:tex():Bind()
-
 	programI.unif.MP:set(MOrtho.gl)
 	fboim:viewport()
 	
@@ -223,7 +222,7 @@ function MR:MeshRectifyTriang(num)
 end
 
 
-function MR:MeshRectify(mesh,newtex)
+function MR:MeshRectify(mesh,newtex,filter)
 	self.mesh = mesh
 	meshcyl_eye = self.mesh
 
@@ -244,6 +243,14 @@ function MR:MeshRectify(mesh,newtex)
 	gl.glDisable(glc.GL_CULL_FACE)
 	gl.glDisable(glc.GL_DEPTH_TEST)
 	
+	if filter then
+	programI:use()
+	programI.unif.tex:set{0}
+	tex:Bind()
+	tex:min_filter(filter)
+	tex:mag_filter(filter)
+	end
+	
 	for i=1,meshcyl_eye.ntriangles do
 		self:MeshRectifyTriang(i)	
 	end
@@ -251,7 +258,7 @@ function MR:MeshRectify(mesh,newtex)
 	
 	fboim:delete()
 	fboim_inter:delete()
-	self.texR:gen_mipmap()
+	--self.texR:gen_mipmap()
 	gl.glClearColor(0,0,0,0)
 	print"done rectify"
 	return self.texR
@@ -259,6 +266,9 @@ end
 
 
 	MR.texR = GL:Texture(tex.width,tex.height,glc.GL_RGBA32F)
+	
+	-- fboim = GL:initFBO({no_depth=true,color_tex=MR.texR.pTex},tex.width,tex.height)
+	-- fboim_inter = GL:initFBO({no_depth=true},tex.width*facdim,tex.height*facdim)
 
 	MR.camara = camara
 	
@@ -268,7 +278,6 @@ end
 	vao_triang = VAO({position={0,0,0,0,0,0,0,0,0},tcoords={0,0,1,0,0,1}},programI)
 	vao_triang2 = VAO({position={0,0,0,0,0,0,0,0,0},tcoords={1,1,0,1,1,0}},programI)
 
-	--GL:add_plugin(MR,"mesh_rectifier")
 	return MR
 end
 
