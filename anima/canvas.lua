@@ -1103,7 +1103,7 @@ function GLcanvas(GL)
 			
 		end
 
-		
+		if GL.use_log then print = GL.luaprint end
 		if not GL.not_imgui then self.Impl:destroy() end
 		
 		--self.window:destroy()
@@ -1133,7 +1133,8 @@ function GLcanvas(GL)
 		window:setCharCallback(nil);
 		window:setKeyCallback(nil);
 		--]]
-
+		
+		if GL.use_log then print = GL.luaprint end
 		if not GL.not_imgui then self.Impl:destroy() end
 		
 		self.window:destroy()
