@@ -685,7 +685,9 @@ function gui.Dialog(name,vars,func, invisible)
 		--if (imgui.igBegin(name,nil,0)) then
 		local namevar
 		for i,v in ipairs(vars) do
-		
+			local label = v[1]
+			if defs[label].invisible then goto NEXTITEM end
+			
 			if (v[3] == guitypes.button or v[3] == guitypes.toggle or v[3] == guitypes.color) then
 				if v[5] and v[5].sameline then ig.SameLine() end
 				if v[5] and v[5].separator then ig.Separator() end
@@ -806,6 +808,7 @@ function gui.Dialog(name,vars,func, invisible)
 					self.dirty = true
 				end
 			end
+			::NEXTITEM::
 		end
 		
 		if self.func then self:func(namevar) end
@@ -843,14 +846,14 @@ function gui.DialogBox(name,autosaved)
 	function DB:add_dialog(D, dontremove)
 		--quitar de imguimodals
 		assert(D.name)
-		--if false then
+		if self.GL then --if was created with GL:DialogBox
 		for i,v in ipairs(self.GL.imguimodals) do
 			if v == D then
 				table.remove(self.GL.imguimodals,i)
 				break;
 			end
 		end
-		--end
+		end
 		D.dboxed = true
 		table.insert(self.dialogs,D)
 	end
@@ -1045,6 +1048,7 @@ function gui.SetImGui(GL)
 	end
 	-------------------------
 	GL.imguimodals =  {}
+	GL.presetmanaged =  {}
 	
 	if GL.use_log then
 		GL.Log = ig.Log()
@@ -1103,6 +1107,18 @@ function gui.SetImGui(GL)
 				table.insert(str,serializeTable(v.name,v:GetValues()))
 			end
 		end
+		
+		for k,v in ipairs(GL.presetmanaged) do
+			table.insert(nms,v.name)
+			--for kk,vv in pairs(v) do print(kk) end
+			if v.plugin and v.plugin.save then
+				print("svaing :save",v.name)
+				table.insert(str,serializeTable(v.name,v.plugin:save())) 
+			else
+				print("saving :getvalues",v.name)
+				table.insert(str,serializeTable(v.name,v:GetValues()))
+			end
+		end
 	
 		table.insert(str,"PRESET = {}\n")
 		for i,name in ipairs(nms) do
@@ -1137,28 +1153,26 @@ function gui.SetImGui(GL)
 				end
 			end
 		end
-	end
-	
-	local PresetLoader =  gui.FileBrowser(nil,{filename="preset",key="load_preset"},function(filename)  
-			local func,err = loadfile(filename)
-			if not func then print(err); return end
-			local NMs = func()
-			--prtable("NMs",NMs)
-			for k,v in ipairs(GL.imguimodals) do
-				if NMs[v.name] then
-					--prtable("NMs[v.name]",NMs[v.name])
-					if v.plugin and v.plugin.load then
-						print("plugin.load",v.name)
-						v.plugin:load(NMs[v.name])
-					else
-						print("setvalues",v.name)
-						v:SetValues(NMs[v.name])
-						if v.plugin and v.plugin.update then
-							v.plugin:update()
-						end
+		for k,v in ipairs(GL.presetmanaged) do
+			print("presermanaged",v.name)
+			if NMs[v.name] then
+				--prtable("NMs[v.name]",NMs[v.name])
+				if v.plugin and v.plugin.load then
+					print("plugin.load",v.name)
+					v.plugin:load(NMs[v.name])
+				else
+					print("setvalues",v.name)
+					v:SetValues(NMs[v.name])
+					if v.plugin and v.plugin.update then
+						v.plugin:update()
 					end
 				end
 			end
+		end
+	end
+	
+	local PresetLoader =  gui.FileBrowser(nil,{filename="preset",key="load_preset"},function(filename)
+			GL:preset_load(filename)
 	end)
 	GL.PresetLoader = PresetLoader
 	local curr_notmodal = 1
@@ -1199,7 +1213,7 @@ function gui.SetImGui(GL)
 			local last_button_x2 = 0
 			---[[
 			for i,v in ipairs(self.imguimodals) do
-				if not v.invisible then --and not v.dboxed then
+				if not v.invisible then 
 					local dopop = false
 					if i == curr_notmodal then
 						ig.PushStyleColor(imgui.ImGuiCol_Button, ig.ImVec4(1,0,0,1)); dopop = true
