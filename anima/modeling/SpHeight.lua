@@ -24,7 +24,7 @@ local function Editor(GL,camera,updatefunc)
 	
 	M.SE = require"anima.modeling.Spline"(GL,updatesp)
 	
-	local Dbox = GL:DialogBox("SpHeight",true) --autosaved
+	local Dbox = gui.DialogBox("SpHeight",true) --autosaved
 	Dbox:add_dialog(M.SE.NM)
 	Dbox:add_dialog(M.HE.NM)
 	Dbox.plugin = M

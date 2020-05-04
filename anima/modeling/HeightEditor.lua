@@ -9,10 +9,29 @@ local function HeightEditor(GL,updatefunc)
 	updatefunc = updatefunc or function() end
 	local M = {psor={},ps={}}
 	
+	local function visibility(this,visibles)
+		--prtable(this)
+		for k,v in pairs(this.defs) do
+			if visibles[k] then
+				v.invisible = false
+			elseif k~="op" then
+				v.invisible = true
+			end
+		end
+	end
+	
 	local SPLINEDIRTY = true
 	local NM = gui.Dialog("Height",
 	{
-	{"op",1,guitypes.slider_enum,{"curve","tube","poly"},function(val) M:process() end},
+	{"op",1,guitypes.slider_enum,{"curve","tube","poly"},function(val,this) 
+		if val==1 then
+			visibility(this,{zplane=true,height=true,proy_height=true,curves=true,grid=true})
+		elseif val==2 then
+			visibility(this,{zplane=true,height=true,grid=true})
+		else
+			visibility(this,{})
+		end
+		M:process() end},
 	{"zplane",0,guitypes.val,{min=-20,max=0}, function() M:set_zplane();M:process() end },
 	{"height",0,guitypes.val,{min=-1,max=1},function(val) M:process() end},
 	{"alpha",1,guitypes.drag,{min=0,max=6},function() M:process() end},
@@ -132,6 +151,7 @@ local function HeightEditor(GL,updatefunc)
 		elseif NM.op == 3 then
 			M:process_poly()
 		end
+		updatefunc(self)
 	end
 	
 	function M:process_poly()
@@ -145,8 +165,11 @@ local function HeightEditor(GL,updatefunc)
 			local vv = v.xy - minb
 			 tcoords[i] = mat.vec2(vv.x/diff.x,vv.y/diff.y)
 		end
-		self.mesh = mesh.mesh({points=self.ps,tcoords=tcoords,triangles=indexes})
-		updatefunc(self)
+		local ps = {}
+		for i,v in ipairs(self.ps) do
+			ps[i] = vec3(v.x,v.y,v.z)
+		end
+		self.mesh = mesh.mesh({points=ps,tcoords=tcoords,triangles=indexes})
 	end
 	
 	function M:process_tube()
@@ -157,7 +180,6 @@ local function HeightEditor(GL,updatefunc)
 		local meshW = mesh.tube(section,NM.grid)
 		meshW:M4(mat.translate(vec3(0,0,NM.zplane))*mat.scale(1,1,NM.height))
 		self.mesh = meshW
-		updatefunc(self)
 	end
 	
 	function M:process_curves()
@@ -204,7 +226,6 @@ local function HeightEditor(GL,updatefunc)
 
 		self.mesh = mesh.mesh({points=points_add,tcoords=tcoords,triangles=indexes})
 		--self.mesh.centroid = cent
-		updatefunc(self)
 	end
 	
 	function M:save()

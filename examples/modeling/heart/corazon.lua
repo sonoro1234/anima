@@ -22,7 +22,7 @@ local function make_mesh()
 		local minb,maxb = meshW:bounds()
 		local center = vec3(meshW.centroid.x,meshW.centroid.y,minb.z)
 
-		if NM.gentex then MI:MeshRectify(meshE) end
+		if NM.gentex then MI:MeshRectify(meshE,nil,glc.GL_NEAREST) end
 		local frame = {X=vec3(1,0,0),Y=vec3(0,1,0),Z=vec3(0,0,1),center=center}
 		object:setMesh(meshW,MI.texR, frame)
 	end
@@ -58,6 +58,7 @@ function GL:init()
 	camera = Camera(GL,"tps")
 	MVinv = camera:MV().inv
 	ME = require"anima.modeling.SpHeight"(GL,camera,make_mesh)
+	-- this would allow spHeight serialization
 	--local plugin = require"anima.plugins.plugin"
 	--ME.SE.fb = plugin.serializer(ME.SE)
 	object = require"anima.Object3D"(GL,camera)
@@ -73,9 +74,9 @@ function GL:init()
 	GL:preset_load("corazon.preset")
 	local vec3 = mat.vec3
 	local gr = 1.7
-	local gr2 = gr --1.5
+	local gr2 = gr 
 	
-	---[[
+	---[[ comment this to avoid animation (allows user to change scale)
 	local zval = pointer()
 	local hook = function()
 		object.NM.vars.scale:set(vec3(1,1,zval[0]))

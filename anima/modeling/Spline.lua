@@ -25,17 +25,16 @@ local function Editor(GL,updatefunc,args)
 	local NM 
 	
 	local vars = {
+	{"curr_spline",0,guitypes.valint,{min=1,max=numsplines}},
 	{"newspline",0,guitypes.button,function(this) 
 		M:newspline() end},
-	{"orientation",0,guitypes.button,function() M:change_orientation(); M:process_all() end,{sameline=true}},
+	{"orientation",0,guitypes.button,function() M:change_orientation(); M:process_all() end},
 	{"set_last",0,guitypes.toggle},
 	{"clear spline",0,guitypes.button,function(this) 
 			M:clearshape()
 		end,
 		{sameline=true}},
-	{"curr_spline",0,guitypes.valint,{min=1,max=numsplines}},
 	{"points",1,guitypes.slider_enum,{"nil","set","edit","clear"}},
-	
 	}
 	
 	if args.region then table.insert(vars,{"drawregion",false,guitypes.toggle,function() updatefunc(M) end}) end
@@ -76,7 +75,7 @@ local function Editor(GL,updatefunc,args)
 		if NM.points == 3 then --edit
 			local mposvp = vec2(ScreenToViewport(mpos.x, mpos.y))
 			for i,sc in ipairs(M.sccoors[NM.curr_spline]) do
-				if (sc-mposvp).norm < 3 then
+				if (sc-mposvp).norm < 5 then
 					dl:AddCircleFilled(ViewportToScreen(sc.x,sc.y), 4, ig.U32(1,1,1,1))
 				end
 			end
@@ -85,7 +84,7 @@ local function Editor(GL,updatefunc,args)
 	end
 	
 	local doingedit = false
-	NM = GL:Dialog("spline",vars,function(this)
+	NM = gui.Dialog("spline",vars,function(this)
 		local NM = this
 		if numsplines==0 then return end
 		if ig.SliderFloat("alpha",M.alpha[NM.curr_spline],0,1) then
@@ -133,7 +132,7 @@ local function Editor(GL,updatefunc,args)
 				local touched = -1
 				for i,v in ipairs(M.sccoors[NM.curr_spline]) do
 					local vec = v - mposvp
-					if (vec.norm) < 3 then touched = i; break end
+					if (vec.norm) < 5 then touched = i; break end
 				end
 				if touched > 0 then doingedit = touched end
 			end
@@ -156,6 +155,8 @@ local function Editor(GL,updatefunc,args)
 
 	M.NM = NM
 	NM.plugin = M
+	
+	
 	function M:newspline(pts)
 		numsplines=numsplines+1;
 		NM.vars.curr_spline[0]=numsplines 
@@ -168,6 +169,15 @@ local function Editor(GL,updatefunc,args)
 		end
 		--M:process_all()
 		return numsplines
+	end
+	
+	function M:set_current(i)
+		self.NM.vars.curr_spline[0] = i
+	end
+	
+	function M:external_control(yes)
+		NM.defs.curr_spline.invisible = yes
+		NM.defs.newspline.invisible = yes
 	end
 	
 	function M:deletespline(ii)
