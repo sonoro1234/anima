@@ -609,8 +609,8 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 		local spnum = PR.Makers[PR.curr_maker[0]]:newmesh(sppoints)
 		--PR.quad_meshes[iplane] = PR.quad_meshes[iplane] or {}
 		table.insert(PR.quad_meshes[iplane], {spnum,PR.curr_maker[0]})
-		local spplane,frame = PR:get_planev4(iplane)
-		PR.Makers[PR.curr_maker[0]]:set_frame(frame,spplane,spnum)
+		local frame = PR:get_planev4(iplane)
+		PR.Makers[PR.curr_maker[0]]:set_frame(frame,spnum)
 	end
 	local curr_mesh_edit
 	NM = gui.Dialog("rhomboids",
@@ -949,15 +949,15 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 	
 	function PR:get_planev4(ii)
 		local frame = PR.planes[ii].frame
-		local Z = frame.Z
-		local spp1 = PR.epointsR[quads[ii][1]]
-		local D = spp1*Z
-		local fac = 1
-		if D > 0 then fac = -1 end
-		local spplane = vec4(Z*fac,-D*fac)
+		-- local Z = frame.Z
+		-- local spp1 = PR.epointsR[quads[ii][1]]
+		-- local D = spp1*Z
+		-- local fac = 1
+		-- if D > 0 then fac = -1 end
+		-- local spplane = vec4(Z*fac,-D*fac)
 		--print("------------------------------------------")
 		--print("get_planev4 from quad",ii,spplane)
-		return spplane, {X=frame.X,Y=frame.Y,Z=frame.Z,center=frame.center}
+		return {X=frame.X,Y=frame.Y,Z=frame.Z,center=frame.center}
 	end
 	
 	local function calcVline(eyepoints)
@@ -1013,22 +1013,22 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 	end
 	
 	function PR:reset_mesh(iplane,maker,imesh)
-		local spplane,frame = PR:get_planev4(iplane)
+		local frame = PR:get_planev4(iplane)
 		sppoints = {}
 		for i,ind in ipairs(quads[iplane]) do
 			local p = points[ind]
 			sppoints[i] = vec2(p.x,p.y)
 		end
-		PR.Makers[maker]:resetmesh(imesh, frame, spplane, sppoints)
+		PR.Makers[maker]:resetmesh(imesh, frame, sppoints)
 	end
 	
 	function PR:reset_planes()
 		for i,quad in ipairs(PR.quads) do
-			local spplane,frame = PR:get_planev4(i)
+			local frame = PR:get_planev4(i)
 			for j,spl in ipairs(PR.quad_meshes[i]) do
 				local splnum = spl[1]
 				local splmaker = spl[2]
-				PR.Makers[splmaker]:set_frame(frame,spplane,splnum)
+				PR.Makers[splmaker]:set_frame(frame,splnum)
 			end
 		end
 	end

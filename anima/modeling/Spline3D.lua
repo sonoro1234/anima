@@ -36,7 +36,6 @@ local function Spline3D(GL, camera,updatefunc)
 	end
 	
 	SP3D.ps_eye = {}
-	SP3D.planes = {}
 	SP3D.frames = {}
 	SP3D.indexes = {}
 	
@@ -65,7 +64,6 @@ local function Spline3D(GL, camera,updatefunc)
 	function SP3D:deletemesh(ii)
 		table.remove(SP3D.indexes,ii)
 		table.remove(SP3D.ps_eye,ii)
-		table.remove(SP3D.planes,ii)
 		table.remove(SP3D.frames,ii)
 		olddeletespline(SP3D,ii)
 	end
@@ -74,9 +72,8 @@ local function Spline3D(GL, camera,updatefunc)
 			self:deletemesh(i)
 		end
 	end
-	function SP3D:set_frame(frame,pl,ii)
-		self.planes[ii] = pl or vec4(0,0,1,1)
-		self.frames[ii] = frame or {X=vec3(1,0,0),Y=vec3(0,1,0),Z=vec3(0,0,1),center=vec3(0,0,0)}
+	function SP3D:set_frame(frame,ii)
+		self.frames[ii] = frame or {X=vec3(1,0,0),Y=vec3(0,1,0),Z=vec3(0,0,1),center=vec3(0,0,-1)}
 		self:calc_spline(ii)
 		--updatefunc(self)
 	end
@@ -88,8 +85,9 @@ local function Spline3D(GL, camera,updatefunc)
 		if self:numpoints(ii)>2 then
 			--project on plane
 			local prsc = {}
-			local D = self.planes[ii].w
-			local R = self.planes[ii].xyz.normalize
+			local R = self.frames[ii].Z
+			local D = -self.frames[ii].center*R
+			if D < 0 then D = -D; R = -R end
 			local MP = camera:MP()
 			local MPinv = MP.inv
 			for i,v in ipairs(self.sccoors[ii]) do
@@ -108,7 +106,7 @@ local function Spline3D(GL, camera,updatefunc)
 				prsc[i] = (vv/vv.w).xyz
 
 			end
-			--print(ii,"Spline",prsc,self.alpha[ii],self.divs[ii])
+
 			local pspr = CG.Spline(prsc,self.alpha[ii][0],self.divs[ii][0],true)
 			self.indexes[ii] = CG.EarClipSimple2(pspr)--,true)
 			
@@ -123,21 +121,17 @@ local function Spline3D(GL, camera,updatefunc)
 				self.ps[ii][i] = Eye2Scr(MP,vv)
 			end
 			
-			--if self.HeightEditors[ii] then
-				self.HeightEditors[ii].Mtrinv = Mtrinv
-				self.HeightEditors[ii]:set_spline(pspr)
-				self.HeightEditors[ii]:process()
-			--end
-			
+			self.HeightEditors[ii].Mtrinv = Mtrinv
+			self.HeightEditors[ii]:set_spline(pspr)
+			self.HeightEditors[ii]:process()
 		end
 	end
 	function SP3D:get_mesh(ii)
 		return self.HeightEditors[ii].mesh, self.frames[ii]
 	end
-	function SP3D:resetmesh(ii,frame,pl,pts)
+	function SP3D:resetmesh(ii,frame,pts)
 		self.NM.vars.curr_spline[0]=ii
 		self:clearshape()
-		self.planes[ii] = pl
 		self.frames[ii] = frame
 		for i,p in ipairs(pts) do
 			self.sccoors[ii][i] = p
@@ -166,7 +160,7 @@ local function Spline3D(GL, camera,updatefunc)
 		
 		for i=1,pars.SP.numsplines do
 			local HE = self:create_height_editor(i) --skip update
-			self:set_frame(nil,nil,i)
+			self:set_frame(nil,i)
 			HE:load(pars.HE[i])
 		end
 		--self:calc_all_splines()

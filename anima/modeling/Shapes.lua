@@ -9,7 +9,6 @@ local function Shapes(GL,camera,updatefunc)
 	local shapes = {"parametric_sphere","cylinder","cone"}
 	local M = {}
 	M.shapes_table = {}
-	M.planes = {}
 	M.frames = {}
 	M.ModelM = {}
 	M.shape_pars = {}
@@ -67,7 +66,6 @@ local function Shapes(GL,camera,updatefunc)
 	
 	function M:deletemesh(ii)
 		table.remove(M.shapes_table,ii)
-		table.remove(M.planes,ii)
 		table.remove(M.frames,ii)
 		table.remove(M.ModelM,ii)
 		table.remove(M.ModelMpars.scale,ii)
@@ -100,19 +98,12 @@ local function Shapes(GL,camera,updatefunc)
 		M = mat.translate(pos[0],pos[1],pos[2]) * M
 		self.ModelM[ii] =  M --self.MFinv * M * self.MF 
 	end
-	function M:set_frame(frame,pl,ii)
-		self.planes[ii] = pl or vec4(0,0,1,1)
+	function M:set_frame(frame,ii)
 		self.frames[ii] = frame or {X=vec3(1,0,0),Y=vec3(0,1,0),Z=vec3(0,0,1),center=vec3(0,0,0)}
-		--self:calc_spline(ii)
-		--updatefunc(self,ii)
 		M:update()
 	end
-	function M:resetmesh(ii,frame,pl,pts)
-		--self.NM.vars.curr_shape[0]=ii
-		--self:clearshape()
-		--self.planes[ii] = pl
-		--self.frames[ii] = frame
-		self:set_frame(frame,pl,ii)
+	function M:resetmesh(ii,frame,pts)
+		self:set_frame(frame,ii)
 	end
 	function M:get_mesh(ii)
 		local mesh1 = self.shapes_table[ii].mesh
