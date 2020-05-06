@@ -24,6 +24,13 @@ void main()
 local  programE
 
 local function PlanesPicker(GL,camera,updatefunc,MakersG)
+
+	if MakersG==nil then
+		local PShaper = require"anima.modeling.Shapes"
+		local SP3D = require"anima.modeling.Spline3D"
+		MakersG = {PShaper,SP3D,names={"pshaper","sp3d"}}
+	end
+	
 	local updatefunc = updatefunc or function() end
 	
 	local doupdate = true

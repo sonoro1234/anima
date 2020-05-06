@@ -84,10 +84,8 @@ NM = GL:Dialog("test",{
 })
 
 
-local PShaper = require"anima.modeling.Shapes"
-local SP3D = require"anima.modeling.Spline3D"
-local MakersG = {PShaper,SP3D,names={"pshaper","sp3d"}}
-edit = require"anima.modeling.rhomboidsM"(GL,camera,make_mesh,MakersG)
+
+edit = require"anima.modeling.rhomboidsM"(GL,camera,make_mesh)
 
 
 function GL.init()
