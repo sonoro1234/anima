@@ -115,15 +115,13 @@ local function Spline3D(GL, camera,updatefunc)
 			self.ps_eye[ii] = {}
 			self.ps[ii] = {}
 			for i,v in ipairs(pspr) do
-				local vv = Mtrinv*vec4(v,1)
-				vv =  (vv/vv.w).xyz
+				local vv = Mtrinv*v
 				self.ps_eye[ii][i] = vv
 				self.ps[ii][i] = Eye2Scr(MP,vv)
 			end
 			
 			self.HeightEditors[ii].Mtrinv = Mtrinv
 			self.HeightEditors[ii]:set_spline(pspr)
-			self.HeightEditors[ii]:process()
 		end
 	end
 	function SP3D:get_mesh(ii)
