@@ -473,10 +473,11 @@ function M.identity3() return mat3(1, 0, 0,
                    0, 1, 0,
                    0, 0, 1)
 end
-M.identity4 = mat4(1, 0, 0, 0,
+function M.identity4() return mat4(1, 0, 0, 0,
                    0, 1, 0, 0,
                    0, 0, 1, 0,
                    0, 0, 0, 1)
+end
 M.identity = M.identity4
 
 function M.translate(x, y, z)
