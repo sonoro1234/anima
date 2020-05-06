@@ -185,7 +185,7 @@ local function Object(GL,camera,args)
 	end
 	function O:setMesh(mesh,tex,frame)
 		O.bounds = {mesh:bounds()}
-		O.mesh = mesh
+		O.mesh = mesh or inimesh
 		O.tex = tex or O.tex or initex
 		O.tex:Bind()
 		O.tex:gen_mipmap()
