@@ -701,10 +701,9 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 						PR:deletemesh(i,maker,spnum)
 					end
 					ig.SameLine()
-					if ig.SmallButton("edit##"..idst) then
+					if ig.RadioButton("edit##"..idst,curr_mesh_edit and curr_mesh_edit[1] == spnum and curr_mesh_edit[2] == maker or false) then
 						curr_mesh_edit = sp
 					end
-					
 				end
 				ig.TreePop()
 			end
