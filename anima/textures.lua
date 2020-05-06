@@ -852,7 +852,7 @@ function Texture(w,h,formato,pTexor,args)
 
 	function tex:set_aniso(val)
 		local aniso = ffi.new"float[1]"
-		gl.glBindTexture(glc.GL_TEXTURE_2D, self.tex);
+		--gl.glBindTexture(glc.GL_TEXTURE_2D, self.tex);
 		if not val then
 			gl.glGetFloatv(glc.GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, aniso);
 		else
