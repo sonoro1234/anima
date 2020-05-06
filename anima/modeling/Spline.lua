@@ -29,6 +29,7 @@ local function Editor(GL,updatefunc,args)
 	{"newspline",0,guitypes.button,function(this) 
 		M:newspline() end},
 	{"orientation",0,guitypes.button,function() M:change_orientation(); M:process_all() end},
+	{"rotate",0,guitypes.button,function() M:rotate(); M:process_all() end,{sameline=true}},
 	{"set_last",0,guitypes.toggle},
 	{"clear spline",0,guitypes.button,function(this) 
 			M:clearshape()
@@ -224,6 +225,13 @@ local function Editor(GL,updatefunc,args)
 		end
 		self.sccoors[NM.curr_spline] = nsc
 	end
+	
+	function M:rotate()
+		local sc = self.sccoors[NM.curr_spline]
+		local first = table.remove(sc,1)
+		table.insert(sc,first)
+	end
+	
 	function M:set_last(ind)
 		if ind == #self.sccoors[NM.curr_spline] then return end
 		local sc,nsc = self.sccoors[NM.curr_spline],{}
