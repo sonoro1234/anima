@@ -47,8 +47,9 @@ local program, progmesh
 local inimesh,initex
 
 
-local function Object()
+local function Object(name)
 	local O = {}
+	O.name = name or tostring(O)
 	O.childs = {}
 	
 	O.scale = vec3(1,1,1)
@@ -141,8 +142,8 @@ local function Object()
 			child:make_model_mat(self.ModelM)
 		end
 	end
-	function O:add_child()
-		local child = Object()
+	function O:add_child(name)
+		local child = Object(name)
 		O.childs[#O.childs + 1] = child
 		return child, #O.childs
 	end
@@ -209,7 +210,7 @@ local function Object()
 	
 	function O:dump(lev)
 		lev = lev or 0
-		print(string.rep("  ",lev)..tostring(O))
+		print(string.rep("  ",lev)..O.name)
 		prtable(O.frame)
 		for ich,child in ipairs(self.childs) do
 			child:dump(lev+1)
@@ -219,7 +220,7 @@ local function Object()
 	function O:tree(editor)
 		if #self.childs > 0 then
 			ig.SetNextItemOpen(true, ig.lib.ImGuiCond_Once)
-			if ig.TreeNode(tostring(O)) then
+			if ig.TreeNode(O.name) then
 				ig.SameLine();
 				if ig.RadioButton("edit##"..tostring(O),editor.object and editor.object==O or false) then
 					editor.object = O
@@ -230,7 +231,7 @@ local function Object()
 				ig.TreePop()
 			end
 		else
-			ig.BulletText(tostring(O))
+			ig.BulletText(O.name)
 			ig.SameLine()
 			if ig.RadioButton("edit##"..tostring(O),editor.object and editor.object==O or false) then
 				editor.object = O
@@ -238,6 +239,17 @@ local function Object()
 		end
 	end
 	
+	function O:find_child(name)
+		for ich,child in ipairs(self.childs) do
+			if child.name == name then
+				return child
+			end
+		end 
+		for ich,child in ipairs(self.childs) do
+			local ret = child:find_child(name)
+			if ret then return ret end
+		end 
+	end
 	
 	function O:clear_childs()
 		for ich,child in ipairs(self.childs) do
@@ -340,6 +352,7 @@ local function Objects(GL,camera,args)
 	-- Dbox:add_dialog(NMzmo)
 	-- O.NM = Dbox
 	O.NM = NM
+	NM.plugin = O
 	
 	function O:init()
 		if not program then
@@ -372,13 +385,17 @@ local function Objects(GL,camera,args)
 			local vec2 = mat.vec2
 			inimesh.tcoords = {vec2(0,0),vec2(0,1),vec2(1/3,1),vec2(1/3,0),vec2(1,0),vec2(1,1),vec2(2/3,1),vec2(2/3,0)}
 		end
-		O.root = Object()
+		O.root = Object("root")
 		if args.doinit then self.root:setMesh(inimesh,initex) end
 	end
 	
 	function O:clear()
 		self.root:clear_childs()
 		self.root.ModelM = mat.identity()
+	end
+	
+	function O:find_node(name)
+		return O.root:find_child(name)
 	end
 	
 	function O:draw()
@@ -427,6 +444,18 @@ local function Objects(GL,camera,args)
 
 			end
 		end
+	end
+	
+	function O:save()
+		local pars = {}
+		pars.dial = NM:GetValues()
+		return pars
+	end
+	
+	function O:load(params)
+		O:clear()
+		if not params then return end
+		NM:SetValues(params.dial or {})
 	end
 	
 	GL:add_plugin(O,"Objects")

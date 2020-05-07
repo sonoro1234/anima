@@ -1,7 +1,7 @@
 require"anima"
 
 
-local GL = GLcanvas{W=800,viewH=600,aspect=1,vsync=1}--DEBUG=true}
+local GL = GLcanvas{W=800,viewH=600,aspect=1,vsync=1,profile="CORE"}--DEBUG=true}
 GL.use_presets = true
 local NM 
 
