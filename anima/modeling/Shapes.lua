@@ -21,9 +21,9 @@ local function Shapes(GL,camera,updatefunc)
 	local numshapes = 0
 	local NM = gui.Dialog("shapes",
 	{{"curr_shape",0,guitypes.valint,{min=1,max=numshapes}},
-	{"shape",1,guitypes.slider_enum,shapes},
-	{"slices",8,guitypes.valint,{min=4,max=64}},
-	{"stacks",8,guitypes.valint,{min=4,max=64}},
+	{"shape",1,guitypes.slider_enum,shapes,function() M:recreate_mesh() end},
+	{"slices",8,guitypes.valint,{min=4,max=64},function() M:recreate_mesh() end},
+	{"stacks",8,guitypes.valint,{min=4,max=64},function() M:recreate_mesh() end},
 	},function(this)
 		if this.curr_shape < 1 then return end
 		local scale = M.ModelMpars.scale[this.curr_shape]
@@ -36,6 +36,14 @@ local function Shapes(GL,camera,updatefunc)
 	end)
 	M.NM = NM
 	
+	function M:recreate_mesh()
+		if not M.shapes_table[NM.curr_shape] then return end
+		local mesh1 = par_shapes.create[shapes[NM.shape]](NM.slices,NM.stacks)
+		mesh1 = mesh.par_shapes2mesh(mesh1)
+		M.shapes_table[NM.curr_shape].mesh = mesh1
+		M.shape_pars[NM.curr_shape] = {NM.shape,NM.slices,NM.stacks}
+		M:update()
+	end
 	function M:create_mesh(shape,slices,stacks)
 		local mesh1 = par_shapes.create[shapes[shape]](slices,stacks)
 		mesh1 = mesh.par_shapes2mesh(mesh1)
@@ -125,7 +133,7 @@ local function Shapes(GL,camera,updatefunc)
 				numshapes = pars.numshapes or 0
 				for i=1,numshapes do
 					M:create_mesh(unpack(M.shape_pars[i]))
-					M:set_frame(nil,nil,i)
+					M:set_frame(nil,i)
 				end
 				use_update = true
 				--if M.update then M:update() end
