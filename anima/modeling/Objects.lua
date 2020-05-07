@@ -120,7 +120,9 @@ local function Object(name)
 		return  self.ModelM * self.MFinv
 	end
 	
-	function O:setModelM(MM)
+	local fmod,abs,pi = math.fmod,math.abs,math.pi
+	local pix2,hpi,hpix3 = pi*2,pi*0.5, pi*1.5
+	function O:setModelM(MM,roty)
 		self.ModelM = MM * self.MF
 
 		local M = self.MF * O.parentM.inv * MM
@@ -136,6 +138,24 @@ local function Object(name)
 		M = M*mat.scale(1/scale[1],1/scale[2],1/scale[3])
 		
 		local z,y,x = R.ZYXE2angles(M.mat3)
+		--try to achive continuity in roty
+		if roty then --near roty value
+			local yA = fmod(roty,pix2)
+			while yA < 0 do yA = yA + pix2 end
+			local yB = y
+			while yB < 0 do yB = yB + pix2 end
+			if (abs(yA-yB)>1e-6) then
+			--print(yA,yB)
+			if (hpi < yA and yA < hpix3) and
+				not (hpi < yB and yB < hpix3) then
+				--print("correct",x,y,z,roty)
+				 y = pi - y
+				 z = z + pi
+				 x = x + pi
+				 --print(x,y,z)
+			end
+			end
+		end
 		self.rot = vec3(x,y,z)
 		
 		for ich,child in ipairs(self.childs) do
@@ -340,9 +360,10 @@ local function Objects(GL,camera,args)
 			end
 			if NMzmo.zmoO and editor.object then
 				MOmo = editor.object:getModelM().gl
+				local ry = editor.object.rot.y
 				--ig.zmoDrawCube(MVmo,MPmo,MOmo)
 				ig.zmoManipulate(MVmo,MPmo,zmoOP[0],zmoMODE[0],MOmo,nil,nil,zmoOP[0]==imgui.BOUNDS and zmobounds or nil,nil)
-				editor.object:setModelM(mat.gl2mat4(MOmo))
+				editor.object:setModelM(mat.gl2mat4(MOmo),ry)
 			end
 		end
 	end)
