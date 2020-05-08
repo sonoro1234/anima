@@ -34,9 +34,9 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 	local updatefunc = updatefunc or function() end
 	
 	local doupdate = true
-	local function updatefunc1()
+	local function updatefunc1(...)
 		if doupdate then 
-			updatefunc() 
+			updatefunc(...) 
 		end
 	end
 
@@ -618,6 +618,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 		table.insert(PR.quad_meshes[iplane], {spnum,PR.curr_maker[0]})
 		local frame = PR:get_planev4(iplane)
 		PR.Makers[PR.curr_maker[0]]:set_frame(frame,spnum)
+		updatefunc1()
 	end
 	local curr_mesh_edit
 	NM = gui.Dialog("rhomboids",
@@ -1003,6 +1004,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 				end
 			end
 		end
+		updatefunc1()
 	end
 	
 	function PR:delete_plane(i)
@@ -1078,9 +1080,6 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 		camNear = camera.NMC.nearZ
 		
 		self:set_points_vao()
-		
-		--updatefunc(self)
-
 	end
 	
 	function PR:save()

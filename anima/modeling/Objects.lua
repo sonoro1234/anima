@@ -59,6 +59,8 @@ local function Object(name)
 	O.MFinv = O.MF.inv
 	O.ModelM = mat.identity()
 	O.tex = initex
+	local md = 0.5
+	O.zmobounds = ffi.new("float[?]",6,{ -0.25*md, -0.25*md, -0.25*md, 0.25*md, 0.25*md, 0.25*md })
 	
 	function O:set_frame(frame)
 		O.frame = frame or {X=vec3(1,0,0),Y=vec3(0,1,0),Z=vec3(0,0,1),center=self.mesh:calc_centroid()}
@@ -70,12 +72,7 @@ local function Object(name)
 		O.MFinv = MF.inv
 		
 		-- vaoframe
-		local maxdim 
-		if self.bounds then
-			local dims = self.bounds[2] - self.bounds[1]
-			maxdim = math.max(dims.x, math.max(dims.y, dims.z))
-		end
-		maxdim = maxdim or 1
+		maxdim = self.maxdim or 1
 		
 		local fc = self.frame.center
 		local fx = fc + self.frame.X * maxdim
@@ -93,6 +90,10 @@ local function Object(name)
 		O.tex:Bind()
 		O.tex:gen_mipmap()
 		
+		local dims = self.bounds[2] - self.bounds[1]
+		self.maxdim = math.max(dims.x, math.max(dims.y, dims.z))
+		local md = self.maxdim
+		self.zmobounds = ffi.new("float[?]",6,{ -0.25*md, -0.25*md, -0.25*md, 0.25*md, 0.25*md, 0.25*md })
 		
 		self:make_model_mat()
 		if self.vao then self.vao:delete() end
@@ -278,6 +279,18 @@ local function Object(name)
 		end 
 	end
 	
+	--given names table: {name1=true, name2=true}
+	--deletes recursively childs with name not in names
+	function O:clear_childs_notin(names)
+		for ich,child in ipairs(self.childs) do
+			child:clear_childs_notin(names)
+			if not names[child.name] then
+				--self.childs[ich] = nil
+				table.remove(self.childs,ich)
+			end
+		end 
+	end
+	
 	O:set_frame({X=vec3(1,0,0),Y=vec3(0,1,0),Z=vec3(0,0,1),center=vec3(0,0,0)})
 	
 	return O
@@ -292,7 +305,7 @@ local function Objects(GL,camera,args)
 	local MVmo,MPmo,MOmo
 	local zmoOP = ffi.new("int[?]",1)
 	local zmoMODE = ffi.new("int[?]",1)
-	local zmobounds = ffi.new("float[6]",{ -0.5, -0.5, -0.5, 0.5, 0.5, 0.5 })
+	--local zmobounds = ffi.new("float[?]",6,{ -0.5, -0.5, -0.5, 0.5, 0.5, 0.5 })
 	local NMzmo = gui.Dialog("zmo",
 	{{"zmoO",false,guitypes.toggle},
 	{"zmoC",false,guitypes.toggle,nil,{sameline=true}},
@@ -327,19 +340,19 @@ local function Objects(GL,camera,args)
 		ig.Separator()
 		if editor.object then
 			local scale = editor.object.scale.gl
-			if MVEscale:Draw(scale) then
+			if MVEscale:Draw(scale,nil,nil,0.1) then
 				editor.object.scale = vec3(scale)
 				editor.object:make_model_mat()
 			end
 			local rot = editor.object.rot
 			local frot = ffi.new("float[?]",3,rot.x,rot.y,rot.z)
-			if MVErot:Draw(frot) then
+			if MVErot:Draw(frot,nil,nil,0.1) then
 				rot.x,rot.y,rot.z = frot[0],frot[1],frot[2]
 				editor.object:make_model_mat()
 			end
 			local pos = editor.object.pos
 			local fpos = ffi.new("float[?]",3,pos.x,pos.y,pos.z)
-			if MVEpos:Draw(fpos) then
+			if MVEpos:Draw(fpos,nil,nil,0.1) then
 				pos.x,pos.y,pos.z = fpos[0],fpos[1],fpos[2]
 				editor.object:make_model_mat()
 			end
@@ -362,7 +375,7 @@ local function Objects(GL,camera,args)
 				MOmo = editor.object:getModelM().gl
 				local ry = editor.object.rot.y
 				--ig.zmoDrawCube(MVmo,MPmo,MOmo)
-				ig.zmoManipulate(MVmo,MPmo,zmoOP[0],zmoMODE[0],MOmo,nil,nil,zmoOP[0]==imgui.BOUNDS and zmobounds or nil,nil)
+				ig.zmoManipulate(MVmo,MPmo,zmoOP[0],zmoMODE[0],MOmo,nil,nil,zmoOP[0]==imgui.BOUNDS and editor.object.zmobounds or nil,nil)
 				editor.object:setModelM(mat.gl2mat4(MOmo),ry)
 			end
 		end
