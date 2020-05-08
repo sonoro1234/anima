@@ -69,8 +69,6 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 	--we have 3 points and 2 vpoints
 	local function complete_quad(quad)
 		--find point not in quad from 1st vpoint
-		local vpoint1 = quad.vpoints[1].vp
-		vpoint1 = PR:Eye2Viewport(vpoint1)
 		local from1 = quad.vpoints[1].from
 		local who1 = quad.vpoints[1].who
 		local notin1 
@@ -82,9 +80,13 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 				break
 			end
 		end
+		local vpoint1 = quad.vpoints[1].vp
+		if vpoint1.z == 0 then --ideal point
+			vpoint1 = notin1 + vec2(vpoint1.x,vpoint1.y).normalize
+		else
+			vpoint1 = PR:Eye2Viewport(vpoint1)
+		end
 		--find point not in quad from 2nd vpoint
-		local vpoint2 = quad.vpoints[2].vp
-		vpoint2 = PR:Eye2Viewport(vpoint2)
 		local from2 = quad.vpoints[2].from
 		local who2 = quad.vpoints[2].who
 		local notin2 
@@ -96,10 +98,17 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 				break
 			end
 		end
+		local vpoint2 = quad.vpoints[2].vp
+		if vpoint2.z == 0 then --ideal point
+			vpoint2 = notin2 + vec2(vpoint2.x,vpoint2.y).normalize
+		else
+			vpoint2 = PR:Eye2Viewport(vpoint2)
+		end
 		--intersect lines notin1-vp1
 		--and notin2-vp2
 		--print("complete",notin1,vpoint1,notin2,vpoint2)
-		local c = CG.IntersecPoint2(notin1,vpoint1,notin2,vpoint2)
+		local c,ok = CG.IntersecPoint2(notin1,vpoint1,notin2,vpoint2)
+		--print("ok",ok,c)
 		--reuse if already exists
 		c = ig.ImVec2(c.x,c.y)
 		for i,p in ipairs(points) do
@@ -116,7 +125,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 	local function correct_quad3(quad,nottouched)
 		--we have a touched point STILL not generating vpoint
 		--find the other touchedquad
-		print"special-------------------------------"
+		print("special-------------------------------",nottouched)
 		local from = quad.vpoints[1].from
 		local who = quad.vpoints[1].who
 		local otherquad,otherind
@@ -138,6 +147,9 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 		follow = follow > 4 and follow - 4 or follow
 		local minsign = math.huge
 		local a, b = PR:Eye2Viewport(quad.vpoints[1].vp), points[quads[otherquad][otherind]]
+		if quad.vpoints[1].vp.z==0 then --ideal point
+			a = b + vec2(quad.vpoints[1].vp.x,quad.vpoints[1].vp.y)
+		end
 		local searchind
 		for i,ind in ipairs{prev,follow} do
 			local sign = math.abs(CG.Sign(a,b,points[quads[otherquad][ind]]))
@@ -166,6 +178,19 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 		end
 		assert(#nottouched==2)
 		local vpoint = quad.vpoints[1].vp
+		--ideal point, represents direction paralel to
+		--image plane, cant be represented on viewport
+		if vpoint.z == 0 then
+			local a = points[quad[nottouched[1]]]
+			a = vec2(a.x,a.y)
+			local b = points[quad[nottouched[2]]]
+			b = vec2(b.x,b.y)
+			local ray = vec2(vpoint.x, vpoint.y).normalize
+			local proj = ray*(b-a)
+			local c = a + ray*proj
+			points[quad[nottouched[2]]] = ig.ImVec2(c.x,c.y)
+			return
+		end
 		vpoint = PR:Eye2Viewport(vpoint)
 		local a = points[quad[nottouched[1]]]
 		a = vec2(a.x,a.y)
@@ -304,8 +329,6 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 	local function correct_quad2(quad)
 		--print"correct_quad2"
 		--find point not in quad from 1st vpoint
-		local vpoint1 = quad.vpoints[1].vp
-		vpoint1 = PR:Eye2Viewport(vpoint1)
 		local from1 = quad.vpoints[1].from
 		local who1 = quad.vpoints[1].who
 		local notin1 
@@ -317,9 +340,13 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 				break
 			end
 		end
+		local vpoint1 = quad.vpoints[1].vp
+		if vpoint1.z == 0 then --ideal point
+			vpoint1 = notin1 + vec2(vpoint1.x,vpoint1.y).normalize
+		else
+			vpoint1 = PR:Eye2Viewport(vpoint1)
+		end
 		--find point not in quad from 2nd vpoint
-		local vpoint2 = quad.vpoints[2].vp
-		vpoint2 = PR:Eye2Viewport(vpoint2)
 		local from2 = quad.vpoints[2].from
 		local who2 = quad.vpoints[2].who
 		local notin2 
@@ -330,6 +357,12 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 				notin2 = vec2(notin2.x, notin2.y)
 				break
 			end
+		end
+		local vpoint2 = quad.vpoints[2].vp
+		if vpoint2.z == 0 then --ideal point
+			vpoint2 = notin2 + vec2(vpoint2.x,vpoint2.y).normalize
+		else
+			vpoint2 = PR:Eye2Viewport(vpoint2)
 		end
 		--intersect lines notin1-vp1
 		--and notin2-vp2
@@ -488,10 +521,12 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 				end
 			end
 		end
+		print"rectity1"
 		PR:Rectify()
 		for nq,quad in ipairs(quads) do
 			repair_quad(quad)
 		end
+		print"rectity1"
 		PR:Rectify()
 		PR:Rectify2()
 		PR:reset_planes()
@@ -581,9 +616,15 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 						--draw line for completing this quad with already an vpoint
 						if i~=who1[1] and i~=who1[2] then
 							local vpoint = quad.vpoints[1].vp
-							vpoint = PR:Eye2Viewport(vpoint)
 							local a = points[quad[i]]
-							local ray = a - vpoint
+							local ray
+							--ideal point
+							if vpoint.z == 0 then
+								ray = vpoint.normalize
+							else
+								vpoint = PR:Eye2Viewport(vpoint)
+								ray = a - vpoint
+							end
 							local b1 = a - ray*400
 							local b2 = a + ray*400
 							local as = ViewportToScreen(a)
@@ -591,7 +632,6 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 							local b2s = ViewportToScreen(b2)
 							dl:AddLine(b1s,b2s,ig.U32(1,0,0,1))
 							dl:AddCircleFilled(as, 6, ig.U32(1,0,1,1))
-							--print"showline"
 						end
 					end
 				end
@@ -659,7 +699,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 		
 		--ig.Columns(2)
 		if picking then
-			if PickQuad() then reconstruct() end --PR:Rectify() end
+			if PickQuad() then reconstruct() end
 		elseif this.edit then
 			if EditQuads()  then 
 				reconstruct()
@@ -689,6 +729,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 				if ig.SmallButton("delete_plane##"..i) then
 					PR:delete_plane(i)
 					curr_plane = #PR.quads > 0 and #PR.quads or nil
+					return
 				end
 				ig.SameLine()
 				local label = "add_"..MakersG.names[PR.curr_maker[0]].."##"..i
@@ -968,20 +1009,30 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 	end
 	
 	local function calcVline(eyepoints)
+		-- print"eyepoints"
+		-- for i=1,4 do
+			-- print(i,eyepoints[i])
+		-- end
 		--get vanishing points
 		local l1 = eyepoints[1]:cross(eyepoints[2])
 		local l2 = eyepoints[4]:cross(eyepoints[3])
 		local vpointX = l1:cross(l2)
+		--print("cv vpointX",vpointX, l1, l2)
+		if vpointX.z~= 0 then
 		vpointX = vpointX/vpointX.z
+		end
 
 		l1 = eyepoints[1]:cross(eyepoints[4])
 		l2 = eyepoints[2]:cross(eyepoints[3])
 		local vpointY = l1:cross(l2)
+		--print("cv vpointY",vpointY,l1,l2)
+		if vpointY.z~=0 then
 		vpointY = vpointY/vpointY.z
+		end
 
 		-- vanishing line
 		local vline = vpointX:cross(vpointY)
-		--if vline.z < 0 then vline = -vline end
+
 		return vpointX, vpointY, vline
 	end
 	
