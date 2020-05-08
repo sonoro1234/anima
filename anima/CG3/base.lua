@@ -86,7 +86,7 @@ function M.IntersecPoint2(a,b,c,d)
 	local num = (a.x - c.x)*(c.y - d.y) - (a.y - c.y)*(c.x - d.x)
 	local t = num/den
 	
-	return a + t*(b - a), t, true
+	return a + t*(b - a), true, t
 end
 
 -- as IsPointInTri but including closure

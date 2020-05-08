@@ -121,7 +121,7 @@ local function CorrectHole(poly,hole,bridgei)
 				print("intersection of",ih,"sc,sd",sc,sd)
 				hasC = true
 				--local pt,ok = CG.IntersecPoint(p,p1,ph,ph1)
-				local pt,t,ok = IntersecPoint2(ph,ph1,p,p1)
+				local pt,ok,t = IntersecPoint2(ph,ph1,p,p1)
 				assert(ok)
 				print("signs of pt:",CG.Sign(pt,p,p1),CG.Sign(pt,ph,ph1))
 				if sc<0 then --ph is out
