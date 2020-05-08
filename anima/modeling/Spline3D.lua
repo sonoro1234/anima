@@ -65,6 +65,7 @@ local function Spline3D(GL, camera,updatefunc)
 		table.remove(SP3D.indexes,ii)
 		table.remove(SP3D.ps_eye,ii)
 		table.remove(SP3D.frames,ii)
+		table.remove(SP3D.HeightEditors,ii)
 		olddeletespline(SP3D,ii)
 	end
 	function SP3D:deleteall()
@@ -119,9 +120,10 @@ local function Spline3D(GL, camera,updatefunc)
 				self.ps_eye[ii][i] = vv
 				self.ps[ii][i] = Eye2Scr(MP,vv)
 			end
-			
+			doheightupdate = false
 			self.HeightEditors[ii].Mtrinv = Mtrinv
 			self.HeightEditors[ii]:set_spline(pspr)
+			doheightupdate = true
 		end
 	end
 	function SP3D:get_mesh(ii)
