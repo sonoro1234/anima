@@ -32,21 +32,25 @@ local function makeObj(sp,MVinv,iplane)
 	
 	local child = objects:find_node(objname) or objects.root:add_child(objname)
 	child:setMesh(meshW, gtex, frame)
+	return objname
 end
 
 local function make_mesh()
 	print"----------------------------set_objects"
 
 	local MVinv = camera:MV().inv
-	
-	local frame = mesh.move_frame({X=mat.vec3(1,0,0),Y=mat.vec3(0,1,0),Z=mat.vec3(0,0,1),center=edit.centroid},MVinv)
-	objects.root:set_frame(frame)
-	
+
+	local objnames = {}
 	for iplane,qm in ipairs(edit.quad_meshes) do
 		for i,sp in ipairs(qm) do
-			makeObj(sp,MVinv,iplane)
+			local oname = makeObj(sp,MVinv,iplane)
+			objnames[oname] = true
 		end
 	end
+	--set root frame last for updading childs
+	local frame = mesh.move_frame({X=mat.vec3(1,0,0),Y=mat.vec3(0,1,0),Z=mat.vec3(0,0,1),center=edit.centroid},MVinv)
+	objects.root:set_frame(frame)
+	objects.root:clear_childs_notin(objnames)
 end
 
 
