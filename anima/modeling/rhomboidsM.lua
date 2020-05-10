@@ -276,11 +276,13 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 					for i=1,#quads-1 do
 						for j=1,4 do
 							if quads[i][j] == touched then
-								--quad.touchedquads = quad.touchedquads or {}
 								quad.touchedquads[i] = quad.touchedquads[i] or {}
-								--vertex #quad+1 from quad touches vertex j from quad i
-								table.insert(quad.touchedquads[i],{j,#quad +1}) 
-								found = true
+								--dont allow 3 points from the same quad
+								--(would be the same plane)
+								if #quad.touchedquads[i] < 2 then
+									table.insert(quad.touchedquads[i],{j,#quad +1}) 
+									found = true
+								end
 							end
 						end
 					end
@@ -457,7 +459,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 			end
 		end
 		--prtable(PR.quad_meshes)
-		--prtable(G.L)
+		--prtable("graph",G)
 		local newquads = {}
 		local newsplines = {}
 		for _,i in ipairs(G.L) do 
@@ -934,12 +936,10 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 	
 	
 	function PR:set_pointsR()
-		--print"set_pointsR"
 		
 		local centroid = vec3(0,0,0)
 		self.epointsR = {}
-		--set first point
-		--self.epointsR[1] = self.epoints[1].normalize*NM.zval
+
 		for i,plane in ipairs(self.planes) do
 		--for _,i in ipairs(Graph.L) do
 			local plane = self.planes[i]
@@ -957,18 +957,11 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 			--set the first one to NM.zval
 			if spoint==nil then
 				print("new firs point in quad",i)
-				self.epointsR[plane.quad[1]] = self.epoints[plane.quad[1]].normalize*NM.zval
+				self.epointsR[plane.quad[1]] = self.epoints[plane.quad[1]]*NM.zval
 				spoint = self.epointsR[plane.quad[1]]
 			end
 			--get plane on point1 at distance zval
 			local D = vlineN * spoint 
-			-- move all points to be in same plane -> eyepointsR[i]*vlineN == D
-			-- but make the plane distance to origin == zval instead of D
-			-- for i,pO in ipairs(eyepoints) do
-				-- local ray = pO.normalize
-				-- eyepointsR[i] = ray * (D/(vlineN*ray))
-				-- centroid = centroid + eyepointsR[i]
-			-- end
 			local cent = vec3(0,0,0)
 			for j=1,4 do
 				local ind = plane.quad[j]
@@ -1090,6 +1083,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 				PR.Makers[splmaker]:set_frame(frame,splnum)
 			end
 		end
+		updatefunc1()
 	end
 	
 	function PR:Rectify()
