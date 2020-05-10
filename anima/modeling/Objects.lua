@@ -80,6 +80,7 @@ local function Object(name)
 		local fz = fc + self.frame.Z * maxdim
 		
 		self.vaoframe = VAO({position=mat.vec2vao{fc,fx,fc,fy,fc,fz}},progmesh)
+		self:make_model_mat()
 	end
 	
 	function O:setMesh(mesh,tex,frame)
@@ -95,13 +96,14 @@ local function Object(name)
 		local md = self.maxdim
 		self.zmobounds = ffi.new("float[?]",6,{ -0.25*md, -0.25*md, -0.25*md, 0.25*md, 0.25*md, 0.25*md })
 		
-		self:make_model_mat()
+		self:set_frame(frame)
+		
+
 		if self.vao then self.vao:delete() end
 		self.vao = mesh:vao(program)
 		if self.vaomesh then self.vaomesh:delete() end
 		self.vaomesh = mesh:vao(progmesh, true)
 		
-		self:set_frame(frame)
 	end
 	
 	O.parentM = mat.identity()
