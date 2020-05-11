@@ -227,7 +227,11 @@ CG.EarClipSimple = EarClipSimple
 
 
 local function EarClipSimple2(poly)
-
+	
+	if poly.holes then
+		poly = CG.InsertHoles(poly)
+	end
+	
 	local ind = {}
 	local tr = {}
 	local angles = {}
@@ -364,9 +368,9 @@ local function EarClipSimple2(poly)
 	if #ind > 2 then
 		local restpoly = {}
 		for i,v in ipairs(ind) do restpoly[#restpoly+1] = poly[ind[i]] end
-		return tr,false,restpoly
+		return poly,tr,false,restpoly
 	end	
-	return tr,true
+	return poly,tr,true
 end
 CG.EarClipSimple2 = EarClipSimple2
 
