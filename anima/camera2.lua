@@ -116,6 +116,15 @@ function Camera(GL,cam_type, name,initialDist)
 		eyepoint = (-1*(eyepoint/eyepoint.z)).xyz
 		return eyepoint
 	end
+	function cam:Eye2Viewport(eyep, MP)
+		MP = MP or self:MP()
+		local ndc = MP*mat.vec4(eyep,1)
+		ndc = (ndc/ndc.w).xyz
+		ndc = (ndc.xy + vec2(1,1))
+		ndc = vec2(ndc.x*GL.W*0.5,ndc.y*GL.H*0.5)
+		return ndc
+	end
+
 	----------------------------------
 	function cam:CalcCameraLookat()
 		local NMC = self.NMC
