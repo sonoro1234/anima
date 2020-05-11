@@ -35,23 +35,13 @@ local function Spline3D(GL, camera,updatefunc)
 		end
 	end
 	
-	SP3D.ps_eye = {}
 	SP3D.frames = {}
-	SP3D.indexes = {}
 	
 	local function Scr2Eye(MPinv,sc)
-		local ndc = sc*2/vec2(GL.W,GL.H) - vec2(1,1)
-		local eyepoint = MPinv * vec4(ndc.x,ndc.y,1,1)
-		eyepoint = eyepoint/eyepoint.w
-		eyepoint = - eyepoint/eyepoint.z
-		return eyepoint.xyz
+		return camera:Viewport2Eye(sc,MPinv)
 	end
-	function Eye2Scr(MP,eyep)
-		local ndc = MP*vec4(eyep,1)
-		ndc = (ndc/ndc.w).xyz
-		ndc = (ndc.xy + vec2(1,1))
-		ndc = vec2(ndc.x*GL.W*0.5,ndc.y*GL.H*0.5)
-		return ndc
+	local function Eye2Scr(MP,eyep)
+		return camera:Eye2Viewport(eyep,MP)
 	end
 	
 	function SP3D:newmesh(pts)
@@ -62,8 +52,6 @@ local function Spline3D(GL, camera,updatefunc)
 	
 	local olddeletespline = SP3D.deletespline
 	function SP3D:deletemesh(ii)
-		table.remove(SP3D.indexes,ii)
-		table.remove(SP3D.ps_eye,ii)
 		table.remove(SP3D.frames,ii)
 		table.remove(SP3D.HeightEditors,ii)
 		olddeletespline(SP3D,ii)
@@ -96,6 +84,17 @@ local function Spline3D(GL, camera,updatefunc)
 				local dotinv = -D/(R*r)
 				prsc[i] = dotinv*r
 			end
+			if self.sccoors[ii].holes then
+				prsc.holes = {}
+				for i,hole in ipairs(self.sccoors[ii].holes) do
+					prsc.holes[i] = {}
+					for j,v in ipairs(hole) do
+						local r = Scr2Eye(MPinv,v) --vec3(v.x,v.y,1)
+						local dotinv = -D/(R*r)
+						prsc.holes[i][j] = dotinv*r
+					end
+				end
+			end
 			--make planes coord sys
 			local Mt = mat.translate(-prsc[1])
 			local X = (prsc[2] - prsc[1]).normalize
@@ -105,20 +104,43 @@ local function Spline3D(GL, camera,updatefunc)
 			for i,v in ipairs(prsc) do
 				local vv = Mtr*vec4(v,1)
 				prsc[i] = (vv/vv.w).xyz
-
+			end
+			if prsc.holes then
+				for i,hole in ipairs(prsc.holes) do
+					for j,v in ipairs(hole) do
+						local vv = Mtr*vec4(v,1)
+						hole[j] = (vv/vv.w).xyz
+					end
+				end
+			end
+			local pspr = CG.Spline(prsc,self.alpha[ii][0],self.divs[ii][0],true)
+			if prsc.holes then
+				pspr.holes = {}
+				for i,hole in ipairs(prsc.holes) do
+					if #hole > 2 then
+						pspr.holes[i] = CG.Spline(hole,self.alpha[ii][0],self.divs[ii][0],true)
+					end
+				end
 			end
 
-			local pspr = CG.Spline(prsc,self.alpha[ii][0],self.divs[ii][0],true)
-			self.indexes[ii] = CG.EarClipSimple2(pspr)--,true)
+			--self.indexes[ii] = CG.EarClipSimple2(pspr)--,true)
 			
 			local Mtrinv = Mtr.inv
 
-			self.ps_eye[ii] = {}
 			self.ps[ii] = {}
 			for i,v in ipairs(pspr) do
 				local vv = Mtrinv*v
-				self.ps_eye[ii][i] = vv
 				self.ps[ii][i] = Eye2Scr(MP,vv)
+			end
+			if pspr.holes then
+				self.ps[ii].holes = {}
+				for k,hole in ipairs(pspr.holes) do
+					self.ps[ii].holes[k] = {}
+					for j,v in ipairs(hole) do
+						local vv = Mtrinv*v
+						self.ps[ii].holes[k][j] = Eye2Scr(MP,vv)
+					end
+				end
 			end
 			doheightupdate = false
 			self.HeightEditors[ii].Mtrinv = Mtrinv
@@ -175,5 +197,20 @@ local function Spline3D(GL, camera,updatefunc)
 	
 	return SP3D
 end
+
+--[=[
+local GL = GLcanvas{H=500,aspect=1,DEBUG=true}
+local function update(n) print("update spline",n) end
+local camera = Camera(GL,"tps")
+local edit = Spline3D(GL,camera,update)--,doblend=true})
+edit:newmesh()
+edit:set_frame(nil,1)
+local plugin = require"anima.plugins.plugin"
+edit.fb = plugin.serializer(edit)
+function GL.imgui()
+	edit.NM:draw()
+end
+GL:start()
+--]=]
 
 return Spline3D

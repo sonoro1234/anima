@@ -47,6 +47,15 @@ local function HeightEditor(GL,updatefunc)
 		for i,pt in ipairs(ps) do
 			M.psor[i] = vec3(pt.x,pt.y,pt.z)
 		end
+		if ps.holes then
+			M.psor.holes = {}
+			for j,hole in ipairs(ps.holes) do
+				M.psor.holes[j] = {}
+				for k,pt in ipairs(hole) do
+					M.psor.holes[j][k] = vec3(pt.x,pt.y,pt.z)
+				end
+			end
+		end
 		M:set_zplane()
 		SPLINEDIRTY = true
 		M:process()
@@ -57,6 +66,15 @@ local function HeightEditor(GL,updatefunc)
 		M.ps = {}
 		for i,pt in ipairs(M.psor) do
 			M.ps[i] = fac*pt
+		end
+		if M.psor.holes then
+			M.ps.holes = {}
+			for j,hole in ipairs(M.psor.holes) do
+				M.ps.holes[j] = {}
+				for k,pt in ipairs(hole) do
+					M.ps.holes[j][k] = fac*pt
+				end
+			end
 		end
 	end
 
@@ -157,16 +175,17 @@ local function HeightEditor(GL,updatefunc)
 	function M:process_poly()
 		if #self.ps < 3 then return end
 		local minb,maxb = CG.bounds(self.ps)
-		local indexes = CG.EarClipSimple2(self.ps)
+		--print("holes?",self.ps.holes)
+		local polypoints , indexes = CG.EarClipSimple2(self.ps)
 		--make tcoords
 		local diff = maxb-minb
 		local tcoords = {}
-		for i,v in ipairs(self.ps) do
+		for i,v in ipairs(polypoints) do
 			local vv = v.xy - minb
 			 tcoords[i] = mat.vec2(vv.x/diff.x,vv.y/diff.y)
 		end
 		local ps = {}
-		for i,v in ipairs(self.ps) do
+		for i,v in ipairs(polypoints) do
 			ps[i] = vec3(v.x,v.y,v.z)
 		end
 		self.mesh = mesh.mesh({points=ps,tcoords=tcoords,triangles=indexes})

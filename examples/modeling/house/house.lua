@@ -10,31 +10,35 @@ camera.NM.vars.dist[0] = 1.5
 local edit
 local tex
 local object
+
 local filters = {glc.GL_NEAREST,glc.GL_LINEAR}
 local function make_mesh(...)
 		local vec2 = mat.vec2
 		local SP3D = edit.Makers[2]
-		print("makemesh",#SP3D.ps,"splines",...)
-		if #SP3D.ps == 0 then return end
+		print("makemesh",#SP3D.HeightEditors,"splines",...)
+		if #SP3D.HeightEditors == 0 then return end
 		
 		--print(debug.traceback())
 		--put all spline points in common structure
+		local MP = camera:MP()
 		local points = {}
 		local epoints = {}
 		local indexes = {}
-		for i=1,#SP3D.ps do
-			for j,p in ipairs(SP3D.ps[i]) do
-				points[#points+1] = p
-				epoints[#points] = SP3D.ps_eye[i][j]
+		for i=1,#SP3D.HeightEditors do
+			local mesh = SP3D:get_mesh(i)
+			for j,p in ipairs(mesh.points) do
+				points[#points+1] = camera:Eye2Viewport(p,MP)
+				epoints[#points] = p 
 			end
 		end
-		if #points==0 then return end
+		if #epoints==0 then return end
 		local offsetind = 0
-		for i=1,#SP3D.indexes do
-			for j,ind in ipairs(SP3D.indexes[i]) do
+		for i=1,#SP3D.HeightEditors do
+			local mesh = SP3D:get_mesh(i)
+			for j,ind in ipairs(mesh.indexes) do
 				indexes[#indexes+1] = ind + offsetind
 			end
-			offsetind = offsetind + #SP3D.ps[i]
+			offsetind = offsetind + #mesh.points
 		end
 		--get tcoords
 		--first bounding box of screen points

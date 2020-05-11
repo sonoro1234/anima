@@ -23,11 +23,14 @@ local function Editor(GL,updatefunc,args)
 	M.divs = {}
 	
 	local NM 
+	local curr_hole = ffi.new("int[1]")
 	
 	local vars = {
-	{"curr_spline",0,guitypes.valint,{min=1,max=numsplines}},
+	{"curr_spline",0,guitypes.valint,{min=1,max=numsplines},function() curr_hole[0] = 0 end},
 	{"newspline",0,guitypes.button,function(this) 
 		M:newspline() end},
+	{"newhole",0,guitypes.button,function(this) 
+		M:newhole() end,{sameline=true}},
 	{"orientation",0,guitypes.button,function() M:change_orientation(); M:process_all() end},
 	{"rotate",0,guitypes.button,function() M:rotate(); M:process_all() end,{sameline=true}},
 	{"set_last",0,guitypes.toggle},
@@ -65,6 +68,13 @@ local function Editor(GL,updatefunc,args)
 			local color = i==1 and ig.U32(1,1,0,1) or ig.U32(1,0,0,1)
 			dl:AddCircleFilled(scpoint, 4, color)
 		end
+		if curr_hole[0]>0 then
+			for i,v in ipairs(M.sccoors[NM.curr_spline].holes[curr_hole[0]]) do
+				local scpoint = ViewportToScreen(v.x,v.y)
+				local color = i==1 and ig.U32(1,1,0,1) or ig.U32(1,0,0,1)
+				dl:AddCircleFilled(scpoint, 4, color)
+			end
+		end
 		for i=1,numsplines do
 			local pointsI = ffi.new("ImVec2[?]",#M.ps[i])
 			for j,p in ipairs(M.ps[i]) do
@@ -72,12 +82,31 @@ local function Editor(GL,updatefunc,args)
 				pointsI[j-1] = scpoint
 			end
 			dl:AddPolyline(pointsI,#M.ps[i],ig.U32(0.5,1,0,1),true, 1)
+			if M.ps[i].holes then
+				for j,hole in ipairs(M.ps[i].holes) do
+					local pointsI = ffi.new("ImVec2[?]",#hole)
+					for k,p in ipairs(hole) do
+						local scpoint = ViewportToScreen(p.x,p.y)
+						pointsI[k-1] = scpoint
+					end
+					dl:AddPolyline(pointsI,#hole,ig.U32(0.5,1,0,1),true, 1)
+				end
+			end
 		end
 		if NM.points == 3 then --edit
 			local mposvp = vec2(ScreenToViewport(mpos.x, mpos.y))
-			for i,sc in ipairs(M.sccoors[NM.curr_spline]) do
-				if (sc-mposvp).norm < 5 then
-					dl:AddCircleFilled(ViewportToScreen(sc.x,sc.y), 4, ig.U32(1,1,1,1))
+			if curr_hole[0] == 0 then
+				for i,sc in ipairs(M.sccoors[NM.curr_spline]) do
+					if (sc-mposvp).norm < 5 then
+						dl:AddCircleFilled(ViewportToScreen(sc.x,sc.y), 4, ig.U32(1,1,1,1))
+					end
+				end
+			else
+				local hole = M.sccoors[NM.curr_spline].holes[curr_hole[0]]
+				for i,sc in ipairs(hole) do
+					if (sc-mposvp).norm < 5 then
+						dl:AddCircleFilled(ViewportToScreen(sc.x,sc.y), 4, ig.U32(1,1,1,1))
+					end
 				end
 			end
 		end
@@ -88,11 +117,16 @@ local function Editor(GL,updatefunc,args)
 	NM = gui.Dialog("spline",vars,function(this)
 		local NM = this
 		if numsplines==0 then return end
+		
 		if ig.SliderFloat("alpha",M.alpha[NM.curr_spline],0,1) then
 			M:process_all()
 		end
 		if ig.SliderInt("divs",M.divs[NM.curr_spline],1,30) then
 			M:process_all()
+		end
+		
+		if M.sccoors[NM.curr_spline].holes then
+		ig.SliderInt("curr_hole",curr_hole,0, #M.sccoors[NM.curr_spline].holes) 
 		end
 		
 		local igio = ig.GetIO()
@@ -102,9 +136,17 @@ local function Editor(GL,updatefunc,args)
 		if NM.set_last then
 			if igio.MouseClicked[0] then
 				local touched = -1
-				for i,v in ipairs(M.sccoors[NM.curr_spline]) do
-					local vec = v - mposvp
-					if (vec.norm) < 3 then touched = i; break end
+				if curr_hole[0] == 0 then
+					for i,v in ipairs(M.sccoors[NM.curr_spline]) do
+						local vec = v - mposvp
+						if (vec.norm) < 3 then touched = i; break end
+					end
+				else
+					local hole = M.sccoors[NM.curr_spline].holes[curr_hole[0]]
+					for i,v in ipairs(hole) do
+						local vec = v - mposvp
+						if (vec.norm) < 3 then touched = i; break end
+					end
 				end
 				if touched > 0 then
 					M:set_last(touched)
@@ -118,35 +160,64 @@ local function Editor(GL,updatefunc,args)
 		ig.SetMouseCursor(ig.lib.ImGuiMouseCursor_Hand);
 		if this.points == 2 then --set
 			if igio.MouseClicked[0] and not igio.MouseDownOwned[0] then
-				table.insert(M.sccoors[NM.curr_spline],mposvp)
+				if curr_hole[0]==0 then
+					table.insert(M.sccoors[NM.curr_spline],mposvp)
+				else
+					table.insert(M.sccoors[NM.curr_spline].holes[curr_hole[0]],mposvp)
+				end
 				M:calc_spline()
 				if M:numpoints(ii)>2 then updatefunc(M) end
 			end
+			
 		elseif this.points == 3 then --edit
 			if doingedit then
-				M.sccoors[NM.curr_spline][doingedit] = mposvp
+				if curr_hole[0] == 0 then
+					M.sccoors[NM.curr_spline][doingedit] = mposvp
+				else
+					M.sccoors[NM.curr_spline].holes[curr_hole[0]][doingedit] = mposvp
+				end
 				M:process_all()
 				if igio.MouseReleased[0] then
 					doingedit = false
 				end
 			elseif igio.MouseClicked[0] and not igio.MouseDownOwned[0] then
 				local touched = -1
-				for i,v in ipairs(M.sccoors[NM.curr_spline]) do
-					local vec = v - mposvp
-					if (vec.norm) < 5 then touched = i; break end
+				if curr_hole[0] == 0 then
+					for i,v in ipairs(M.sccoors[NM.curr_spline]) do
+						local vec = v - mposvp
+						if (vec.norm) < 5 then touched = i; break end
+					end
+				else
+					local hole = M.sccoors[NM.curr_spline].holes[curr_hole[0]]
+					for i,v in ipairs(hole) do
+						local vec = v - mposvp
+						if (vec.norm) < 5 then touched = i; break end
+					end
 				end
 				if touched > 0 then doingedit = touched end
 			end
 		elseif this.points == 4 then --clear
 			if igio.MouseClicked[0] then
 				local touched = -1
-				for i,v in ipairs(M.sccoors[NM.curr_spline]) do
-					local vec = v - mposvp
-					if (vec.norm) < 3 then touched = i; break end
-				end
-				if touched > 0 then
-					table.remove(M.sccoors[NM.curr_spline],touched)
-					M:process_all()
+				if curr_hole[0] == 0 then
+					for i,v in ipairs(M.sccoors[NM.curr_spline]) do
+						local vec = v - mposvp
+						if (vec.norm) < 3 then touched = i; break end
+					end
+					if touched > 0 then
+						table.remove(M.sccoors[NM.curr_spline],touched)
+						M:process_all()
+					end
+				else
+					local hole = M.sccoors[NM.curr_spline].holes[curr_hole[0]]
+					for i,v in ipairs(hole) do
+						local vec = v - mposvp
+						if (vec.norm) < 3 then touched = i; break end
+					end
+					if touched > 0 then
+						table.remove(hole,touched)
+						M:process_all()
+					end
 				end
 			end
 		end
@@ -172,8 +243,16 @@ local function Editor(GL,updatefunc,args)
 		return numsplines
 	end
 	
+	function M:newhole()
+		if NM.curr_spline==0 then return end
+		self.sccoors[NM.curr_spline].holes = self.sccoors[NM.curr_spline].holes or {}
+		table.insert(self.sccoors[NM.curr_spline].holes,{})
+		curr_hole[0] = #self.sccoors[NM.curr_spline].holes
+	end
+	
 	function M:set_current(i)
 		self.NM.vars.curr_spline[0] = i
+		curr_hole[0] = math.min(curr_hole[0],self.sccoors[i].holes and #self.sccoors[i].holes or 0)
 	end
 	
 	function M:external_control(yes)
@@ -202,6 +281,7 @@ local function Editor(GL,updatefunc,args)
 	
 	function M:clearshape()
 		if NM.curr_spline==0 then return end
+		curr_hole[0] = 0
 		self.sccoors[NM.curr_spline] = {}
 		self.ps[NM.curr_spline] = {}
 		M.alpha[NM.curr_spline] = ffi.new("float[1]",0.5)
@@ -217,38 +297,76 @@ local function Editor(GL,updatefunc,args)
 		ind = ind or NM.curr_spline
 		return self.sccoors[ind] and #self.sccoors[ind] or 0
 	end
-
-	function M:change_orientation()
-		local sc,nsc = self.sccoors[NM.curr_spline],{}
-		for i=#sc,1,-1 do
-			nsc[#nsc + 1] = sc[i]
+	
+	local floor = math.floor
+	local function reverse(t)
+		local s = #t+1
+		for i=1,floor(#t/2) do
+			t[i],t[s-i] = t[s-i],t[i]
 		end
-		self.sccoors[NM.curr_spline] = nsc
+		return t
+	end
+	function M:change_orientation()
+		if NM.curr_spline == 0 then return end
+		local sc
+		if curr_hole[0] == 0 then
+			sc = self.sccoors[NM.curr_spline]
+		else
+			sc = self.sccoors[NM.curr_spline].holes[curr_hole[0]]
+		end
+		reverse(sc)
 	end
 	
 	function M:rotate()
-		local sc = self.sccoors[NM.curr_spline]
+		if NM.curr_spline == 0 then return end
+		local sc
+		if curr_hole[0] == 0 then
+			sc = self.sccoors[NM.curr_spline]
+		else
+			sc = self.sccoors[NM.curr_spline].holes[curr_hole[0]]
+		end
 		local first = table.remove(sc,1)
 		table.insert(sc,first)
 	end
 	
 	function M:set_last(ind)
-		if ind == #self.sccoors[NM.curr_spline] then return end
-		local sc,nsc = self.sccoors[NM.curr_spline],{}
-		local first = mod(ind+1,#sc)
-		for i=first,#sc do
-			nsc[#nsc + 1] = sc[i]
+		if NM.curr_spline == 0 then return end
+		if curr_hole[0] == 0 then
+			if ind == #self.sccoors[NM.curr_spline] then return end
+			local sc,nsc = self.sccoors[NM.curr_spline],{}
+			local first = mod(ind+1,#sc)
+			for i=first,#sc do
+				nsc[#nsc + 1] = sc[i]
+			end
+			for i=1,ind do
+				nsc[#nsc + 1] = sc[i]
+			end
+			self.sccoors[NM.curr_spline] = nsc
+		else
+			local sc,nsc = self.sccoors[NM.curr_spline].holes[curr_hole[0]],{}
+			local first = mod(ind+1,#sc)
+			for i=first,#sc do
+				nsc[#nsc + 1] = sc[i]
+			end
+			for i=1,ind do
+				nsc[#nsc + 1] = sc[i]
+			end
+			self.sccoors[NM.curr_spline].holes[curr_hole[0]] = nsc
 		end
-		for i=1,ind do
-			nsc[#nsc + 1] = sc[i]
-		end
-		self.sccoors[NM.curr_spline] = nsc
 	end
 	
 	function M:calc_spline(ii)
 		ii = ii or NM.curr_spline
 		if self:numpoints(ii)>2 then
 			self.ps[ii] = CG.Spline(self.sccoors[ii],M.alpha[ii][0],M.divs[ii][0],true)
+			if self.sccoors[ii].holes then
+				self.ps[ii].holes = {}
+				for i,hole in ipairs(self.sccoors[ii].holes) do
+					if #hole > 2 then
+						self.ps[ii].holes[i] = CG.Spline(hole,M.alpha[ii][0],M.divs[ii][0],true)
+					end
+				end
+			end
 		end
 	end
 	function M:calc_all_splines()
@@ -274,9 +392,16 @@ local function Editor(GL,updatefunc,args)
 	function M:load(params)
 		if not params then return end
 		for j,sc in ipairs(params.sccoors) do
-		for i,v in ipairs(sc) do
-			sc[i] = v/vec2(params.VP[1]/GL.W,params.VP[2]/GL.H)
-		end
+			for i,v in ipairs(sc) do
+				sc[i] = v/vec2(params.VP[1]/GL.W,params.VP[2]/GL.H)
+			end
+			if sc.holes then
+				for k,hole in ipairs(sc.holes) do
+					for l,v in ipairs(hole) do
+						hole[l] = v/vec2(params.VP[1]/GL.W,params.VP[2]/GL.H)
+					end
+				end
+			end
 		end
 		NM:SetValues(params.dial or {})
 		M.sccoors = params.sccoors
@@ -300,13 +425,13 @@ end
 
 --[=[
 local GL = GLcanvas{H=500,aspect=1,DEBUG=true}
---local camara = newCamera(GL,"ident")
 local function update(n) print("update spline",n) end
 local edit = Editor(GL,update,{region=false})--,doblend=true})
 local plugin = require"anima.plugins.plugin"
 edit.fb = plugin.serializer(edit)
---GL.use_presets = true
-
+function GL.imgui()
+	edit.NM:draw()
+end
 GL:start()
 --]=]
 
