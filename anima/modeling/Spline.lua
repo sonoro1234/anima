@@ -93,7 +93,7 @@ local function Editor(GL,updatefunc,args)
 				end
 			end
 		end
-		if NM.points == 3 then --edit
+		if NM.points == 3 or NM.points == 4 then --edit or clear
 			local mposvp = vec2(ScreenToViewport(mpos.x, mpos.y))
 			if curr_hole[0] == 0 then
 				for i,sc in ipairs(M.sccoors[NM.curr_spline]) do
