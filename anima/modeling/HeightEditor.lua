@@ -29,7 +29,7 @@ local function HeightEditor(GL,updatefunc)
 		elseif val==2 then
 			visibility(this,{zplane=true,height=true,grid=true})
 		else
-			visibility(this,{})
+			visibility(this,{height=true})
 		end
 		M:process() end},
 	{"zplane",0,guitypes.val,{min=-20,max=0}, function() M:set_zplane();M:process() end },
@@ -87,7 +87,7 @@ local function HeightEditor(GL,updatefunc)
 	local heights = {}
 	local Plength = 0
 	local maxh = 0
-	local function HeightSet(P,Pol)
+	local function HeightSet(P,Pol,bridges)
 		if NM.height == 0 then return end
 		local function dist2seg(a,b,c)
 			local ac = (c - a).xy
@@ -107,18 +107,32 @@ local function HeightEditor(GL,updatefunc)
 			end
 		end
 		if SPLINEDIRTY or #P~=Plength then
-			--print("DIRT",not SPLINEDIRTY , #P~=Plength)
 			Plength = #P
 			heights = {}
+			--[=[
 			for i=1,#P do
 				local p = P[i]
 				heights[i] = math.huge
 				for j=1,#Pol do
+					if not bridges[j] or NM.notbridges then
+						local a = P[Pol[j]]
+						local b = P[Pol[mod(j+1,#Pol)]]
+						local dis = dist2seg(a,b,p)
+						heights[i] = (dis < heights[i]) and dis or heights[i]
+					end
+				end
+			end
+			--]=]
+			for i=1,#P do heights[i] = math.huge end
+			for j=1,#Pol do
+				if not bridges[j] then
 					local a = P[Pol[j]]
 					local b = P[Pol[mod(j+1,#Pol)]]
-	
-					local dis = dist2seg(a,b,p)
-					heights[i] = (dis < heights[i]) and dis or heights[i]
+					for i=1,#P do
+						local p = P[i]
+						local dis = dist2seg(a,b,p)
+						heights[i] = (dis < heights[i]) and dis or heights[i]
+					end
 				end
 			end
 			maxh = 0
@@ -188,7 +202,10 @@ local function HeightEditor(GL,updatefunc)
 		for i,v in ipairs(polypoints) do
 			ps[i] = vec3(v.x,v.y,v.z)
 		end
-		self.mesh = mesh.mesh({points=ps,tcoords=tcoords,triangles=indexes})
+		--self.mesh = mesh.mesh({points=ps,tcoords=tcoords,triangles=indexes})
+		local meshW = mesh.mesh({points=ps,tcoords=tcoords,triangles=indexes})
+		meshW:M4(mat.translate(vec3(0,0,NM.height)))
+		self.mesh = meshW
 	end
 	
 	function M:process_tube()
@@ -213,16 +230,21 @@ local function HeightEditor(GL,updatefunc)
 		local points_add = grid.points
 		local indexes = grid.triangles
 		
-		local Polind = CG.AddPoints2Mesh(self.ps,points_add,indexes)
-		---prtable(points_add)
+		--holes
+		local polyh = CG.InsertHoles(self.ps)
+		--prtable("bridges1",polyh.bridges)
+		local Polind = CG.AddPoints2Mesh(polyh,points_add,indexes)
 		---[[
-		indexes =	CDTinsertion(points_add,indexes,Polind, true) --NM.outpoly)
+		indexes = CDTinsertion(points_add,indexes,Polind, true) --NM.outpoly)
 		---------------------
+		---[=[
 		--delete points not used
 		local map = mesh.clean_points(points_add, indexes)
+		--remap Polind
 		for i,ind in ipairs(Polind) do
 			Polind[i] = map[ind]
 		end
+		--]=]
 		---------------------
 		--]]
 		--centroid
@@ -233,7 +255,7 @@ local function HeightEditor(GL,updatefunc)
 		-- cent = cent/#points_add
 		-- self.centroid = cent
 		
-		HeightSet(points_add,Polind)
+		HeightSet(points_add,Polind,polyh.bridges)
 		
 		--make tcoords
 		local diff = maxb-minb
