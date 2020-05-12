@@ -4,16 +4,20 @@ local SegmentIntersect = CG.SegmentIntersect
 --takes P: table of points, indexes: openGL tr over P (offset -1 for being 0-indexed)
 -- Poli: table of poligon indexes over P 
 -- delout: (boolean) delete edges out of polygon
-function CG.CDTinsertion(P,indexes,Polind,delout)
+function CG.CDTinsertion(P,indexes,Polind,bridges,delout)
 
 		local Ed = CG.TR2Ed(indexes)
 				
 		--edges of polygon 
 		local Poli = {}
 		for ii=1,#Polind-1 do
-			Poli[ii] = {Polind[ii],Polind[ii+1]}
+			if not bridges[ii] then
+				Poli[#Poli+1] = {Polind[ii],Polind[ii+1]}
+			end
 		end
-		Poli[#Polind] = {Polind[#Polind],Polind[1]}
+		if not bridges[#Polind] then
+			Poli[#Poli+1] = {Polind[#Polind],Polind[1]}
+		end
 
 		--polygon points
 		local Pol = {}
@@ -294,9 +298,9 @@ function CG.CDTinsertion(P,indexes,Polind,delout)
 		return CG.Ed2TR(Ed),Ed
 end
 
---given a set of points and a mesh of points triangulated by tr (opengl 0-indexed)
---add new points to points and recreates the triangulation
---poli: table of points to add
+--given a set of polygon points and a mesh of points triangulated by tr (opengl 0-indexed)
+--add new polygon points to mesh points and recreates the triangulation
+--poli: table of polygon points to add
 --points: original mesh points
 --tr: triangulation indexes of mesh points (openGL style 0-indexed)
 --returns Polind as indexes of polygon points over the points table (Lua 1-indexed)
@@ -309,7 +313,7 @@ function CG.AddPoints2Mesh(poli,points,tr)
 	local remove = table.remove
 	local IsPointInTri = CG.IsPointInTri
 	local polind = {}
-
+	
 	local function addtrian(tr,a,b,c)
 		tr[#tr+1] = a
 		tr[#tr+1] = b

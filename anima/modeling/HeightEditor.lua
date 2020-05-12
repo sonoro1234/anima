@@ -232,10 +232,10 @@ local function HeightEditor(GL,updatefunc)
 		
 		--holes
 		local polyh = CG.InsertHoles(self.ps)
-		--prtable("bridges1",polyh.bridges)
+		--prtable("bridges1",polyh)--.bridges)
 		local Polind = CG.AddPoints2Mesh(polyh,points_add,indexes)
 		---[[
-		indexes = CDTinsertion(points_add,indexes,Polind, true) --NM.outpoly)
+		indexes = CDTinsertion(points_add,indexes,Polind,polyh.bridges, true) --NM.outpoly)
 		---------------------
 		---[=[
 		--delete points not used

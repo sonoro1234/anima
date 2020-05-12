@@ -150,6 +150,11 @@ local function InsertHoles(poly,skip_check)
 
 	local algo = require"anima.algorithm.algorithm"
 	local holes = poly.holes
+	if not holes then
+		poly.holes = {}
+		poly.bridges = {}
+		return poly
+	end
 	--[[
 	print"removing bad points in holes---------------------"
 	for nhole,hole in ipairs(holes) do
@@ -335,9 +340,10 @@ local function InsertHoles(poly,skip_check)
 				poly = newpoly
 				
 				bridges[dd.j]= true
-				bridges[dd.j+1] = true
+				--bridges[dd.j+1] = true
 				bridges[indmini]= true
-				bridges[indmini+1] = true
+				--bridges[indmini+1] = true
+				--bridges1[dd.j]=indmini
 				
 				--print("bridge added",i,"was",horder.i,horder.mini,"inds",dd.j,dd.j+1,indmini,indmini+1)
 				if CG.check_crossings(poly,true) then
