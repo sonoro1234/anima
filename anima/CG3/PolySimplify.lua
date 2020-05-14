@@ -505,3 +505,118 @@ function CG.PolySimplifyNC2(poly,eps)
 	
 	return poly,removed
 end
+
+-------polygon padding
+local function mod(a,b)
+	return ((a-1)%b)+1
+end
+--return a polygon with positive outward offset dis
+--square bool if square instead of round terminations
+--minlen defaults 10 for viewport coordinates
+function CG.PolygonPad(pol,dis,square,minlen)
+	
+	if dis <= 0 then return pol end
+	if square==nil then square=false end
+	minlen = minlen or 10
+	
+	local floor,atan2,cos,sin = math.floor, math.atan2, math.cos, math.sin
+	local insert, remove = table.insert, table.remove
+	local pix2 = math.pi*2
+	local vec2 = mat.vec2
+	
+	--first displace edges outwards
+	local pol2 = {}
+	local signs = {}
+	for i=1,#pol do
+		signs[i] = CG.Sign(pol[mod(i-1,#pol)],pol[i],pol[mod(i+1,#pol)])
+		local edge = (pol[mod(i+1,#pol)]-pol[i]).normalize
+		local nor = vec2(edge.y,-edge.x) 
+		pol2[#pol2+1] = dis*nor+pol[i]
+		pol2[#pol2+1] = dis*nor+pol[mod(i+1,#pol)]
+	end
+	
+	local pol3 = pol2
+	--make round on convex vertices
+	if not square then
+		pol3 = {}
+		for i=1,#pol do
+			local a,b = mod(2*i-2,#pol2),2*i-1
+			if signs[i] > 0 then 
+				local center = pol[i]
+				local p1,p2 = pol2[a],pol2[b]
+				local dir1 = (p1 - center).normalize
+				local dir2 = (p2 - center).normalize
+				local iniang = atan2(dir1.y, dir1.x)
+				local endang = atan2(dir2.y, dir2.x)
+				--print("convex",i,iniang, endang, dir1, dir2)
+				local chgang = endang - iniang
+				chgang = chgang < 0 and pix2+chgang or chgang
+				local leng = dis*(chgang)
+				--leng = math.abs(leng)
+				--assert(leng>0)
+				--trozos
+				local trozos = floor(leng/minlen)
+				local incang = chgang/trozos
+				
+				pol3[#pol3+1] = p1
+				for t = 1, trozos-1 do
+					local om = iniang + incang*t
+					pol3[#pol3+1] = center + dis*vec2(cos(om),sin(om))
+				end
+				pol3[#pol3+1] = p2
+			else
+				pol3[#pol3+1] = pol2[a]
+				pol3[#pol3+1] = pol2[b]
+			end
+		end
+	end
+	--self intersection repair
+	--start from minimum x and y vertex
+	local minx = math.huge
+	local mini
+	for i=1,#pol3 do
+		if pol3[i].x <= minx then
+			if pol3[i].x == minx then
+				if pol3[i].y < miny then
+					miny = pol3[i].y
+					mini = i
+				end
+			else
+				miny = pol3[i].y
+				minx = pol3[i].x
+				mini = i
+			end
+		end
+	end
+	for i=1,mini-1 do
+		insert(pol3,remove(pol3,1))
+	end
+	--now repair
+	local poly = pol3
+	local i = 1
+	while i < #poly do
+		--print("repair",i,#poly)
+		local ai,bi = i,mod(i+1,#poly)
+		local a,b = poly[ai],poly[bi]
+		local found = false
+		for j=i+2,#poly do
+			local ci,di = j,mod(j+1,#poly)
+			local c,d = poly[ci],poly[di]
+			if CG.SegmentIntersect(a,b,c,d) then
+				--print("intersec",ai,bi,ci,di)
+				local pc = CG.IntersecPoint2(a,b,c,d)
+				--delete from bi to ci
+				for k=ci,bi,-1 do 
+					remove(poly,k) 
+				end
+				insert(poly,ai+1,pc)
+				found = true
+				break
+			end
+		end
+		if not found then
+			i = i + 1
+		end
+	end
+	return pol3
+end
