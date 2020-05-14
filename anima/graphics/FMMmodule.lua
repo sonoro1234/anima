@@ -2,6 +2,8 @@
 -- use flood_fill to select the area to inpaint
 -- then click doit on inpaint dialog
 
+local function FMMmodule(GL)
+	local M = {}
 require"anima"
 
 local ImageF = [[
@@ -66,62 +68,42 @@ local function inpaint(tex,m1,NM,progrData)
 	return t,datatex
 
 end
-
-local GL = GLcanvas{H=700 ,aspect=1,vsync=true}
-
-local DOINPAINT
-local progrData = ffi.new("float[1]")
-local NM = GL:Dialog("inpaint",{
-{"doit",0,guitypes.button,function() DOINPAINT=true end},
-{"showres",false,guitypes.toggle},
-{"radio",5,guitypes.valint,{min=1,max=30}},
-},function() 
-	ig.ProgressBar(progrData[0])
-end)
-
-local FF
-local tex,inpainted
-local maskfbo
-
-function GL.init()
-
-	tex = GL:Texture():Load([[golf.png]])
-	inpainted = GL:Texture(tex.width,tex.height)
-	GL:set_WH(tex.width,tex.height)
 	
-	FF = require"anima.plugins.flood_fill"(GL)
-
-	maskfbo = GL:initFBO({no_depth=true})
-
-	GL:DirtyWrap()
-end
-
-
-local tt,datatex
-function GL.draw(t,w,h)
-
-	ut.Clear()
+	local DOINPAINT
+	local progrData = ffi.new("float[1]")
+	local NM = GL:Dialog("inpaint",{
+	{"doit",0,guitypes.button,function() DOINPAINT=true end},
+	{"showres",false,guitypes.toggle},
+	{"radio",5,guitypes.valint,{min=1,max=30}},
+	},function() 
+		ig.ProgressBar(progrData[0])
+	end)
 	
-	FF:process_fbo(maskfbo,tex)
-	maskfbo:tex():drawcenter()
+	M.NM = NM
 	
-	if NM.showres then
-		ut.Clear()
-		inpainted:drawcenter()
-	end
-	
-	if DOINPAINT then
-		tt,datatex = inpaint(tex, FF.mask, NM, progrData)
-		DOINPAINT = false
-	end
-	if tt then
-		if tt:join(0.01) then
-			inpainted:set_data(datatex,3,3)
-			tt:free()
-			tt = nil
-			NM.vars.showres[0] = true
+	local tt,datatex
+	local inpainted = GL:Texture()
+	function M:draw(tex,mask)
+		if NM.showres then
+			ut.Clear()
+			inpainted:drawcenter()
+		end
+		
+		if DOINPAINT then
+			tt,datatex = inpaint(tex, mask, NM, progrData)
+			DOINPAINT = false
+		end
+		if tt then
+			if tt:join(0.01) then
+				inpainted:set_data(datatex,3,3)
+				tt:free()
+				tt = nil
+				NM.vars.showres[0] = true
+			end
 		end
 	end
+
+	return M
 end
 
-GL:start()
+return FMMmodule

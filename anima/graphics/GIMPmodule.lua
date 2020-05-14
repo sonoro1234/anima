@@ -1,8 +1,7 @@
 -- Threaded inpaint with GIMP resynthesizer library
--- use flood_fill to select area to inpaint
--- use mophol do dilate this area (resynthesizer will use this area as source)
--- click doit on resynth
 -----------------------------------------------------------------------------
+local function GIMPmodule(GL)
+	local M = {}
 require"anima"
 --WINUSEPTHREAD = true
 local ok,resy = pcall(require,"resynth")
@@ -25,7 +24,7 @@ local thread_func = function(pars)
 	param.sensitivityToOutliers                = pars.sensitivityToOutliers
 	param.patchSize                            = pars.patchSize
 	param.maxProbeCount	                       = pars.maxProbeCount
-	
+
 	return function(ud)
 
 		ud = ffi.cast("struct { ImageBuffer im;ImageBuffer m1;ImageBuffer m2;float* progdata;}*", ud)
@@ -52,7 +51,7 @@ local function resynth(tex,m1,m2,NM,progrData)
 	
 	param.isMakeSeamlesslyTileableHorizontally = false;
 	param.isMakeSeamlesslyTileableVertically   = false;
-	param.matchContextType                     = NM.matchContextType
+	param.matchContextType                     = NM.matchContextType - 1
 	param.mapWeight                            = NM.mapWeight
 	param.sensitivityToOutliers                = NM.sensitivityToOutliers
 	param.patchSize                            = NM.patchSize
@@ -88,101 +87,46 @@ local function resynth(tex,m1,m2,NM,progrData)
 
 end
 
-local GL = GLcanvas{H=700 ,aspect=1,vsync=true}
-GL.use_presets = true
-
 local DORESYNTH
 local progrData = ffi.new("float[1]")
-local NM = GL:Dialog("resynth",{
+local NMres = GL:Dialog("resynth",{
 {"doit",0,guitypes.button,function() DORESYNTH=true end},
 {"flipV",false,guitypes.toggle},
 {"showres",false,guitypes.toggle},
-{"matchContextType",1,guitypes.valint,{min=0,max=8}},
+{"matchContextType",2,guitypes.slider_enum,{"none","random","concentric inward","horizontal inward","vertical inward","concentric outward","horizontal outward","vertical outward","concentric donut"}},
 {"mapWeight",0,guitypes.drag,{min=0,max=1}},
 {"sensitivityToOutliers",0.117,guitypes.drag,{min=0,max=1}},
 {"patchSize",16,guitypes.valint,{min=1,max=36}},
-{"maxProbeCount",500,guitypes.valint,{min=1,max=500}}
+{"maxProbeCount",500,guitypes.valint,{min=1,max=500}},
 },function() 
 	ig.ProgressBar(progrData[0])
 end)
 
-local medit1
-local morpho 
-local tex,tex2
-local mask1,mask2,morfbo
-local mixer,subsproc
-local DBox = GL:DialogBox("resynthesizer",true)
-function GL.init()
-	tex = GL:Texture():Load([[golf.png]])
-	tex2 = GL:Texture(tex.width,tex.height)
-	GL:set_WH(tex.width,tex.height)
-	
-	medit1 = require"anima.plugins.flood_fill"(GL)
-	morpho = require"anima.plugins.morphology"(GL)
-	morpho.NM:SetValues{op="dilate"}
-	local codestr = [[if(t@)
-						color = color*(1.0-c@.r)+c@;
-	]]
-
-	subsproc = require"anima.plugins.texture_processor"(GL,2)
-	DBox:add_dialog(NM)
-	DBox:add_dialog(medit1.NM)
-	DBox:add_dialog(morpho.NM)
-	
-	
-	local plugin = require"anima.plugins.plugin"
-	plugin.serializer(medit1)
-	plugin.serializer(morpho)
-	
-	mask1 = GL:initFBO({no_depth=true})
-	mask2 = GL:initFBO({no_depth=true})
-	morfbo = GL:initFBO({no_depth=true})
-	
-	subsproc:set_process[[vec4 process(vec2 pos){
-		float col = c1.r-c2.r;
-		return vec4(vec3(col),col*0.5);
-	}]]
-	GL:DirtyWrap()
-end
-
-
+M.NM = NMres
 local tt,datatex
-function GL.draw(t,w,h)
-	
-	ut.Clear()
-
-	medit1:process_fbo(mask1,tex)
-	mask1:tex():drawcenter()
-	morpho:process_fbo(morfbo,medit1.mask)
-	
-	
-	subsproc:process_fbo(mask2,{morfbo:tex(),medit1.mask})
-	
-	ut.ClearDepth()
-	gl.glEnable(glc.GL_BLEND)
-	gl.glBlendFunc(glc.GL_SRC_ALPHA, glc.GL_ONE_MINUS_SRC_ALPHA)
-	glext.glBlendEquation(glc.GL_FUNC_ADD)
-	mask2:tex():drawcenter()
-	gl.glDisable(glc.GL_BLEND)
-	
-	if NM.showres then
+local tex2  = GL:Texture()
+function M:draw(tex,mask1,mask2)
+	if NMres.showres then
 		ut.Clear()
 		tex2:drawcenter()
 	end
 	
 	if DORESYNTH then
-		tt,datatex = resynth(tex,medit1.mask,mask2:tex(),NM,progrData)
+		tt,datatex = resynth(tex,mask1,mask2,NMres,progrData)
 		DORESYNTH = false
 	end
 	if tt then
 		if tt:join(0.01) then
-			if NM.flipV then datatex = vicim.flip_vertical(datatex,tex.width,tex.height,3) end
+			if NMres.flipV then datatex = vicim.flip_vertical(datatex,tex.width,tex.height,3) end
 			tex2:set_data(datatex,3,3)
 			tt:free()
 			tt = nil
-			NM.vars.showres[0] = true
+			NMres.vars.showres[0] = true
 		end
 	end
 end
 
-GL:start()
+	return M
+end
+
+return GIMPmodule
