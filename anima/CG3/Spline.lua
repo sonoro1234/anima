@@ -52,12 +52,13 @@ local function Spline(points,alpha,amountOfPoints,closed)
 	local i0,i1,i2,i3
 	if closed then
 		if #points < 3 then return ps end
+		CatmulRom(points[#points],points[1],points[2],points[3],ps,alpha,amountOfPoints)
 		for i=1,#points-3 do
 			CatmulRom(points[i],points[i+1],points[i+2],points[i+3],ps,alpha,amountOfPoints)
 		end
 		CatmulRom(points[#points-2],points[#points-1],points[#points],points[1],ps,alpha,amountOfPoints)
-		CatmulRom(points[#points-1],points[#points],points[1],points[2],ps,alpha,amountOfPoints)
-		CatmulRom(points[#points],points[1],points[2],points[3],ps,alpha,amountOfPoints,true)
+		CatmulRom(points[#points-1],points[#points],points[1],points[2],ps,alpha,amountOfPoints,true)
+		
 		ps[#ps] = nil --delete repeated
 	else
 		if #points < 4 then return ps end
