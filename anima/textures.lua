@@ -741,8 +741,8 @@ function Texture(w,h,formato,pTexor,args)
 	assert(args)
 	if not args then print("texture witout context") end
 	--args = args or {GL={}}
-	w = w or 1
-	h = h or 1
+	w = w or args.GL.W
+	h = h or args.GL.H
 	formato = formato or glc.GL_RGBA
 	local tex = {aspect= w/h,width=w,height=h,isTex2D=true,instance=0,formato=formato,GL=args.GL}
 	
