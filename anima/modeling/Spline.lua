@@ -63,6 +63,7 @@ local function Editor(GL,updatefunc,args)
 		local dl = ig.GetBackgroundDrawList()
 		local keepflags = dl.Flags
 		dl.Flags = bit.band(dl.Flags,bit.bnot(ig.lib.ImDrawListFlags_AntiAliasedLines))
+		--points in curr_spline
 		for i,v in ipairs(M.sccoors[NM.curr_spline]) do
 			local scpoint = ViewportToScreen(v.x,v.y)
 			local color = i==1 and ig.U32(1,1,0,1) or ig.U32(1,0,0,1)
@@ -75,13 +76,15 @@ local function Editor(GL,updatefunc,args)
 				dl:AddCircleFilled(scpoint, 4, color)
 			end
 		end
+		--polylines
 		for i=1,numsplines do
+			local color = i == NM.curr_spline and ig.U32(0.5,1,0,1) or ig.U32(0.25,0.5,0,1)
 			local pointsI = ffi.new("ImVec2[?]",#M.ps[i])
 			for j,p in ipairs(M.ps[i]) do
 				local scpoint = ViewportToScreen(p.x,p.y)
 				pointsI[j-1] = scpoint
 			end
-			dl:AddPolyline(pointsI,#M.ps[i],ig.U32(0.5,1,0,1),true, 1)
+			dl:AddPolyline(pointsI,#M.ps[i],color,true, 1)
 			if M.ps[i].holes then
 				for j,hole in ipairs(M.ps[i].holes) do
 					local pointsI = ffi.new("ImVec2[?]",#hole)
@@ -89,7 +92,7 @@ local function Editor(GL,updatefunc,args)
 						local scpoint = ViewportToScreen(p.x,p.y)
 						pointsI[k-1] = scpoint
 					end
-					dl:AddPolyline(pointsI,#hole,ig.U32(0.5,1,0,1),true, 1)
+					dl:AddPolyline(pointsI,#hole,color,true, 1)
 				end
 			end
 		end
@@ -139,13 +142,13 @@ local function Editor(GL,updatefunc,args)
 				if curr_hole[0] == 0 then
 					for i,v in ipairs(M.sccoors[NM.curr_spline]) do
 						local vec = v - mposvp
-						if (vec.norm) < 3 then touched = i; break end
+						if (vec.norm) < 5 then touched = i; break end
 					end
 				else
 					local hole = M.sccoors[NM.curr_spline].holes[curr_hole[0]]
 					for i,v in ipairs(hole) do
 						local vec = v - mposvp
-						if (vec.norm) < 3 then touched = i; break end
+						if (vec.norm) < 5 then touched = i; break end
 					end
 				end
 				if touched > 0 then
@@ -202,7 +205,7 @@ local function Editor(GL,updatefunc,args)
 				if curr_hole[0] == 0 then
 					for i,v in ipairs(M.sccoors[NM.curr_spline]) do
 						local vec = v - mposvp
-						if (vec.norm) < 3 then touched = i; break end
+						if (vec.norm) < 5 then touched = i; break end
 					end
 					if touched > 0 then
 						table.remove(M.sccoors[NM.curr_spline],touched)
@@ -212,7 +215,7 @@ local function Editor(GL,updatefunc,args)
 					local hole = M.sccoors[NM.curr_spline].holes[curr_hole[0]]
 					for i,v in ipairs(hole) do
 						local vec = v - mposvp
-						if (vec.norm) < 3 then touched = i; break end
+						if (vec.norm) < 5 then touched = i; break end
 					end
 					if touched > 0 then
 						table.remove(hole,touched)
@@ -261,6 +264,7 @@ local function Editor(GL,updatefunc,args)
 	end
 	
 	function M:deletespline(ii)
+		if ii > numsplines then return numsplines end
 		ii = ii or NM.curr_spline
 		table.remove(M.sccoors,ii)
 		table.remove(M.ps,ii)
