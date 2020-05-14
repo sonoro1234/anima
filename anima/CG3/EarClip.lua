@@ -239,31 +239,36 @@ local function EarClipSimple2(poly)
 	local eartips = {}
 	for i,v in ipairs(poly) do ind[i] = i end
 	--compute interior angles
-	for i=2,#poly-1 do
-		angles[i],convex[i] = Angle(poly[i-1],poly[i],poly[i+1])
-	end
-	angles[1],convex[1] = Angle(poly[#poly],poly[1],poly[2])
-	angles[#poly],convex[#poly] = Angle(poly[#poly-1],poly[#poly],poly[1])
 	
-	
-	--find eartips
-	for i=1,#poly do
-		if convex[i] then
-			local empty = true
-			local a,b,c = poly[mod(i-1,#poly)],poly[i],poly[mod(i+1,#poly)]
-			local jlimit = mod(i-1,#poly)
-			local j = mod(i+2,#poly)
-			while j~=jlimit do
-				--if not convex[j] and 
-				if IsPointInTri(poly[j],a,b,c) then
-					empty = false
-					break
+	local function update_all_ears()
+		for i=2,#ind-1 do
+			angles[i],convex[i] = Angle(poly[i-1],poly[i],poly[i+1])
+		end
+		angles[1],convex[1] = Angle(poly[#ind],poly[1],poly[2])
+		angles[#ind],convex[#ind] = Angle(poly[#ind-1],poly[#ind],poly[1])
+		
+		
+		--find eartips
+		for i=1,#ind do
+			if convex[i] then
+				local empty = true
+				local a,b,c = poly[mod(i-1,#ind)],poly[i],poly[mod(i+1,#ind)]
+				local jlimit = mod(i-1,#ind)
+				local j = mod(i+2,#ind)
+				while j~=jlimit do
+					--if not convex[j] and 
+					if IsPointInTri(poly[j],a,b,c) then
+						empty = false
+						break
+					end
+					j = mod(j+1,#ind)
 				end
-				j = mod(j+1,#ind)
+				eartips[i] = empty
 			end
-			eartips[i] = empty
 		end
 	end
+	
+	update_all_ears()
 	
 	local function update_ear(i)
 		if not convex[ind[i]] then 
@@ -310,7 +315,7 @@ local function EarClipSimple2(poly)
 			table.insert(tr,c-1)
 		end
 	end
-	
+	local last_uae
 	while #ind > 2 do
 		local initind = #ind
 		--find smallest angle eartips
@@ -331,7 +336,15 @@ local function EarClipSimple2(poly)
 		if not_eartips then
 			-- try to repair
 			--find consecutive repeated
+			print("\n-----------trying to repair",#ind)
 			local repaired = false
+			if last_uae ~= #ind then
+				update_all_ears()
+				print"updated_all_ears"
+				last_uae = #ind
+				repaired = true
+			end
+			if not repaired then
 			for i=1,#ind do
 				local j = mod(i+1,#ind)
 				if poly[ind[i]]==poly[ind[j]] then 
@@ -340,6 +353,7 @@ local function EarClipSimple2(poly)
 					print("consecutive repeat repaired",ind[i])
 					break
 				end
+			end
 			end
 			if not repaired then
 			for i=1,#ind do
