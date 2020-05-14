@@ -128,9 +128,15 @@ M.TArea = TArea
 
 local function signed_area(poly)
 	local sum = 0
-	for i=2,#poly-1 do
-		sum = sum + Sign(poly[1],poly[i],poly[i+1])
+	-- for i=2,#poly-1 do
+		-- sum = sum + Sign(poly[1],poly[i],poly[i+1])
+	-- end
+	for i=1,#poly-1 do
+		local a,b = poly[i], poly[i+1]
+		sum = sum + a.x*b.y - b.x*a.y
 	end
+	local a,b = poly[#poly], poly[1]
+	sum = sum + a.x*b.y - b.x*a.y
 	return sum
 end
 M.signed_area = signed_area
@@ -202,7 +208,7 @@ local function IsPointInPolyWn(V,P)
         end
 	end
 	V[#V] = nil
-    return wn~=0;
+    return wn~=0,wn;
 end
 
 M.IsPointInPoly = IsPointInPolyCn
