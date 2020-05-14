@@ -46,6 +46,8 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 	local points = {}
 	local quads = {}
 	local components = 1 
+	PR.extrazplanes = {}
+	PR.Graph = {components=0}
 	local picking = false
 	local curr_plane -- for choose_p and spline drawing in it
 	local use_points = ffi.new("bool[1]",true)
@@ -401,8 +403,9 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 		end
 	end
 	
-	local function DFS(G,v)
+	local function DFS(G,v, component)
 		G.V[v].explored = true
+		G.V[v].component = component
 		G.L = G.L or {}
 		table.insert(G.L,v)
 		for eh,_  in pairs(G.V[v].edges) do
@@ -455,9 +458,15 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 		for i,V in ipairs(G.V) do
 			if not V.explored then 
 				components = components + 1
-				DFS(G,i) 
+				DFS(G,i, components) 
 			end
 		end
+		G.components = components
+		--create extrazplanes
+		for i=2,components do
+			PR.extrazplanes[i-1] = PR.extrazplanes[i-1] or ffi.new("float[1]",0)
+		end
+		PR.Graph = G
 		--prtable(PR.quad_meshes)
 		--prtable("graph",G)
 		local newquads = {}
@@ -672,7 +681,8 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 				print(pl.vpointX,pl.vpointY)
 			end
 		end,{sameline=true}},
-	{"dump quad_meshes",0,guitypes.button,function() prtable(PR.quad_meshes) end,{sameline=true}},
+	{"dump meshes",0,guitypes.button,function() prtable(PR.quad_meshes) end,{sameline=true}},
+	{"dump graph",0,guitypes.button,function() prtable(PR.Graph) end,{sameline=true}},
 	{"focal_track",false,gui.types.toggle,nil},
 	
 	{"zval",1,guitypes.val,{min=1e-5,max=30},function(val,this) PR:Rectify();PR:Rectify2();PR:reset_planes() end},
@@ -717,6 +727,15 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 		if ig.SliderInt("maker",PR.curr_maker, 1,#MakersG, MakersG.names[PR.curr_maker[0]]) then
 			
 		end
+		
+		if PR.Graph.components > 1 then
+			for i=2,PR.Graph.components do
+				if ig.SliderFloat("offsetzval"..i, PR.extrazplanes[i-1],-30,30) then
+					PR:Rectify();PR:Rectify2();PR:reset_planes()
+				end
+			end
+		end
+		
 		if curr_plane then
 			local cuplane = ffi.new("int[1]",curr_plane)
 			if ig.SliderInt("curr_plane",cuplane,1,#PR.quads) then
@@ -958,7 +977,10 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 			--set the first one to NM.zval
 			if spoint==nil then
 				print("new firs point in quad",i)
-				self.epointsR[plane.quad[1]] = self.epoints[plane.quad[1]]*NM.zval
+				prtable(self.Graph.V[i])
+				local comp = self.Graph.V[i].component
+				local zval = comp==1 and NM.zval or (PR.extrazplanes[comp-1][0]+NM.zval)
+				self.epointsR[plane.quad[1]] = self.epoints[plane.quad[1]]*zval
 				spoint = self.epointsR[plane.quad[1]]
 			end
 			--get plane on point1 at distance zval
@@ -1134,7 +1156,8 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 			sav_points[i] = {p.x,p.y}
 		end
 		
-		local pars = {sav_points=sav_points,quads=quads,VP={GL.W,GL.H},quad_meshes=PR.quad_meshes}
+		local pars = {sav_points=sav_points,quads=quads,VP={GL.W,GL.H},quad_meshes=PR.quad_meshes,
+		extrazplanes=PR.extrazplanes}
 		pars.dial = NM:GetValues()
 		pars.Makers = {}
 		for i,m in ipairs(MakersG) do
@@ -1158,6 +1181,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 		--planes = {}
 		self.planes = {} --planes
 		self.quad_meshes = par.quad_meshes or {}
+		self.extrazplanes = par.extrazplanes or {}
 		NM:SetValues(par.dial or {})
 		NM.vars.edit[0] = false
 		self:Rectify()
