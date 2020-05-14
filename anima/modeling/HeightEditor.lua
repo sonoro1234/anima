@@ -25,7 +25,7 @@ local function HeightEditor(GL,updatefunc)
 	{
 	{"op",1,guitypes.slider_enum,{"curve","tube","poly"},function(val,this) 
 		if val==1 then
-			visibility(this,{zplane=true,height=true,proy_height=true,curves=true,grid=true})
+			visibility(this,{zplane=true,height=true,proy_height=true,curves=true,grid=true,mirror=true})
 		elseif val==2 then
 			visibility(this,{zplane=true,height=true,grid=true})
 		else
@@ -38,6 +38,7 @@ local function HeightEditor(GL,updatefunc)
 	{"proy_height",false,guitypes.toggle,function() M:process() end},
 	{"curves",1,guitypes.slider_enum,{"line","circle","pow"},function() M:process() end},
 	{"grid",3,guitypes.valint,{min=1,max=30},function() M:process() end},
+	{"mirror",false,guitypes.toggle,function() M:process() end},
 	})
 
 
@@ -263,6 +264,21 @@ local function HeightEditor(GL,updatefunc)
 		for i,v in ipairs(points_add) do
 			local vv = v.xy - minb
 			 tcoords[i] = mat.vec2(vv.x/diff.x,vv.y/diff.y)
+		end
+		
+		if NM.mirror then
+			local leng = #points_add
+			for i=1, leng do
+				local p = points_add[i]
+				points_add[leng+i] = vec3(p.x,p.y,-p.z)
+				tcoords[leng+i] = tcoords[i]
+			end
+			local leni = #indexes
+			for i=1,leni,3 do
+				indexes[i+leni] = indexes[i] + leng
+				indexes[i+leni+1] = indexes[i+1] + leng
+				indexes[i+leni+2] = indexes[i+2] + leng
+			end
 		end
 
 		self.mesh = mesh.mesh({points=points_add,tcoords=tcoords,triangles=indexes})
