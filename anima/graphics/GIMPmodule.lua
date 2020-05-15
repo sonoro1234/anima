@@ -96,7 +96,7 @@ local NMres = GL:Dialog("resynth",{
 {"matchContextType",2,guitypes.slider_enum,{"none","random","concentric inward","horizontal inward","vertical inward","concentric outward","horizontal outward","vertical outward","concentric donut"}},
 {"mapWeight",0,guitypes.drag,{min=0,max=1}},
 {"sensitivityToOutliers",0.117,guitypes.drag,{min=0,max=1}},
-{"patchSize",16,guitypes.valint,{min=1,max=36}},
+{"patchSize",16,guitypes.valint,{min=1,max=64}},
 {"maxProbeCount",500,guitypes.valint,{min=1,max=500}},
 },function() 
 	ig.ProgressBar(progrData[0])
