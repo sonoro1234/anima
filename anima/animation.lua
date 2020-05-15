@@ -189,11 +189,12 @@ end
 animatable = {is_animatable = true}
 -- object must have setval for updtating values
 -- segments = {{ini,end,dur,func},{ini,end,dur,func},...}
-function animatable:new(object,segments)
+function animatable:new(object,segments,hook)
 	local o =  {} 
 	--assert(object)
 	o.object = object or pointer()
 	o.segmentsO = segments or {}
+	o.hook = hook
 	setmetatable(o, self)
 	self.__index = self
 	return o
@@ -237,6 +238,7 @@ function animatable:dofunc(time)
 		else
 			self.object[0] = self.curr_val
 		end
+		if self.hook then self:hook() end
 	end
 	return self.curr_val
 end
@@ -423,9 +425,9 @@ function Animation:add_animatable(ani)
 	self.animatables[ani.object] = ani --avoids adding two times a setable
 end
 
-function Animation:add_setable(set,segments)
+function Animation:add_setable(set,segments,hook)
 	assert(set,"add_setable with null pointer")
-	local set_a = animatable:new(set,segments)
+	local set_a = animatable:new(set,segments,hook)
 	self:add_animatable(set_a)
 	return set_a
 end
