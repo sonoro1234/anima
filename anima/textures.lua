@@ -47,7 +47,7 @@ function LoadTextures(fileNames,GLparams,mipmaps)
 		--gl.TexParameter('TEXTURE_2D','TEXTURE_BORDER_COLOR',{1,0,0,1})
 		print("loading",fileName)
 		local image = im.FileImageLoadBitmap(fileName)
-		if (not image) then
+		if (image==nil) then
 			print ("Unnable to open the file: " .. fileName)
 			error("23")
 		end
@@ -140,7 +140,7 @@ function CubeTexture(GL)
 			return
 		end
 		local image = im.FileImageLoadBitmap(fileName)
-			if (not image) then
+			if (image==nil) then
 				print ("Unnable to open the file: " .. fileName)
 				error("164")
 			end
@@ -306,7 +306,7 @@ function CubeTexture(GL)
 			return
 		end
 		local image = im.FileImageLoadBitmap(fileName)
-			if (not image) then
+			if (image==nil) then
 				print ("Unnable to open the file: " .. fileName)
 				error("164")
 			end
@@ -364,6 +364,10 @@ function CubeTexture(GL)
 		gl.glPixelStorei(glc.GL_UNPACK_ALIGNMENT, 1)
 		for i=1,6 do
 			local image = im.FileImageLoadBitmap(folder..fileNames[i]..".jpg")
+			if (image==nil) then
+				print ("Unnable to open the file:", fileNames[i]..".jpg")
+				error(im.ErrorStr(err))
+			end
 			 im.ProcessFlip(image,image)
 			local gldata, glformat = image:GetOpenGLData()
 			gl.glTexImage2D (cubesides[i], 0, glc.GL_RGBA, image:Width(),image:Height(), 0, glformat, glc.GL_UNSIGNED_BYTE, gldata);
@@ -1085,7 +1089,7 @@ function LoadTextures2(fileNames,GLparams,mipmaps)
 		--gl.TexParameter('TEXTURE_2D','TEXTURE_BORDER_COLOR',{1,0,0,1})
 		print("loading",fileName)
 		local image = im.FileImageLoadBitmap(fileName)
-		if (not image) then
+		if (image==nil) then
 			print ("Unnable to open the file: " .. fileName)
 			error("364")
 		end
@@ -1222,11 +1226,12 @@ function ConvertToCompressed(fileName,pathSave)
    -- Again, more error checking.  Here we aren't using
    -- MIPMAPs, so make sure your dimensions are a power of 2.
 	----------------------------
-	local image = im.FileImageLoadBitmap(fileName)
-		if (not image) then
+	local image,err = im.FileImageLoadBitmap(fileName)
+		if (image==nil) then
 			print ("Unnable to open the file: " .. fileName)
-			error("500")
+			error(im.ErrorStr(err))
 		end
+
 	if image:DataType() == imffi.IM_USHORT then
 		print"convert ushort to byte"
 		local err,imag2 = imffi.ConvertDataTypeNew(image,imffi.IM_BYTE, imffi.IM_CPX_REAL, imffi.IM_GAMMA_LINEAR, true, imffi.IM_CAST_FIXED)
