@@ -5,6 +5,7 @@ local function mod(a,b)
 	return ((a-1)%b)+1
 end
 
+local vec2 = mat.vec2
 local function HeightEditor(GL,updatefunc)
 	updatefunc = updatefunc or function() end
 	local M = {psor={},ps={}}
@@ -103,7 +104,7 @@ local function HeightEditor(GL,updatefunc)
 				return (dista < distb) and dista or distb
 			else --angulos agudos distancia punto recta
 				local abn = ab.normalize
-				abn = mat.vec2(-abn.y,abn.x)
+				abn = vec2(-abn.y,abn.x)
 				return math.abs(abn*ac)
 			end
 		end
@@ -169,7 +170,13 @@ local function HeightEditor(GL,updatefunc)
 			end
 			alt = NMheight*alt
 			if NM.proy_height then
-				P[i] = P[i]/P[i].z*(NM.zplane+alt)
+				if M.Mtrinv then --we come from Spline3D
+					local p = M.Mtrinv*P[i]
+					p = p/p.z*(p.z+alt)
+					P[i] = M.Mtr*p
+				else
+					P[i] = P[i]/P[i].z*(NM.zplane+alt)
+				end
 			else
 				P[i].z = NM.zplane  + alt
 			end
@@ -197,7 +204,7 @@ local function HeightEditor(GL,updatefunc)
 		local tcoords = {}
 		for i,v in ipairs(polypoints) do
 			local vv = v.xy - minb
-			 tcoords[i] = mat.vec2(vv.x/diff.x,vv.y/diff.y)
+			 tcoords[i] = vec2(vv.x/diff.x,vv.y/diff.y)
 		end
 		local ps = {}
 		for i,v in ipairs(polypoints) do
@@ -227,7 +234,7 @@ local function HeightEditor(GL,updatefunc)
 		local epsv = vec3(1e-5,1e-5,1e-5)
 		local minb,maxb = CG.bounds(self.ps)
 		
-		local grid = mesh.gridB(NM.grid,{minb-epsv,maxb+epsv},NM.zplane)
+		local grid = mesh.gridB(NM.grid,{minb-epsv,maxb+epsv},NM.zplane) --==0 and -1 or NM.plane)
 		local points_add = grid.points
 		local indexes = grid.triangles
 		
@@ -263,7 +270,7 @@ local function HeightEditor(GL,updatefunc)
 		local tcoords = {}
 		for i,v in ipairs(points_add) do
 			local vv = v.xy - minb
-			 tcoords[i] = mat.vec2(vv.x/diff.x,vv.y/diff.y)
+			 tcoords[i] = vec2(vv.x/diff.x,vv.y/diff.y)
 		end
 		
 		if NM.mirror then
@@ -271,7 +278,8 @@ local function HeightEditor(GL,updatefunc)
 			for i=1, leng do
 				local p = points_add[i]
 				points_add[leng+i] = vec3(p.x,p.y,-p.z)
-				tcoords[leng+i] = tcoords[i]
+				tcoords[i] = vec2(0.5*tcoords[i].x,tcoords[i].y)
+				tcoords[leng+i] = tcoords[i] + vec2(0.5,0)
 			end
 			local leni = #indexes
 			for i=1,leni,3 do

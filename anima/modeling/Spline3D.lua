@@ -144,6 +144,7 @@ local function Spline3D(GL, camera,updatefunc)
 			end
 			doheightupdate = false
 			self.HeightEditors[ii].Mtrinv = Mtrinv
+			self.HeightEditors[ii].Mtr = Mtr
 			self.HeightEditors[ii]:set_spline(pspr)
 			doheightupdate = true
 		end
