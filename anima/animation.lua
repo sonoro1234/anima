@@ -227,6 +227,7 @@ function animatable:dofunc(time)
 	if not _segm then _segm = self.segments[#self.segments] end
 	if _segm then
 		local dur = _segm[3]
+		_segm.dur = dur
 		local frac = clip(map2unit(time, _segm.secs, dur),0,1)
 		self.curr_val = _segm.func(frac,_segm,time)
 		local ok,hasset = pcall(function() return self.object.set end)
