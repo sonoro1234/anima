@@ -17,9 +17,11 @@ local function Spline3D(GL, camera,updatefunc)
 	
 	function SP3D:create_height_editor(spnum)
 		local updateheightfunc = function(hedit)
-			local Mtrinv = self.HeightEditors[spnum].Mtrinv
-			self.HeightEditors[spnum].mesh:M4(Mtrinv)
-			updateheights()
+			if self.HeightEditors[spnum].mesh then
+				local Mtrinv = self.HeightEditors[spnum].Mtrinv
+				self.HeightEditors[spnum].mesh:M4(Mtrinv)
+				updateheights()
+			end
 		end
 		self.HeightEditors[spnum] = HeightEditor(GL,updateheightfunc  )
 		return self.HeightEditors[spnum]
