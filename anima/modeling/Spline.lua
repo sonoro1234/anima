@@ -153,7 +153,7 @@ local function Editor(GL,updatefunc,args)
 				end
 				if touched > 0 then
 					M:set_last(touched)
-					M:process_all()
+					--M:process_all()
 					NM.vars.set_last[0] = false
 				end
 			end
