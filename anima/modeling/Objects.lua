@@ -106,29 +106,65 @@ local function Object(name)
 		
 	end
 	
-	O.parentM = mat.identity()
-	function O:make_model_mat(parentM)
-		O.parentM = parentM or O.parentM
+	function O:make_localM()
 		local M = 1
 		M = mat.scale(O.scale.x,O.scale.y,O.scale.z) * M
 		M = R.ZYXE(O.rot.z,O.rot.y,O.rot.x).mat4 * M
 		M = mat.translate(O.pos.x,O.pos.y,O.pos.z) * M
+		return M
+	end
+	
+	O.parentM = mat.identity()
+	function O:make_model_mat(parentM)
+		O.parentM = parentM or O.parentM
+		
+		local M = self.make_localM()
+		
 		self.ModelM =  O.parentM * self.MFinv * M * self.MF
 		for ich,child in ipairs(self.childs) do
 			child:make_model_mat(self.ModelM)
 		end
 	end
 	
+	--set local M
+	function O:set_localM(M)
+		self.ModelM =  O.parentM * self.MFinv * M * self.MF
+		
+		self:calcfromM(M)
+		
+		for ich,child in ipairs(self.childs) do
+			child:make_model_mat(self.ModelM)
+		end
+	end
+	
+	function O:get_localM()
+		return O.parentM.inv*self.MF*self.ModelM*self.MFinv
+	end
+	
+	--useful for zmo
 	function O:getModelM()
 		return  self.ModelM * self.MFinv
 	end
 	
 	local fmod,abs,pi = math.fmod,math.abs,math.pi
 	local pix2,hpi,hpix3 = pi*2,pi*0.5, pi*1.5
-	function O:setModelM(MM,roty)
+	--useful for zmo
+	function O:setModelM(MM)
 		self.ModelM = MM * self.MF
 
 		local M = self.MF * O.parentM.inv * MM
+		
+		self:calcfromM(M,true)
+		
+		for ich,child in ipairs(self.childs) do
+			child:make_model_mat(self.ModelM)
+		end
+	end
+	
+	function O:calcfromM(M,use_roty)
+		
+		local roty
+		if use_roty then roty = self.rot.y end
 		
 		self.pos = vec3(M.m41,M.m42,M.m43)
 		
@@ -160,11 +196,8 @@ local function Object(name)
 			end
 		end
 		self.rot = vec3(x,y,z)
-		
-		for ich,child in ipairs(self.childs) do
-			child:make_model_mat(self.ModelM)
-		end
 	end
+	
 	function O:add_child(name)
 		local child = Object(name)
 		O.childs[#O.childs + 1] = child
@@ -375,10 +408,9 @@ local function Objects(GL,camera,args)
 			end
 			if NMzmo.zmoO and editor.object then
 				MOmo = editor.object:getModelM().gl
-				local ry = editor.object.rot.y
 				--ig.zmoDrawCube(MVmo,MPmo,MOmo)
 				ig.zmoManipulate(MVmo,MPmo,zmoOP[0],zmoMODE[0],MOmo,nil,nil,zmoOP[0]==imgui.BOUNDS and editor.object.zmobounds or nil,nil)
-				editor.object:setModelM(mat.gl2mat4(MOmo),ry)
+				editor.object:setModelM(mat.gl2mat4(MOmo))
 			end
 		end
 	end)
