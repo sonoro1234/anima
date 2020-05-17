@@ -8,6 +8,9 @@ function LogFile(str,filename)
 	end
 end
 
+function clip(val,mini,maxi)
+    return math.max(mini,math.min(val,maxi))
+end
 --values must be unique
 function swap_keyvalue(t)
 	local res={}
