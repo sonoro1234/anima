@@ -1,5 +1,63 @@
 require"anima"
 local vec3 = mat.vec3
+
+local vert_twist = [[
+	uniform mat4 MF;
+	uniform float ang;
+	uniform float benddir;
+	uniform int op = 0;
+	uniform int axisperm = 0;
+	const mat3 Mper = mat3(0,0,1,
+					1,0,0,
+					0,1,0);
+	mat3 Maxis = mat3(1);
+	
+	mat4 MFinv = inverse(MF);
+	in vec3 position;
+	out vec3 position_out;
+	
+	void main(){
+		for(int i=1;i<=axisperm;i++){
+			Maxis = Mper*Maxis;
+		}
+		mat3 Maxisinv = inverse(Maxis);
+		
+		vec4 position4 = MF*vec4(position,1);
+		vec3 position3 = (position4/position4.w).xyz;
+		position3 = Maxis*position3;
+		float nx,ny,nz;
+		if (op==0){
+			/// twist
+			float alfa = position3.x*ang;
+			float cos = cos(alfa);
+			float sin = sin(alfa);
+			ny = cos*position3.y-sin*position3.z;
+			nz = sin*position3.y+cos*position3.z;
+			nx = position3.x;
+		}else{
+			
+			//rotate bendir
+			float cosb = benddir;//cos(benddir);
+			float sinb = 1.0-benddir;//sin(benddir);
+			float y2 = cosb*position3.y - sinb*position3.z;
+			float z2 = sinb*position3.y + cosb*position3.z;
+			float alfa = y2*ang;
+			float cos = cos(alfa);
+			float sin = sin(alfa);
+			float y3 = cos*y2-sin*z2;
+			float z3 = sin*y2+cos*z2;
+			//unrotate (same cos change -sin)
+			ny = cosb*y3 + sinb*z3;
+			nz = -sinb*y3 + cosb*z3;
+			nx = position3.x;
+			
+		}
+		position3 = Maxisinv*vec3(nx,ny,nz);
+		position4 = MFinv*vec4(position3,1);
+		position_out = (position4/position4.w).xyz;
+	}
+]]
+
 local vert_sh = [[
 in vec3 position;
 in vec2 texcoords;
@@ -44,17 +102,22 @@ void main()
 
 local R = require"anima.rotations"
 local program, progmesh
+local prog_twist
 local inimesh,initex
 
 
-local function Object(name)
-	local O = {}
+local function Object(name,objtree)
+	local O = {objtree=objtree}
 	O.name = name or tostring(O)
 	O.childs = {}
 	
 	O.scale = vec3(1,1,1)
 	O.rot = vec3(0,0,0)
 	O.pos = vec3(0,0,0)
+	O.deformang = ffi.new("float[1]")
+	O.benddir = ffi.new("int[1]")
+	O.axisperm = ffi.new("int[1]")
+	O.deformop = ffi.new("int[1]")
 	O.MF = mat.identity()
 	O.MFinv = O.MF.inv
 	O.ModelM = mat.identity()
@@ -62,8 +125,8 @@ local function Object(name)
 	local md = 0.5
 	O.zmobounds = ffi.new("float[?]",6,{ -0.25*md, -0.25*md, -0.25*md, 0.25*md, 0.25*md, 0.25*md })
 	
-	function O:set_frame(frame)
-		O.frame = frame or {X=vec3(1,0,0),Y=vec3(0,1,0),Z=vec3(0,0,1),center=self.mesh:calc_centroid()}
+	function O:set_frame(frame,center)
+		O.frame = frame or {X=vec3(1,0,0),Y=vec3(0,1,0),Z=vec3(0,0,1),center=center or self.mesh:calc_centroid()}
 
 		local MF = mat.translate(-self.frame.center)
 		MF = mat.rotABCD(self.frame.Y, vec3(0,1,0), self.frame.X , vec3(1,0,0)).mat4 * MF
@@ -98,12 +161,25 @@ local function Object(name)
 		
 		self:set_frame(frame)
 		
-
-		if self.vao then self.vao:delete() end
+		if self.vao then 
+			self.vao:delete()
+			self.vaomesh:delete()
+			self.orig_vao:delete()
+			self.vaomeshtfb:delete()
+		end
 		self.vao = mesh:vao(program)
-		if self.vaomesh then self.vaomesh:delete() end
-		self.vaomesh = mesh:vao(progmesh, true)
-		
+		self.vaomesh = self.vao:clone(progmesh) 
+		--TFV
+		self.orig_vao = mesh:vao(prog_twist, true)
+		if not self.m_transformFeedback then
+			self.m_transformFeedback = ffi.new("GLuint[1]") 
+			glext.glGenTransformFeedbacks(1, self.m_transformFeedback);
+		end
+		self.vaomeshtfb = VAO({position=self.vaomesh:vbo"position"},prog_twist)
+		self.vaomeshtfb.clonedvbos = true
+		glext.glBindTransformFeedback(glc.GL_TRANSFORM_FEEDBACK, self.m_transformFeedback[0]);
+        glext.glBindBufferBase(glc.GL_TRANSFORM_FEEDBACK_BUFFER, prog_twist.tfv.position_out, self.vaomeshtfb:vbo("position").vbo[0]);
+		glext.glBindTransformFeedback(glc.GL_TRANSFORM_FEEDBACK, 0);
 	end
 	
 	function O:make_localM()
@@ -199,18 +275,18 @@ local function Object(name)
 	end
 	
 	function O:add_child(name)
-		local child = Object(name)
+		local child = Object(name,self.objtree)
 		O.childs[#O.childs + 1] = child
 		return child, #O.childs
 	end
-	function O:drawmesh(U)
-		
+	function O:drawmesh(U, editor)
+		local color = editor.object==self and {1,1,1} or {0.5,0.5,0.5}
 		U.ModelM:set(self.ModelM.gl)
 		if self.vaomesh then
-			U.color:set{1,1,1}
+			U.color:set(color)
 			self.vaomesh:draw_mesh()
 		end
-		if self.vaoframe then
+		if self.vaoframe and editor.object==self then
 			U.color:set{1,0,0}
 			self.vaoframe:draw(glc.GL_LINES,2,0)
 			U.color:set{0,1,0}
@@ -223,18 +299,21 @@ local function Object(name)
 			gl.glPointSize(1)
 		end
 		for i,child in ipairs(O.childs) do
-			child:drawmesh(U)
+			child:drawmesh(U, editor)
 		end
 	end
 	
-	function O:drawpoints(U)
-		if self.vaomesh then
-		U.ModelM:set(self.ModelM.gl)
-		U.color:set{1,0,0}
-		self.vaomesh:draw(glc.GL_POINTS)
-		end
-		for i,child in ipairs(O.childs) do
-			child:drawpoints(U)
+	function O:drawpoints(U, editor)
+		if editor.object==self then
+			if self.vaomesh  then
+				U.ModelM:set(self.ModelM.gl)
+				U.color:set{1,0,0}
+				self.vaomesh:draw(glc.GL_POINTS)
+			end
+		else
+			for i,child in ipairs(O.childs) do
+				child:drawpoints(U,editor)
+			end
 		end
 	end
 
@@ -261,6 +340,30 @@ local function Object(name)
 		end
 		for i,child in ipairs(O.childs) do
 			child:draw(U,NM)
+		end
+	end
+	
+	function O:do_twist()
+		if self.orig_vao then
+		prog_twist:use()
+		prog_twist.unif.ang:set{self.deformang[0]}
+		prog_twist.unif.benddir:set{self.benddir[0]}
+		prog_twist.unif.axisperm:set{self.axisperm[0]}
+		prog_twist.unif.op:set{self.deformop[0]}
+		prog_twist.unif.MF:set(self.MF.gl)
+		gl.glEnable(glc.GL_RASTERIZER_DISCARD);
+		
+		--tfb:Bind(0)
+		glext.glBindTransformFeedback(glc.GL_TRANSFORM_FEEDBACK, self.m_transformFeedback[0]);
+		glext.glBeginTransformFeedback(glc.GL_POINTS);
+		self.orig_vao:draw(glc.GL_POINTS)
+		glext.glEndTransformFeedback();
+		glext.glBindTransformFeedback(glc.GL_TRANSFORM_FEEDBACK, 0);
+		gl.glDisable(glc.GL_RASTERIZER_DISCARD);
+		gl.glFlush()
+		end
+		for i,child in ipairs(O.childs) do
+			child:do_twist()
 		end
 	end
 	
@@ -335,7 +438,7 @@ end
 local function Objects(GL,camera,args)
 	args = args or {}
 	
-	local O = {}
+	local Os = {}
 	--------zmo
 	local MVmo,MPmo,MOmo
 	local zmoOP = ffi.new("int[?]",1)
@@ -360,6 +463,7 @@ local function Objects(GL,camera,args)
 	local MVEpos = gui.MultiValueEdit("pos",3)
 	local MVErot = gui.MultiValueEdit("rot",3)
 	local MVEscale = gui.MultiValueEdit("scale",3)
+	local MVEdeformang = gui.MultiValueEdit("deformang",1)
 	local NM = GL:Dialog(args.name or "objects",{
 		{"dodraw",true,guitypes.toggle},
 		{"mesh",true,guitypes.toggle,nil,{sameline=true}},
@@ -368,10 +472,11 @@ local function Objects(GL,camera,args)
 		{"mipmaps",false,guitypes.toggle,nil,{sameline=true}},
 		{"aniso",false,guitypes.toggle,nil,{sameline=true}},
 		{"showtex",false,guitypes.toggle},
-		--{"dump",0,guitypes.button,function() O.root:dump() end}
+		{"use_alpha",false,guitypes.toggle,nil,{sameline=true}},
+		--{"dump",0,guitypes.button,function() Os.root:dump() end}
 	},function() 
 		ig.Separator()
-		O.root:tree(editor)
+		Os.root:tree(editor)
 		ig.Separator()
 		if editor.object then
 			local scale = editor.object.scale.gl
@@ -391,6 +496,16 @@ local function Objects(GL,camera,args)
 				pos.x,pos.y,pos.z = fpos[0],fpos[1],fpos[2]
 				editor.object:make_model_mat()
 			end
+			MVEdeformang:Draw(editor.object.deformang,nil,nil,0.1)
+			ig.SameLine()
+			local bdt = ffi.new("bool[1]",editor.object.benddir[0]==1)
+			if gui.ToggleButton("benddir", bdt) then
+				editor.object.benddir[0] = bdt[0] and 1 or 0
+			end
+			local axistr = {[0]="X","Y","Z"}
+			ig.SliderInt("axis",editor.object.axisperm,0,2,axistr[editor.object.axisperm[0]])
+			local opstr = {[0]="twist","bend"}
+			ig.SliderInt("deformop",editor.object.deformop,0,1,opstr[editor.object.deformop[0]])
 		end
 		---zmo
 		ig.Separator()
@@ -415,17 +530,16 @@ local function Objects(GL,camera,args)
 		end
 	end)
 	
-	-- local Dbox = GL:DialogBox("Objects")
-	-- Dbox:add_dialog(NM)
-	-- Dbox:add_dialog(NMzmo)
-	-- O.NM = Dbox
-	O.NM = NM
-	NM.plugin = O
+	Os.NM = NM
+	NM.plugin = Os
 	
-	function O:init()
+	function Os:init()
 		if not program then
 			program = GLSL:new():compile(vert_sh,frag_sh)
 			progmesh = GLSL:new():compile(vertmesh,fragmesh)
+			
+			prog_twist = GLSL:new():compile(vert_twist,fragmesh)
+			prog_twist:set_TFV({"position_out"},true)
 			
 			--initial object
 			local tproc = require"anima.plugins.texture_processor"(GL,0)
@@ -453,20 +567,20 @@ local function Objects(GL,camera,args)
 			local vec2 = mat.vec2
 			inimesh.tcoords = {vec2(0,0),vec2(0,1),vec2(1/3,1),vec2(1/3,0),vec2(1,0),vec2(1,1),vec2(2/3,1),vec2(2/3,0)}
 		end
-		O.root = Object("root")
+		Os.root = Object("root",self)
 		if args.doinit then self.root:setMesh(inimesh,initex) end
 	end
 	
-	function O:clear()
+	function Os:clear()
 		self.root:clear_childs()
 		self.root.ModelM = mat.identity()
 	end
 	
-	function O:find_node(name)
-		return O.root:find_child(name)
+	function Os:find_node(name)
+		return Os.root:find_child(name)
 	end
 	
-	function O:draw()
+	function Os:draw()
 		
 		if not NM.dodraw then return end
 
@@ -478,28 +592,32 @@ local function Objects(GL,camera,args)
 		gl.glEnable(glc.GL_DEPTH_TEST)
 
 		if NM.showtex then
-			local obj = editor.object or O.root
+			local obj = editor.object or Os.root
 			obj.tex:drawcenter()
 		else
 			gl.glViewport(0,0,GL.W,GL.H)
+			Os.root:do_twist()
+			
 			if NM.points then
 				progmesh:use()
 				local U = progmesh.unif
 				U.MVP:set(camera:MVP().gl)
 				U.color:set{1,0,0}
 				gl.glPointSize(5)
-				O.root:drawpoints(U)
+				Os.root:drawpoints(U, editor)
 				gl.glPointSize(1)
 			end
 			if NM.mesh then
 				progmesh:use()
 				local U = progmesh.unif
 				U.MVP:set(camera:MVP().gl)
-				O.root:drawmesh(U)
+				Os.root:drawmesh(U, editor)
 			else
-				gl.glEnable(glc.GL_BLEND)
-				gl.glBlendFunc(glc.GL_SRC_ALPHA, glc.GL_ONE_MINUS_SRC_ALPHA)
-				glext.glBlendEquation(glc.GL_FUNC_ADD)
+				if NM.use_alpha then
+					gl.glEnable(glc.GL_BLEND)
+					gl.glBlendFunc(glc.GL_SRC_ALPHA, glc.GL_ONE_MINUS_SRC_ALPHA)
+					glext.glBlendEquation(glc.GL_FUNC_ADD)
+				end
 				
 				program:use()
 				local U = program.unif
@@ -507,55 +625,55 @@ local function Objects(GL,camera,args)
 				
 				U.tex:set{0}
 				
-				O.root:draw(program.unif, NM)
+				Os.root:draw(program.unif, NM)
 				gl.glDisable(glc.GL_BLEND)
 
 			end
 		end
 	end
 	
-	function O:save()
+	function Os:save()
 		local pars = {}
 		pars.dial = NM:GetValues()
 		return pars
 	end
 	
-	function O:load(params)
-		O:clear()
+	function Os:load(params)
+		Os:clear()
 		if not params then return end
 		NM:SetValues(params.dial or {})
 	end
 	
-	GL:add_plugin(O,"Objects")
-	return O
+	GL:add_plugin(Os,"Objects")
+	return Os
 end
 
---[=[ test
-local function make_cyl(pos, scl)
+--[=[ test 
+local function make_cyl(pos, scl,eje)
 	scl = scl or 1
 	local par_shapes = require"anima.par_shapes"
 	local pmesh = par_shapes.create.cylinder(32,32)
 	local inimesh = mesh.par_shapes2mesh(pmesh)
 	local cent = inimesh:calc_centroid()
-	inimesh:M4(mat.translate(pos)*mat.translate(-cent)*mat.scale(scl))
+	local rot = mat.rotAB(vec3(0,0,1),eje).mat4
+	inimesh:M4(mat.translate(pos)*mat.translate(-cent)*rot*mat.scale(scl*vec3(1,1,5)))
 	return inimesh
 end
-
 
 local GL = GLcanvas{H=800,aspect=1,use_log=true}
 
 local camera = Camera(GL,"tps")
 local objects
 function GL:init()
-	--local tex = GL:Texture():Load[[../5847tnmtpe.tif]]
 	objects = Objects(GL,camera)--,{doinit=true})
-	--objects:init()
-	local child,ich = objects.root:add_child()
-	child:setMesh(make_cyl(vec3(-1,0,0)),tex)
-	local child, ich = objects.root:add_child()
-	child:setMesh(make_cyl(vec3(1,0,0)),tex)
-	child = child:add_child()
-	child:setMesh(make_cyl(vec3(1.5,0,0.5),0.5),tex)
+	objects.root:set_frame(nil,vec3(0,0,-12))
+	local child,ich = objects.root:add_child("Xcyl")
+	child:setMesh(make_cyl(vec3(-3,0,-12),1,vec3(1,0,0)))
+	local child, ich = objects.root:add_child("Ycyl")
+	child:setMesh(make_cyl(vec3(3,0,-12),1,vec3(0,1,0)))
+	child = child:add_child("Zcyl")
+	child:setMesh(make_cyl(vec3(0,0,-12),1,vec3(0,0,1)))
+	--child:setMesh(make_cyl(vec3(1.5,0,0.5),0.5)ex)
 end
 function GL.draw(t,w,h)
 	ut.Clear()
