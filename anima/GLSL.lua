@@ -1015,8 +1015,10 @@ function VAO(t,program,indices,tsize,isize)
 	end
 	--
 	function tVao:delete()
-		for i,v in ipairs(vbos) do v:delete() end
-		if self.ebo then glext.glDeleteBuffers(1,self.ebo) end
+		if not self.clonedvbos then
+			for i,v in ipairs(vbos) do v:delete() end
+			if self.ebo then glext.glDeleteBuffers(1,self.ebo) end
+		end
 		glext.glDeleteVertexArrays(1,vao)
 	end
 	--same vbos with other program
@@ -1035,6 +1037,7 @@ function VAO(t,program,indices,tsize,isize)
 			glext.glBindBuffer(glc.GL_ELEMENT_ARRAY_BUFFER, retv.ebo[0]);
 			retv:UnBind()
 		end
+		retv.clonedvbos = true
 		return retv
 	end
 	
