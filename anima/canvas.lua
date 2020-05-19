@@ -684,7 +684,7 @@ function GLcanvas(GL)
 	GL.v3_0plus = GL.gl_version[1]>=3
 	if (GL.profile == "CORE" and GL.v3_2plus) then
 		GL.restricted = true
-		GLSL.default_version = "#version 130\n"
+		GLSL.default_version = "#version 140\n"
 	end
 	
 	GL.postdraw = function() end
