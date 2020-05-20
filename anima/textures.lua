@@ -1011,15 +1011,22 @@ function Texture(w,h,formato,pTexor,args)
 		self:Bind(0)
 		greyprog:draw(w or self.width,h or self.height,mask)
 	end
-	--as plugin:process_tex
-	function tex:make_grey(mask)
-		local fbo = self.GL:get_fbo()
+	--if you pass fbo1 it will be more performant
+	function tex:make_grey(mask,fbo1)
+		local fbo = fbo1 and fbo1 or self:make_fbo()
+		--local fbo = self.GL:get_fbo()
 		fbo:Bind()
 		self:togrey(nil,nil,mask)
 		fbo:UnBind()
-		return fbo
+		local ret 
+		if not fbo1 then
+			ret = fbo:texcopy()
+			fbo:delete()
+		else
+			ret = fbo:tex()
+		end
 		--fbo:release()
-		--return fbo:texcopy()
+		return ret
 	end
 	function tex:neg()
 		self:Bind()
