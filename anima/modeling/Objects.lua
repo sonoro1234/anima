@@ -546,8 +546,9 @@ local function Objects(GL,camera,args)
 			tproc:set_process[[
 				#define M_PI 3.1415926535897932384626433832795
 				vec4 process(vec2 pos){
-					float angle = M_PI*0.3*2;
-					float freq = 100;
+					float angle = M_PI*0.25;
+					float N = 5.0;
+					float freq = 2*N/sin(0.5*M_PI-angle);
 					vec2 dir = vec2(cos(angle),sin(angle));
 					float dis = dot(dir,pos);
 					return vec4(vec3(sin(dis*2*M_PI*freq)*0.5+0.5),1);
@@ -555,7 +556,7 @@ local function Objects(GL,camera,args)
 			local fbo = GL:initFBO({no_depth=true},300,300)
 			fbo:Bind()
 			ut.Clear()
-			tproc:process{}
+			tproc:process({},300,300)
 			fbo:UnBind()
 			initex = fbo:tex()
 			
@@ -568,6 +569,7 @@ local function Objects(GL,camera,args)
 			inimesh.tcoords = {vec2(0,0),vec2(0,1),vec2(1/3,1),vec2(1/3,0),vec2(1,0),vec2(1,1),vec2(2/3,1),vec2(2/3,0)}
 		end
 		Os.root = Object("root",self)
+		initex = args.initex or initex
 		if args.doinit then self.root:setMesh(inimesh,initex) end
 	end
 	
