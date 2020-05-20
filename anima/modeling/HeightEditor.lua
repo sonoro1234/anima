@@ -277,7 +277,10 @@ local function HeightEditor(GL,updatefunc)
 			local leng = #points_add
 			for i=1, leng do
 				local p = points_add[i]
-				points_add[leng+i] = vec3(p.x,p.y,-p.z)
+				--print(p.z)
+				local pz = math.abs(p.z)< 1e-8 and p.z or -p.z
+				
+				points_add[leng+i] = vec3(p.x,p.y,pz)
 				tcoords[i] = vec2(0.5*tcoords[i].x,tcoords[i].y)
 				tcoords[leng+i] = tcoords[i] + vec2(0.5,0)
 			end
