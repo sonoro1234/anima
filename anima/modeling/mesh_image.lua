@@ -184,13 +184,15 @@ function MR:MeshRectifyTriang(num)
 	programI.unif.MP:set(MP.gl)
 	
 	fboim_inter:viewport()
-
+	
+	--[[
 	if has_nans then
 	gl.glClearColor(0,1,0,1)
 	else
 	gl.glClearColor(0.5,0.5,0.5,0)
 	end
-	ut.Clear()
+	ut.Clear() --uses 40% of time
+	--]]
 
 	vao_makeimage:draw(glc.GL_TRIANGLES,3)
 
@@ -223,6 +225,7 @@ end
 
 
 function MR:MeshRectify(mesh,newtex,filter)
+	--ProfileStart()
 	self.mesh = mesh
 	meshcyl_eye = self.mesh
 
@@ -252,7 +255,7 @@ function MR:MeshRectify(mesh,newtex,filter)
 	end
 	
 	for i=1,meshcyl_eye.ntriangles do
-		self:MeshRectifyTriang(i)	
+		self:MeshRectifyTriang(i)
 	end
 	
 	
@@ -261,6 +264,7 @@ function MR:MeshRectify(mesh,newtex,filter)
 	--self.texR:gen_mipmap()
 	gl.glClearColor(0,0,0,0)
 	print"done rectify"
+	--ProfileStop()
 	return self.texR
 end
 
