@@ -687,3 +687,10 @@ end
 function ProfileStop()
 	require("jit.p").stop()
 end
+
+function table_continue(T,...)
+	for j=1,select('#',...) do
+		local t = select(j,...)
+		T[#T+1]=t 
+	end
+end
