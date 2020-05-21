@@ -81,6 +81,19 @@ void main()
 }
 ]]
 
+local frag_shdiscard = [[
+uniform sampler2D tex;
+in  vec2 f_tc;
+void main()
+{
+	vec4 color = texture2D(tex,f_tc);
+	if (color.a < 0.5)
+      discard;
+	gl_FragColor  = color;
+}
+
+]]
+
 local vertmesh = [[
 in vec3 position;
 uniform mat4 ModelM;
@@ -101,7 +114,7 @@ void main()
 ]]
 
 local R = require"anima.rotations"
-local program, progmesh
+local program, progmesh, program_discard
 local prog_twist
 local inimesh,initex
 
@@ -472,7 +485,7 @@ local function Objects(GL,camera,args)
 		{"mipmaps",false,guitypes.toggle,nil,{sameline=true}},
 		{"aniso",false,guitypes.toggle,nil,{sameline=true}},
 		{"showtex",false,guitypes.toggle},
-		{"use_alpha",false,guitypes.toggle,nil,{sameline=true}},
+		{"transparency",1,guitypes.slider_enum,{"none","alpha","mult","add","discard"}},
 		--{"dump",0,guitypes.button,function() Os.root:dump() end}
 	},function() 
 		ig.Separator()
@@ -536,6 +549,7 @@ local function Objects(GL,camera,args)
 	function Os:init()
 		if not program then
 			program = GLSL:new():compile(vert_sh,frag_sh)
+			program_discard = GLSL:new():compile(vert_sh,frag_shdiscard)
 			progmesh = GLSL:new():compile(vertmesh,fragmesh)
 			
 			prog_twist = GLSL:new():compile(vert_twist,fragmesh)
@@ -591,7 +605,7 @@ local function Objects(GL,camera,args)
 		else
 			gl.glDisable(glc.GL_CULL_FACE)
 		end
-		gl.glEnable(glc.GL_DEPTH_TEST)
+		--gl.glEnable(glc.GL_DEPTH_TEST)
 
 		if NM.showtex then
 			local obj = editor.object or Os.root
@@ -615,21 +629,42 @@ local function Objects(GL,camera,args)
 				U.MVP:set(camera:MVP().gl)
 				Os.root:drawmesh(U, editor)
 			else
-				if NM.use_alpha then
+				if NM.transparency == 1 then --none
+					gl.glEnable(glc.GL_DEPTH_TEST)
+				elseif NM.transparency == 2 then --alpha blend
+					gl.glDisable(glc.GL_DEPTH_TEST)
 					gl.glEnable(glc.GL_BLEND)
 					gl.glBlendFunc(glc.GL_SRC_ALPHA, glc.GL_ONE_MINUS_SRC_ALPHA)
 					glext.glBlendEquation(glc.GL_FUNC_ADD)
+				elseif NM.transparency ==3 then --multiply
+					gl.glDisable(glc.GL_DEPTH_TEST)
+					gl.glEnable(glc.GL_BLEND)
+					gl.glBlendFunc(glc.GL_ZERO, glc.GL_SRC_COLOR);
+					glext.glBlendEquation(glc.GL_FUNC_ADD)
+				elseif NM.transparency == 4 then --add
+					gl.glDisable(glc.GL_DEPTH_TEST)
+					gl.glEnable(glc.GL_BLEND)
+					gl.glBlendFunc(glc.GL_ONE, glc.GL_ONE);
+					glext.glBlendEquation(glc.GL_FUNC_ADD)
 				end
 				
-				program:use()
-				local U = program.unif
+				local U
+				if NM.transparency == 5 then
+					gl.glEnable(glc.GL_DEPTH_TEST)
+					program_discard:use()
+					U = program_discard.unif
+				else
+					program:use()
+					U = program.unif
+				end
 				U.MVP:set(camera:MVP().gl)
 				
 				U.tex:set{0}
 				
 				Os.root:draw(program.unif, NM)
+				
 				gl.glDisable(glc.GL_BLEND)
-
+				gl.glDisable(glc.GL_DEPTH_TEST)
 			end
 		end
 	end
