@@ -24,10 +24,12 @@ function gui.KeyFramer(NMC,use_spline)
 		function_name_idx[function_names[k]] = k ; 
 	end
 	--prtable(function_name_idx)
-	KF.functions_combo = ffi.new("const char*["..(#function_names + 1).."]")
+	local anchor = {}
 	for i = 0,#function_names  do
-		KF.functions_combo[i] = ffi.new("const char*",function_names[i])
+		anchor[i] = ffi.new("const char*",function_names[i])
+		--KF.functions_combo[i] = anchor[i]
 	end
+	KF.functions_combo = ffi.new("const char* const[?]",(#function_names + 1),anchor)
 	KF.curr_function_num = ffi.new("int[1]",0)
 	KF.functions_combo_count = #function_names + 1
 	
@@ -38,50 +40,50 @@ function gui.KeyFramer(NMC,use_spline)
 			ig.BeginChild("key editor",ig.ImVec2(0,ig.GetFrameHeightWithSpacing()*5),true,imgui.ImGuiWindowFlags_AlwaysAutoResize)
 			--local text = (KF.edit and "edit x") or "edit"
 			--if imgui.igSmallButton(text) then KF.edit = not KF.edit end
-			imgui.igCheckbox("edit", KF.edit)
-			imgui.igSameLine(0,-1)
+			ig.Checkbox("edit", KF.edit)
+			ig.SameLine(0,-1)
 			ffi.copy(KF.currkey_time, tostring(KF.Keys[KF.currkey[0]].time))
-			if imgui.igInputText("time",KF.currkey_time,32,imgui.ImGuiInputTextFlags_CharsDecimal + imgui.ImGuiInputTextFlags_EnterReturnsTrue, nil, nil) then
+			if ig.InputText("time",KF.currkey_time,32,imgui.ImGuiInputTextFlags_CharsDecimal + imgui.ImGuiInputTextFlags_EnterReturnsTrue, nil, nil) then
 				KF.Keys[KF.currkey[0]].time = tonumber(ffi.string(KF.currkey_time))
 				table.sort(KF.Keys, function(a,b) return a.time < b.time end)
 				KF.Animation = KF:MakeAnim(KF.Keys)
 			end
 			--KF.curr_function_num[0] = KF.Keys[KF.currkey[0]].func_num or -1
 			KF.curr_function_num[0] = KF.Keys[KF.currkey[0]].funcname and function_name_idx[KF.Keys[KF.currkey[0]].funcname] or 0
-			if imgui.igCombo("function", KF.curr_function_num, KF.functions_combo, KF.functions_combo_count, -1) then
+			if ig.Combo("function", KF.curr_function_num, KF.functions_combo, KF.functions_combo_count, -1) then
 				--print(KF.functions_combo[KF.curr_function_num[0]])
 				KF.Keys[KF.currkey[0]].funcname = ffi.string(KF.functions_combo[KF.curr_function_num[0]])
 				--KF.Keys[KF.currkey[0]].func_num = KF.curr_function_num[0]
 				KF.Animation = KF:MakeAnim(KF.Keys)
 			end
 			ffi.copy(KF.curr_args, KF.Keys[KF.currkey[0]].args or "")
-			if imgui.igInputText("args", KF.curr_args, 64, imgui.ImGuiInputTextFlags_EnterReturnsTrue,nil, nil) then
+			if ig.InputText("args", KF.curr_args, 64, imgui.ImGuiInputTextFlags_EnterReturnsTrue,nil, nil) then
 				KF.Keys[KF.currkey[0]].args = ffi.string(KF.curr_args)
 				KF.Animation = KF:MakeAnim(KF.Keys)
 			end
-			if imgui.igSmallButton"add" then
+			if ig.SmallButton"add" then
 				KF.max_currkey  = KF.max_currkey  + 1
 				KF:addkey()
 			end
-			imgui.igSameLine(0,-1)
-			if imgui.igSmallButton"modify" then
+			ig.SameLine(0,-1)
+			if ig.SmallButton"modify" then
 				KF:modifykey()
 			end
-			imgui.igSameLine(0,-1)
-			if imgui.igSmallButton"delete" then
+			ig.SameLine(0,-1)
+			if ig.SmallButton"delete" then
 				if #KF.Keys > 1 then
 					KF.max_currkey  = KF.max_currkey  + 1
 					KF:deletekey()
 				end
 			end
-			imgui.igSameLine(0,-1)
-			if imgui.igSmallButton"clipboard" then
+			ig.SameLine(0,-1)
+			if ig.SmallButton"clipboard" then
 				KF:to_clipboard()
 			end
-			if imgui.igSliderInt("key", KF.currkey, 1, KF.max_currkey, "%.0f") then
+			if ig.SliderInt("key", KF.currkey, 1, KF.max_currkey, "%.0f") then
 				GL.timeprovider:set_time(KF.Keys[KF.currkey[0]].time + KF.clippos + 0.01)
 			end
-			imgui.igEndChild()
+			ig.EndChild()
 		end
 	
 	NMC.KF_dialog = KF.dialog
