@@ -6,6 +6,32 @@ function smoothstep(edge0,edge1,x)
 	return t* t * (3 - 2 * t);
 end
 
+function REPEAT_SEGMENTS(n,...)
+	local T = {}
+	for i=1,n do 
+		for j=1,select('#',...) do
+			local t = select(j,...)
+			T[#T+1]=t 
+		end
+	end
+	return unpack(T)
+end
+
+--given t and dur
+-- returns a 0-1 ramp lasting f1
+-- then constant 1 until dur-f2
+-- then 1-0 ramp lasting f2
+function fadeInOut(t,dur,f1,f2)
+	f2 = f2 or f1
+	if t < f1 then
+		return t/f1
+	elseif t > dur - f2 then
+		return 1 - clamp((t - dur + f2)/f2,0,1)
+	else
+		return 1
+	end
+end
+
 unit_maps = {}
 local function clip(val,mini,maxi)
     return math.max(mini,math.min(val,maxi))
