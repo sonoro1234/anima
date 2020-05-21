@@ -496,7 +496,9 @@ local function ReLoadTexture(fileName,texture,srgb,tex)
 		elseif glformat == glc.GL_RGBA then
 			rgbf = glc.GL_SRGB_ALPHA
 		else
-			error("unknown file format")
+			local datatype = image and image:DataType()
+			print("glformat",glformat,gldata,ToStr(swapped_glc[glformat]),im.DataTypeName(datatype),fileName)
+			error("unknown file format"..swapped_glc[glformat])
 		end
 	end
 	--print(fileName,"format",glformat)
