@@ -482,6 +482,27 @@ function M.mesh(t)
 		end
 		return M.mesh{points=points,normals=normals,tcoords=tcoords,triangles=triangles}
 	end
+	--normals not done
+	function mesh:merge(m2)
+		local npoints = #self.points
+		for i,v in ipairs(m2.points) do
+			self.points[i+npoints] = v --vec3(v.x,v.y,v.z)
+		end
+		local ntr = #self.triangles
+		for i,v in ipairs(m2.triangles) do
+			self.triangles[i+ntr] = v + npoints 
+		end
+		--make tcoords based on 2d coordinates
+		local CG = require"anima.CG3"
+		local minb,maxb = CG.bounds(self.points)
+		local diff = maxb-minb
+		for i,v in ipairs(self.points) do
+			local vv = v.xy - minb
+			self.tcoords[i] = vec2(vv.x/diff.x,vv.y/diff.y)
+		end
+		return self
+	end
+	
 	function mesh:M4(MM)
 		for i=1,#self.points do
 			-- local vec = mat.vec4(self.points[i],1)
