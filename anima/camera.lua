@@ -270,6 +270,8 @@ function newCamera(GL,cam_type, name,initialDist)
 	elseif not cam_type then
 		cam.CalcCamera = cam.CalcCameraEuler
 		cam.NMC = imgui_cameraDialog(name,zforh,GL,true,cam)
+	else
+		error("unknown cam type "..cam_type)
 	end
 	cam.NM = cam.NMC
 	-----------
