@@ -107,6 +107,10 @@ local function Spline3D(GL, camera,updatefunc)
 				local vv = Mtr*vec4(v,1)
 				prsc[i] = (vv/vv.w).xyz
 			end
+			--calc minlen for spline
+			local minb,maxb = CG.bounds(prsc)
+			local diff = maxb - minb
+			local minlen = 5*diff.norm/200
 			if prsc.holes then
 				for i,hole in ipairs(prsc.holes) do
 					for j,v in ipairs(hole) do
@@ -115,12 +119,12 @@ local function Spline3D(GL, camera,updatefunc)
 					end
 				end
 			end
-			local pspr = CG.Spline(prsc,self.alpha[ii][0],self.divs[ii][0],true)
+			local pspr = CG.Spline(prsc,self.alpha[ii][0],self.divs[ii][0],true,minlen)
 			if prsc.holes then
 				pspr.holes = {}
 				for i,hole in ipairs(prsc.holes) do
 					if #hole > 2 then
-						pspr.holes[i] = CG.Spline(hole,self.alpha[ii][0],self.divs[ii][0],true)
+						pspr.holes[i] = CG.Spline(hole,self.alpha[ii][0],self.divs[ii][0],true,minlen)
 					end
 				end
 			end

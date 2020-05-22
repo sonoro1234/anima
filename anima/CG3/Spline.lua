@@ -46,17 +46,27 @@ local function CatmulRom(p0,p1,p2,p3,ps,alpha,amountOfPoints,last)
 end
 CG.CatmulRom = CatmulRom
 
-local function Spline(points,alpha,amountOfPoints,closed)
+local floor, min, max = math.floor, math.min, math.max
+local function Spline(points,alpha,amountOfPoints,closed,minlen)
+	minlen = minlen or 5
 	--print("Spline alpha",alpha)
 	local ps = {}
 	local i0,i1,i2,i3
 	if closed then
 		if #points < 3 then return ps end
-		CatmulRom(points[#points],points[1],points[2],points[3],ps,alpha,amountOfPoints)
+		local divs = floor((points[2]-points[1]).norm/minlen)
+		divs = max(1,min(divs, amountOfPoints))
+		CatmulRom(points[#points],points[1],points[2],points[3],ps,alpha,divs)
 		for i=1,#points-3 do
-			CatmulRom(points[i],points[i+1],points[i+2],points[i+3],ps,alpha,amountOfPoints)
+			divs = floor((points[i+2]-points[i+1]).norm/minlen)
+			divs = max(1,min(divs, amountOfPoints))
+			CatmulRom(points[i],points[i+1],points[i+2],points[i+3],ps,alpha,divs)
 		end
+		divs = floor((points[#points]-points[#points-1]).norm/minlen)
+		divs = max(1,min(divs, amountOfPoints))
 		CatmulRom(points[#points-2],points[#points-1],points[#points],points[1],ps,alpha,amountOfPoints)
+		divs = floor((points[#points]-points[1]).norm/minlen)
+		divs = max(1,min(divs, amountOfPoints))
 		CatmulRom(points[#points-1],points[#points],points[1],points[2],ps,alpha,amountOfPoints,true)
 		
 		ps[#ps] = nil --delete repeated
