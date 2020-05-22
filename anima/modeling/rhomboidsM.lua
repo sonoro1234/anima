@@ -236,7 +236,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 			local mposvp = ig.ImVec2(ScreenToViewport(mpos.x, mpos.y))
 			for i,plane in ipairs(PR.planes) do
 				local center = PR:Eye2Viewport(plane.frame.center)
-				if (center - mposvp).norm < 6 then
+				if (center - mposvp).norm < 5 then
 					curr_plane = i 
 					NM.vars.choose_p[0] = false
 				end
@@ -255,7 +255,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 			local touched = -1
 			local mposvp = ig.ImVec2(ScreenToViewport(mpos.x, mpos.y))
 			for i=1,#points do 
-				if (points[i] - mposvp).norm < 6 then touched = i;break end
+				if (points[i] - mposvp).norm < 5 then touched = i;break end
 			end
 			if touched < 0 then 
 				points[#points+1]= mposvp 
@@ -557,7 +557,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 			local touched = -1
 			local mposvp = ig.ImVec2(ScreenToViewport(mpos.x, mpos.y))
 			for i=1,#points do 
-				if (points[i] - mposvp).norm < 6 then touched = i end
+				if (points[i] - mposvp).norm < 5 then touched = i end
 			end
 			if touched > 0 then editind=touched end
 		end
@@ -589,7 +589,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 				local point = points[quad[i]]
 				local scpoint = ViewportToScreen(point)
 				dl:AddCircleFilled(scpoint, 4, ig.U32(1,0,0,1))
-				if picking and (scpoint - mpos).norm < 4 then dl:AddCircleFilled(scpoint, 6, ig.U32(1,1,0,1)) end
+				if picking or NM.edit and (scpoint - mpos).norm < 5 then dl:AddCircleFilled(scpoint, 6, ig.U32(1,1,0,1)) end
 				pointsI[i-1] = scpoint
 			end
 			dl:AddPolyline(pointsI,#quad,ig.U32(1,1,0,1),#quad > 2, 1)
