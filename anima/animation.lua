@@ -384,7 +384,7 @@ function spl_anim:dofunc(time)
 		else
 			self.object[0] = self.curr_val
 		end
-		if self.hook then self:hook() end
+		if self.hook then self:hook(time,_segm) end
 	end
 	return self.curr_val
 end
