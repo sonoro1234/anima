@@ -110,7 +110,7 @@ local function Spline3D(GL, camera,updatefunc)
 			--calc minlen for spline
 			local minb,maxb = CG.bounds(prsc)
 			local diff = maxb - minb
-			local minlen = 5*diff.norm/200
+			local minlen = 5*diff.norm/400
 			if prsc.holes then
 				for i,hole in ipairs(prsc.holes) do
 					for j,v in ipairs(hole) do
