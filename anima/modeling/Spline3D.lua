@@ -27,12 +27,15 @@ local function Spline3D(GL, camera,updatefunc)
 		return self.HeightEditors[spnum]
 	end
 	
+	SP3D.zoffset = {}
+	local MVEzoffset = gui.MultiValueEdit("zoffset",1)
 	SP3D.HeightEditors = {}
 	local oldfunc = SP3D.NM.func
 	SP3D.NM.func = function(this)
 		oldfunc(this)
 		if SP3D.HeightEditors and SP3D.HeightEditors[this.curr_spline] then
 			ig.Separator()
+			if MVEzoffset:Draw(SP3D.zoffset[this.curr_spline],nil,nil,0.001) then SP3D:process_all() end
 			SP3D.HeightEditors[this.curr_spline].NM:draw()
 		end
 	end
@@ -49,6 +52,7 @@ local function Spline3D(GL, camera,updatefunc)
 	function SP3D:newmesh(pts)
 		local spnum = self:newspline(pts)
 		self:create_height_editor(spnum)
+		SP3D.zoffset[spnum] = ffi.new("float[1]",0)
 		return spnum
 	end
 	
@@ -77,7 +81,8 @@ local function Spline3D(GL, camera,updatefunc)
 			--project on plane
 			local prsc = {}
 			local R = self.frames[ii].Z
-			local D = -self.frames[ii].center*R
+			local point = self.frames[ii].center + self.zoffset[ii][0]*R
+			local D = -point*R
 			if D < 0 then D = -D; R = -R end
 			local MP = camera:MP()
 			local MPinv = MP.inv
@@ -86,6 +91,7 @@ local function Spline3D(GL, camera,updatefunc)
 				local dotinv = -D/(R*r)
 				prsc[i] = dotinv*r
 			end
+
 			if self.sccoors[ii].holes then
 				prsc.holes = {}
 				for i,hole in ipairs(self.sccoors[ii].holes) do
@@ -172,6 +178,7 @@ local function Spline3D(GL, camera,updatefunc)
 	function SP3D:save()
 		local pars = {}
 		pars.SP = old_save(self)
+		pars.zoffset = self.zoffset
 		pars.HE = {}
 		for i, he in ipairs(SP3D.HeightEditors) do
 			pars.HE[i] = he:save()
@@ -186,8 +193,9 @@ local function Spline3D(GL, camera,updatefunc)
 		self.calc_all_splines = function() end --avoid calc_all_splines
 		old_load(SP3D,pars.SP)
 		self.calc_all_splines = casp
-		
+		self.zoffset = pars.zoffset or {}
 		for i=1,pars.SP.numsplines do
+			self.zoffset[i] = self.zoffset[i] or ffi.new("float[1]")
 			local HE = self:create_height_editor(i) --skip update
 			self:set_frame(nil,i)
 			HE:load(pars.HE[i])
