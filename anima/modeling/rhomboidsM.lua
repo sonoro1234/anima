@@ -449,6 +449,132 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 		return G
 	end
 	
+	local editind
+	local function EditQuads()
+		ig.SetMouseCursor(ig.lib.ImGuiMouseCursor_Hand);
+		local igio = ig.GetIO()
+		local mpos = igio.MousePos
+		if igio.MouseClicked[0] then
+			local touched = -1
+			local mposvp = ig.ImVec2(ScreenToViewport(mpos.x, mpos.y))
+			for i=1,#points do 
+				if (points[i] - mposvp).norm < 5 then touched = i end
+			end
+			if touched > 0 then editind=touched end
+		end
+		if editind then
+			points[editind] = ig.ImVec2(ScreenToViewport(mpos.x, mpos.y))
+			for i,quad in ipairs(quads) do
+				--print("repair ",i)
+				repair_quad(quad)
+			end
+			if igio.MouseReleased[0] then 
+				editind = nil
+			end
+			return true
+		end
+		return false
+	end
+	
+	local function ShowQuads()
+		--print"Show"
+		local igio = ig.GetIO()
+		local mpos = igio.MousePos
+		local dl = ig.GetBackgroundDrawList()
+		local keepflags = dl.Flags
+		dl.Flags = bit.band(dl.Flags,bit.bnot(ig.lib.ImDrawListFlags_AntiAliasedLines))
+		
+		for j,quad in ipairs(quads) do
+			local pointsI = ffi.new("ImVec2[?]",#quad)
+			for i=1,#quad do
+				local point = points[quad[i]]
+				local scpoint = ViewportToScreen(point)
+				dl:AddCircleFilled(scpoint, 4, ig.U32(1,0,0,1))
+				if (picking or NM.edit) and (scpoint - mpos).norm < 5 then 
+					dl:AddCircleFilled(scpoint, 6, ig.U32(1,1,0,1)) 
+				end
+				pointsI[i-1] = scpoint
+			end
+			dl:AddPolyline(pointsI,#quad,ig.U32(1,1,0,1),#quad > 2, 1)
+			
+			--vpointX and Y1
+			if PR.planes[j] then
+				local vpX,vpY = PR.planes[j].vpointX, PR.planes[j].vpointY
+				vpX = PR:Eye2Viewport(vpX)
+				vpY = PR:Eye2Viewport(vpY)
+				dl:AddCircleFilled(ViewportToScreen(vpX), 4, ig.U32(0,1,0,1))
+				dl:AddCircleFilled(ViewportToScreen(vpY), 4, ig.U32(0,1,0,1))
+			end
+			--show planes center
+			if PR.planes[j] then
+				local center = PR.planes[j].frame.center
+				center = PR:Eye2Viewport(center)
+				local color = j==curr_plane and ig.U32(1,0,1,1) or ig.U32(0,0,1,1)
+				dl:AddCircleFilled(ViewportToScreen(center), 4, color)
+			end
+			--if just picking this quad
+			if #quad < 4 then
+				--line from last point to mouse
+				if #quad > 0 then
+					local lastp = ViewportToScreen(points[quad[#quad]])
+					dl:AddLine(lastp,mpos,ig.U32(1,1,0,1))
+				end
+				if quad.vpoints and #quad.vpoints > 0 then
+					assert(#quad.vpoints==1)
+					--find not touched
+					local vpoint1 = quad.vpoints[1].vp
+					local from1 = quad.vpoints[1].from
+					local who1 = quad.vpoints[1].who
+					for i=1,#quad do
+						--if not quad.touched[i] then
+						--draw line for completing this quad with already an vpoint
+						if i~=who1[1] and i~=who1[2] then
+							local vpoint = quad.vpoints[1].vp
+							local a = points[quad[i]]
+							local ray
+							--ideal point
+							if vpoint.z == 0 then
+								ray = vpoint.normalize
+							else
+								vpoint = PR:Eye2Viewport(vpoint)
+								ray = a - vpoint
+							end
+							local b1 = a - ray*400
+							local b2 = a + ray*400
+							local as = ViewportToScreen(a)
+							local b1s = ViewportToScreen(b1)
+							local b2s = ViewportToScreen(b2)
+							dl:AddLine(b1s,b2s,ig.U32(1,0,0,1))
+							dl:AddCircleFilled(as, 6, ig.U32(1,0,1,1))
+						end
+					end
+				end
+			end
+		end
+		
+		dl.Flags = keepflags
+	end
+	
+	
+	
+	local function add_mesh(iplane, usepoints)
+		local sppoints 
+		if usepoints then
+			sppoints = {}
+			for i,ind in ipairs(quads[iplane]) do
+				local p = points[ind]
+				sppoints[i] = vec2(p.x,p.y)
+			end
+		end
+		
+		local spnum = PR.Makers[PR.curr_maker[0]]:newmesh(sppoints)
+		--PR.quad_meshes[iplane] = PR.quad_meshes[iplane] or {}
+		table.insert(PR.quad_meshes[iplane], {spnum,PR.curr_maker[0]})
+		local frame = PR:get_planev4(iplane)
+		PR.Makers[PR.curr_maker[0]]:set_frame(frame,spnum)
+		updatefunc1()
+	end
+	
 	local function reconstruct()
 		print("reconstruct","doupdate",doupdate)
 		doupdate = false
@@ -540,7 +666,11 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 		print"rectity1"
 		PR:Rectify()
 		PR:Rectify2()
-		PR:reset_planes()
+		--dont reset planes on active editing to avoid
+		--too much CPU load
+		if editind or not NM.dontreset then
+			PR:reset_planes()
+		end
 
 		doupdate = true
 		updatefunc1()
@@ -548,129 +678,6 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 		print("reconstruct done")
 	end
 	
-	local editind
-	local function EditQuads()
-		ig.SetMouseCursor(ig.lib.ImGuiMouseCursor_Hand);
-		local igio = ig.GetIO()
-		local mpos = igio.MousePos
-		if igio.MouseClicked[0] then
-			local touched = -1
-			local mposvp = ig.ImVec2(ScreenToViewport(mpos.x, mpos.y))
-			for i=1,#points do 
-				if (points[i] - mposvp).norm < 5 then touched = i end
-			end
-			if touched > 0 then editind=touched end
-		end
-		if editind then
-			points[editind] = ig.ImVec2(ScreenToViewport(mpos.x, mpos.y))
-			for i,quad in ipairs(quads) do
-				--print("repair ",i)
-				repair_quad(quad)
-			end
-			if igio.MouseReleased[0] then 
-				editind = nil
-			end
-			return true
-		end
-		return false
-	end
-	
-	local function ShowQuads()
-		--print"Show"
-		local igio = ig.GetIO()
-		local mpos = igio.MousePos
-		local dl = ig.GetBackgroundDrawList()
-		local keepflags = dl.Flags
-		dl.Flags = bit.band(dl.Flags,bit.bnot(ig.lib.ImDrawListFlags_AntiAliasedLines))
-		
-		for j,quad in ipairs(quads) do
-			local pointsI = ffi.new("ImVec2[?]",#quad)
-			for i=1,#quad do
-				local point = points[quad[i]]
-				local scpoint = ViewportToScreen(point)
-				dl:AddCircleFilled(scpoint, 4, ig.U32(1,0,0,1))
-				if picking or NM.edit and (scpoint - mpos).norm < 5 then dl:AddCircleFilled(scpoint, 6, ig.U32(1,1,0,1)) end
-				pointsI[i-1] = scpoint
-			end
-			dl:AddPolyline(pointsI,#quad,ig.U32(1,1,0,1),#quad > 2, 1)
-			
-			--vpointX and Y1
-			if PR.planes[j] then
-				local vpX,vpY = PR.planes[j].vpointX, PR.planes[j].vpointY
-				vpX = PR:Eye2Viewport(vpX)
-				vpY = PR:Eye2Viewport(vpY)
-				dl:AddCircleFilled(ViewportToScreen(vpX), 4, ig.U32(0,1,0,1))
-				dl:AddCircleFilled(ViewportToScreen(vpY), 4, ig.U32(0,1,0,1))
-			end
-			--show planes center
-			if PR.planes[j] then
-				local center = PR.planes[j].frame.center
-				center = PR:Eye2Viewport(center)
-				local color = j==curr_plane and ig.U32(1,0,1,1) or ig.U32(0,0,1,1)
-				dl:AddCircleFilled(ViewportToScreen(center), 4, color)
-			end
-			--if just picking this quad
-			if #quad < 4 then
-				--line from last point to mouse
-				if #quad > 0 then
-					local lastp = ViewportToScreen(points[quad[#quad]])
-					dl:AddLine(lastp,mpos,ig.U32(1,1,0,1))
-				end
-				if quad.vpoints and #quad.vpoints > 0 then
-					assert(#quad.vpoints==1)
-					--find not touched
-					local vpoint1 = quad.vpoints[1].vp
-					local from1 = quad.vpoints[1].from
-					local who1 = quad.vpoints[1].who
-					for i=1,#quad do
-						--if not quad.touched[i] then
-						--draw line for completing this quad with already an vpoint
-						if i~=who1[1] and i~=who1[2] then
-							local vpoint = quad.vpoints[1].vp
-							local a = points[quad[i]]
-							local ray
-							--ideal point
-							if vpoint.z == 0 then
-								ray = vpoint.normalize
-							else
-								vpoint = PR:Eye2Viewport(vpoint)
-								ray = a - vpoint
-							end
-							local b1 = a - ray*400
-							local b2 = a + ray*400
-							local as = ViewportToScreen(a)
-							local b1s = ViewportToScreen(b1)
-							local b2s = ViewportToScreen(b2)
-							dl:AddLine(b1s,b2s,ig.U32(1,0,0,1))
-							dl:AddCircleFilled(as, 6, ig.U32(1,0,1,1))
-						end
-					end
-				end
-			end
-		end
-		
-		dl.Flags = keepflags
-	end
-	
-	
-	
-	local function add_mesh(iplane, usepoints)
-		local sppoints 
-		if usepoints then
-			sppoints = {}
-			for i,ind in ipairs(quads[iplane]) do
-				local p = points[ind]
-				sppoints[i] = vec2(p.x,p.y)
-			end
-		end
-		
-		local spnum = PR.Makers[PR.curr_maker[0]]:newmesh(sppoints)
-		--PR.quad_meshes[iplane] = PR.quad_meshes[iplane] or {}
-		table.insert(PR.quad_meshes[iplane], {spnum,PR.curr_maker[0]})
-		local frame = PR:get_planev4(iplane)
-		PR.Makers[PR.curr_maker[0]]:set_frame(frame,spnum)
-		updatefunc1()
-	end
 	local curr_mesh_edit
 	NM = gui.Dialog("rhomboids",
 	{
@@ -687,6 +694,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 	
 	{"zval",1,guitypes.val,{min=1e-5,max=30},function(val,this) PR:Rectify();PR:Rectify2();PR:reset_planes() end},
 	{"reconstruct",0,guitypes.button,function() reconstruct() end},
+	{"dontreset",false,gui.types.toggle,nil,{sameline=true}},
 	{"pick_plane",0,guitypes.button,function(this,_) 
 		if not picking then
 			this.vars.edit[0]=false; 
