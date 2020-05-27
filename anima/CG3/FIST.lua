@@ -348,7 +348,7 @@ local function InsertHoles(poly,skip_check)
 				--print("bridge added",i,"was",horder.i,horder.mini,"inds",dd.j,dd.j+1,indmini,indmini+1)
 				if CG.check_crossings(poly,true) then
 					print("bad bridge insertion of hole",i,"was",hole)
-					error"bad bridge"
+					--error"bad bridge"
 				end
 				bridgedone = true
 				break
