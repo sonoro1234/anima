@@ -449,8 +449,10 @@ local function ReLoadTexture(fileName,texture,srgb,tex)
 	local rgbf  --= srgb and glc.GL_SRGB or glc.GL_RGB
 
 	if string.match(fileName, "cmp",-3) then
+		tex.compressed = true
 		return LoadCompressedTotexture( fileName, texture,srgb)
 	end
+	tex.compressed = false
 	local image,err = im.FileImageLoad(fileName) --imffi.FileImageLoadBitmap(fileName)
 		if (image==nil) then
 			print ("Unnable to open the file:", fileName)
@@ -743,6 +745,7 @@ function Texture1D(w,formato,data,format,type,args)
 	end
 	return tex
 end
+
 function Texture(w,h,formato,pTexor,args)
 	assert(args)
 	if not args then print("texture witout context") end
@@ -750,7 +753,7 @@ function Texture(w,h,formato,pTexor,args)
 	w = w or args.GL.W
 	h = h or args.GL.H
 	formato = formato or glc.GL_RGBA
-	local tex = {aspect= w/h,width=w,height=h,isTex2D=true,instance=0,formato=formato,GL=args.GL}
+	local tex = {aspect= w/h,width=w,height=h,isTex2D=true,instance=0,internal_format=formato,formato=formato,GL=args.GL}
 	
 	if not pTexor then
 		tex.pTex = ffi.new("GLuint[?]",1)
@@ -763,6 +766,8 @@ function Texture(w,h,formato,pTexor,args)
 		gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_WRAP_S, glc.GL_MIRRORED_REPEAT);
 		gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_WRAP_T, glc.GL_MIRRORED_REPEAT);
 		gl.glTexImage2D(glc.GL_TEXTURE_2D,0, formato, w, h, 0, glc.GL_RGB, glc.GL_UNSIGNED_BYTE, nil)
+		tex.internal_format,tex.formato,tex.datatype = formato, glc.GL_RGB, glc.GL_UNSIGNED_BYTE
+		
 		tex.tex = tex.pTex[0]
 		--print("new tex2d",tex.tex,tex)
 	else
@@ -801,6 +806,7 @@ function Texture(w,h,formato,pTexor,args)
 		assert(type)
 		self:Bind()
 		gl.glTexImage2D(glc.GL_TEXTURE_2D,0, int_formats[intbitplanes], self.width,self.height, 0, formats[bitplanes], type, pData)
+		self.internal_format,self.formato,self.datatype = int_formats[intbitplanes], formats[bitplanes], type
 		return tex
 	end
 	function tex:Load(filename,srgb,mipmaps)
@@ -809,8 +815,7 @@ function Texture(w,h,formato,pTexor,args)
 		if self.GL and self.GL.loaded_files then
 			self.GL.loaded_files[filename] = true
 		end
-		--assert(mipmaps)
-		self.width,self.height,self.internal_format,self.formato,self.datatype = ReLoadTexture(filename,self.tex,srgb,self) --,mipmaps)
+		self.width,self.height,self.internal_format,self.formato,self.datatype = ReLoadTexture(filename,self.tex,srgb,self)
 		self.aspect = self.width/self.height
 		self.filename = filename
 		--
@@ -818,6 +823,14 @@ function Texture(w,h,formato,pTexor,args)
 			self:Bind()
 			self:gen_mipmap()
 		end
+		
+		--[[ memory usage in ATI
+		local mem = ffi.new("GLint[4]")
+		--TEXTURE_FREE_MEMORY_ATI                 0x87FC
+		gl.glGetIntegerv(0x87FC,mem)
+		print("------------loadedtex",self.width,self.height,self.width%4,self.height%4,"mem",mem[0])
+		--]]
+		
 		self:inc_signature()
 		return self
 	end
@@ -833,18 +846,30 @@ function Texture(w,h,formato,pTexor,args)
 		if not self.GL.restricted then gl.glEnable( glc.GL_TEXTURE_2D ); end
 		gl.glTexParameteri(glc.GL_TEXTURE_2D,glc.GL_TEXTURE_MIN_FILTER,mode)
 	end
+	local floor = math.floor
 	function tex:gen_mipmap()
-		--self:Bind(n)
-		
+		if self.compressed then return end
 		 --ati bug
 		if not self.GL.restricted then gl.glEnable( glc.GL_TEXTURE_2D ); end
+		--[=[
+		--allocatemem not necessary
+		--crash with gen_mipmap is with compressed textures
+		local w,h = self.width,self.height
+		local level = 0
+		repeat
+			level = level + 1
+			w,h = floor(w*0.5),floor(h*0.5)
+			--print(glc.GL_TEXTURE_2D,level, self.internal_format, w,h, 0, self.formato, self.datatype, nil)
+			gl.glTexImage2D(glc.GL_TEXTURE_2D,level, self.internal_format, w,h, 0, self.formato, self.datatype or glc.GL_UNSIGNED_BYTE, nil)
+		until(w==1 or h==1)
+		
+		gl.glTexParameteri(glc.GL_TEXTURE_2D,glc.GL_TEXTURE_BASE_LEVEL,0)
+		gl.glTexParameteri(glc.GL_TEXTURE_2D,glc.GL_TEXTURE_MAX_LEVEL,level)
+		--]=]
 		glext.glGenerateMipmap(glc.GL_TEXTURE_2D)
-		--gl.glTexParameteri(glc.GL_TEXTURE_2D,glc.GL_TEXTURE_MIN_FILTER,glc.GL_LINEAR_MIPMAP_LINEAR)
-		--gl.glTexParameteri(glc.GL_TEXTURE_2D,glc.GL_TEXTURE_MIN_FILTER,glc.GL_NEAREST_MIPMAP_LINEAR)
-		--gl.glTexParameteri(glc.GL_TEXTURE_2D,glc.GL_TEXTURE_MIN_FILTER,glc.GL_NEAREST_MIPMAP_NEAREST)
-		--gl.glTexParameteri(glc.GL_TEXTURE_2D,glc.GL_TEXTURE_MIN_FILTER,glc.GL_LINEAR_MIPMAP_NEAREST)
 		gl.glTexParameteri(glc.GL_TEXTURE_2D,glc.GL_TEXTURE_MAG_FILTER,glc.GL_LINEAR)
 		gl.glTexParameteri(glc.GL_TEXTURE_2D,glc.GL_TEXTURE_MIN_FILTER,glc.GL_LINEAR_MIPMAP_LINEAR)
+		
 	end
 	function tex:Bind(n)
 		n = n or 0
@@ -1274,6 +1299,12 @@ function LoadCompressedTotexture(filename, texture,srgb)
     gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_MIN_FILTER, glc.GL_LINEAR);
     gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_MAG_FILTER, glc.GL_LINEAR);
       -- Create the texture from the compressed bytes.
+	local formato
+	if (compressedFormat == glc.GL_COMPRESSED_RGB_S3TC_DXT1_EXT) then
+			formato = glc.GL_RGB
+	elseif (compressedFormat == glc.GL_COMPRESSED_RGBA_S3TC_DXT5_EXT) then
+			formato = glc.GL_RGBA
+	end
 	if srgb then
 		if (compressedFormat == glc.GL_COMPRESSED_RGB_S3TC_DXT1_EXT) then
 			compressedFormat = glc.GL_COMPRESSED_SRGB_S3TC_DXT1_EXT;
@@ -1281,9 +1312,11 @@ function LoadCompressedTotexture(filename, texture,srgb)
 			compressedFormat = glc.GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
 		end
 	end
+	
+	
     glext.glCompressedTexImage2D(glc.GL_TEXTURE_2D, 0, compressedFormat,width, height, 0, size, pData);
 
-	return width,height,compressedFormat
+	return width,height,compressedFormat,formato,glc.GL_UNSIGNED_BYTE
 end
 ffi.cdef[[
 typedef void FILE;
