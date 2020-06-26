@@ -208,7 +208,7 @@ function CubeTexture(GL)
 	end
 	function ctex:ReLoadSq(fileName)
 		local tp = require"anima.tex_procs"
-		local textureV = Texture():Load(fileName)
+		local textureV = GL:Texture():Load(fileName)
 		
 		local texture = tp.flip(textureV,true,false)
 		textureV:delete()
@@ -365,7 +365,7 @@ function CubeTexture(GL)
 		for i=1,6 do
 			local image = im.FileImageLoadBitmap(folder..fileNames[i]..".jpg")
 			if (image==nil) then
-				print ("Unnable to open the file:", fileNames[i]..".jpg")
+				print ("Unnable to open the file:", folder..fileNames[i]..".jpg")
 				error(im.ErrorStr(err))
 			end
 			 im.ProcessFlip(image,image)
@@ -715,6 +715,139 @@ local function make_tex_negprog()
 	return P3
 end
 
+local tex_Lanczosprog = {}
+local function make_tex_Lanczosprog()
+	local P3 = {}
+	function P3:init()
+		local vert_shad = [[
+	in vec3 Position;
+	void main()
+	{
+		gl_Position = vec4(Position,1);
+	}
+	
+	]]
+	local frag_shad = [[
+	const float PI = 3.141592653589793;
+	const float PI2 = PI*PI;
+	const int a = 3;
+	uniform sampler2D tex0;
+	float L(float x){
+		if (x==0){
+			return 1.0;
+		}else{
+			if((-a <= x) && (x < a)){
+				return a*sin(PI*x)*sin(PI*x/a)/(PI2*x*x);
+			}else{
+				return 0.0;
+			}
+		}
+	}
+	float Lv(vec2 v){
+		return L(v.x)*L(v.y);
+	}
+	vec4 S(vec2 v){
+		vec4 vsum = vec4(0.0);
+		int lx = int(floor(v.x)) - a + 1;
+		int ux = int(floor(v.x)) + a;
+		int ly = int(floor(v.y)) - a + 1;
+		int uy = int(floor(v.y)) + a;
+		for(int i= lx; i<=ux; i++){
+			for(int j=ly; j<=uy; j++){
+				vec4 si = texelFetch(tex0,ivec2(i,j),0);
+				vsum += si*Lv(v-ivec2(i,j));
+			}
+		}
+		return vsum;
+	}
+
+	uniform vec2 Or;
+	uniform vec2 Res;
+	void main()
+	{
+		vec2 pos = vec2(gl_FragCoord.st)*Or/Res;
+		gl_FragColor = S(pos);
+	}
+	]]
+		self.program = GLSL:new():compile(vert_shad,frag_shad)
+		local m = mesh.quad(-1,-1,1,1)
+		self.vao = VAO({Position=m.points,texcoord=m.texcoords},self.program,m.indexes)
+		print"tex_Lanczosprog compiled"
+		self.inited = true
+	end
+	function P3:process(W,H,w,h)
+		if not self.inited then self:init() end
+		self.program:use()
+		self.program.unif.tex0:set{0}
+		self.program.unif.Or:set{W,H}
+		self.program.unif.Res:set{w,h}
+		gl.glViewport(0,0,w,h)
+		self.vao:draw_elm()
+		glext.glUseProgram(0)
+	end
+
+	return P3
+end
+
+local tex_Boxreduceprog = {}
+local function make_tex_Boxreduceprog()
+	local P3 = {}
+	function P3:init()
+		local vert_shad = [[
+	in vec3 Position;
+	void main()
+	{
+		gl_Position = vec4(Position,1);
+	}
+	
+	]]
+	local frag_shad = [[
+	
+	uniform sampler2D tex0;
+	uniform ivec2 Or;
+	uniform ivec2 Res;
+	void main()
+	{
+		vec2 box = vec2(Or)/vec2(Res);
+		vec2 boxhalf = 0.5*box;
+		vec2 pos = vec2(gl_FragCoord.st)*box;
+		vec4 vsum = vec4(0.0);
+		float count = 0;
+		int lx = clamp(int(floor(pos.x-boxhalf.x -0.5) + 1),0,Or.x-1);
+		int ux = clamp(int(floor(pos.x+boxhalf.x -0.5)),0,Or.x-1);
+		int ly = clamp(int(floor(pos.y-boxhalf.y -0.5) +1 ) ,0,Or.y-1);
+		int uy = clamp(int(floor(pos.y+boxhalf.y -0.5)),0,Or.y-1);
+		for(int i= lx; i<=ux; i++){
+			for(int j=ly; j<=uy; j++){
+				vec4 si = texelFetch(tex0,ivec2(i,j),0);
+				vsum += si;
+				count += 1;
+			}
+		}
+		gl_FragColor = vsum/count;
+	}
+	]]
+		self.program = GLSL:new():compile(vert_shad,frag_shad)
+		local m = mesh.quad(-1,-1,1,1)
+		self.vao = VAO({Position=m.points,texcoord=m.texcoords},self.program,m.indexes)
+		print"tex_Boxreduceprog compiled"
+		self.inited = true
+	end
+	function P3:process(W,H,w,h)
+		if not self.inited then self:init() end
+		--local boxW,boxH = W/w
+		self.program:use()
+		self.program.unif.tex0:set{0}
+		self.program.unif.Or:set{W,H}
+		self.program.unif.Res:set{w,h}
+		gl.glViewport(0,0,w,h)
+		self.vao:draw_elm()
+		glext.glUseProgram(0)
+	end
+
+	return P3
+end
+
 function Texture1D(w,formato,data,format,type,args)
 	assert(args.GL)
 	formato = formato or glc.GL_RGB
@@ -982,6 +1115,10 @@ function Texture(w,h,formato,pTexor,args)
 	tex_greyprogs[ctx] = greyprog
 	local negprog = tex_negprogs[ctx] or make_tex_negprog()
 	tex_negprogs[ctx] = negprog
+	local Lanczosprog = tex_Lanczosprog[ctx] or make_tex_Lanczosprog()
+	tex_Lanczosprog[ctx] = Lanczosprog
+	local Boxreduceprog = tex_Boxreduceprog[ctx] or make_tex_Boxreduceprog()
+	tex_Boxreduceprog[ctx] = Boxreduceprog
 	
 	function tex:get_pixels(type,format)
 		type = type or glc.GL_UNSIGNED_BYTE
@@ -1093,6 +1230,26 @@ function Texture(w,h,formato,pTexor,args)
 	end
 	function tex:resample_fac(f)
 		return self:resample(math.floor(self.width*f+0.5),math.floor(self.height*f+0.5))
+	end
+	function tex:lanczos(w,h)
+		local resfbo = self.GL:initFBO({no_depth=true},w,h)
+		resfbo:Bind()
+		self:Bind()
+		Lanczosprog:process(self.width, self.height,w,h)
+		resfbo:UnBind()
+		local tex = resfbo:tex()
+		resfbo:delete(true) --keep texture
+		return tex
+	end
+	function tex:boxreduce(w,h)
+		local resfbo = self.GL:initFBO({no_depth=true},w,h)
+		resfbo:Bind()
+		self:Bind()
+		Boxreduceprog:process(self.width, self.height,w,h)
+		resfbo:UnBind()
+		local tex = resfbo:tex()
+		resfbo:delete(true) --keep texture
+		return tex
 	end
 	function tex:inc_signature()
 		self.instance = self.instance + 1
