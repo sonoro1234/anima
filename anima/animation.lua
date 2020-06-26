@@ -450,6 +450,7 @@ function Animation:add_animatable(ani)
 	--table.insert(self.animatables,ani)
 	if self.animatables[ani.object] then print("WARNING: Animation:add_animatable: already set",ani.object); error"" end
 	self.animatables[ani.object] = ani --avoids adding two times a setable
+	return ani
 end
 
 function Animation:add_setable(set,segments,hook)
