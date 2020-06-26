@@ -56,7 +56,7 @@ end
 function plugin.presets(M)
 	local ps = {}
 	local item = ffi.new"int[1]"
-	local items = ffi.new("const char*[10]")
+	local items = ffi.new("const char*[?]",10)
 	items[0] = ffi.new("const char*","none")
 	ps.names = {}
 	ps.data = {}
