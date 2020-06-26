@@ -127,12 +127,12 @@ local function flow_player(GL)
 			if args.verbose then print("reload 1", images[T1],#images,T1,T2,pos) end
 			--glext.glActiveTexture(glc.GL_TEXTURE0);
 			self.tex1:Load(images[T1])
-			self.tex1:set_wrap(glc.GL_CLAMP_TO_BORDER)
+			--self.tex1:set_wrap(glc.GL_CLAMP_TO_BORDER)
 			--self.tex1:set_border{0,0,0,0}
 			self.oldT1 = fflows[T1]
 			--self.oldT1 = images[T1]
 			self.tex2:Load(images[T2])
-			self.tex2:set_wrap(glc.GL_CLAMP_TO_BORDER)
+			--self.tex2:set_wrap(glc.GL_CLAMP_TO_BORDER)
 			--self.tex2:set_border{0,0,0,0}
 			self.flow = vicim.vicimag2tex(fflows[T1],GL,self.flow)
 			self.bflow = vicim.vicimag2tex(bflows[T1],GL,self.bflow)
