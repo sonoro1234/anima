@@ -49,7 +49,7 @@ function tvl1.tvl1(file0,file1,outfile,args)
 	args = args or {}
 	--defaults
 	local TAU     = 0.25
-	local LAMBDA  =  0.15 --0.05 --0.09 --0.15 --0.03 --1 --0.15
+	local LAMBDA  = args.lambda or 0.15 --0.05 --0.09 --0.15 --0.03 --1 --0.15
 	local THETA   = 0.3
 	local NSCALES = 100
 	local ZFACTOR = 0.5
