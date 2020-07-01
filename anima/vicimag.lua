@@ -47,7 +47,7 @@ function M.tofloat(image,unpacked)
 	local unpdata
 	if unpacked then
 		unpdata = ffi.new("unsigned char[?]",datalen)
-		imffi.imConvertPacking(data,unpdata,nx,ny,nplanes[glformat],nplanes[glformat],im.BYTE,true)
+		im.imffi.imConvertPacking(data,unpdata,nx,ny,nplanes[glformat],nplanes[glformat],im.BYTE,true)
 		for i=0,datalen-1 do
 			fdata[i] = unpdata[i]*inv255;
 		end
