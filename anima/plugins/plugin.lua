@@ -187,7 +187,7 @@ pl_mt.__index = {
 			if self.NM.dirty then return true end
 			for i,D in ipairs(self.NM.dialogs) do
 				--print("    testing",D.name,D.dirty)
-				if D.dirty or (D.plugin.always_dirty) then
+				if D.dirty or (D.plugin and D.plugin.always_dirty) then
 					--print("dbox test:",D.name,D.dirty)
 					return true 
 				end
