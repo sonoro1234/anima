@@ -339,7 +339,7 @@ function gui.FileBrowser(filename_p, args, funcOK)
 	
 		end
 	end
-	return {draw = filechooser, open = function() curr_dir_done = false;imgui.igOpenPopup(args.key) end,func = funcOK}
+	return {draw = filechooser, open = function() curr_dir_done = false;ig.OpenPopup(args.key) end,func = funcOK}
 end
 
 function ToolBox(GL)
@@ -474,7 +474,7 @@ function gui.ImGui_Transport(GL)
 			ig.SameLine()
 			
 			if GL.opentoolbox then ig.OpenPopup"toolbox";GL.opentoolbox=false end
-			if ig.Button("tools") then imgui.igOpenPopup("toolbox") end
+			if ig.Button("tools") then ig.OpenPopup("toolbox") end
 				ig.PushStyleVarFloat(imgui.ImGuiStyleVar_Alpha,1)
 				ToolBox(GL):draw()
 				ig.PopStyleVar(1)
