@@ -211,6 +211,46 @@ function Setables(t,f)
 	return setmetatable(tt,_set_mt)
 end
 --]=]
+function AnimPlotter(anim,ini,endp,step)
+	step = step or 0.1
+	local steps = math.floor(0.5 + (endp-ini)*(1/step)) + 1
+	local xs1, ys1 = ffi.new("float[?]",steps),ffi.new("float[?]",steps)
+	for i=0, steps-1 do
+		xs1[i] = i*step + ini
+		ys1[i] = anim:dofunc(xs1[i])
+	end
+
+	local nsegments = 0
+	local xs2t,ys2t = {},{}
+	for i,seg in ipairs(anim.segments) do
+		if seg.secs > endp then break end
+		if seg.secs >= ini then
+			if anim.is_spl_anim then
+				xs2t[#xs2t + 1] = seg.secs
+				ys2t[#ys2t + 1] = seg[1]
+				nsegments = nsegments + 1
+			else -- animatable not spline
+				xs2t[#xs2t + 1] = seg.secs
+				ys2t[#ys2t + 1] = seg[1]
+				xs2t[#xs2t + 1] = seg.secs + seg[3]
+				ys2t[#ys2t + 1] = seg[2]
+				nsegments = nsegments + 2
+			end
+		end
+	end
+	local xs2, ys2 = ffi.new("float[?]",nsegments,xs2t),ffi.new("float[?]",nsegments,ys2t)
+	return function()
+		--if ig.CollapsingHeader(tostring(anim)) then
+			if (ig.ImPlot_BeginPlot("AnimPlot "..tostring(anim), "x", "f(x)", ig.ImVec2(-1,-1))) then
+				ig.ImPlot_PlotLine("tim1", xs1, ys1, steps);
+				ig.ImPlot_PushStyleVarInt(ig.lib.ImPlotStyleVar_Marker, ig.lib.ImPlotMarker_Circle);
+				ig.ImPlot_PlotScatter("cp", xs2, ys2, nsegments);
+				ig.ImPlot_PopStyleVar();
+				ig.ImPlot_EndPlot();
+			end
+		--end
+	end
+end
 -----------------------------------------------------------------------
 animatable = {is_animatable = true}
 -- object must have setval for updtating values
@@ -275,6 +315,10 @@ function animatable:getdur()
 	return lastsegm.secs + lastsegm[3]
 end
 
+function animatable:plotter(ini,endp,step)
+	return AnimPlotter(self,ini,endp,step)
+end
+
 function ANT(t)
 	return animatable:new(nil, t)
 end
@@ -334,7 +378,7 @@ local function CatmulRom(p0,p1,p2,p3,alpha)
 
 end
 --spline animatables
-spl_anim = {is_spl_anim = true}
+spl_anim = {is_spl_anim = true,is_animatable=true}
 function spl_anim:new(object,segments,hook)
 	local o =  {} 
 	--assert(object)
@@ -387,6 +431,10 @@ function spl_anim:dofunc(time)
 		if self.hook then self:hook(time,_segm) end
 	end
 	return self.curr_val
+end
+
+function spl_anim:plotter(ini,endp,step)
+	return AnimPlotter(self,ini,endp,step)
 end
 -------------------------------------------------------------------------
 
