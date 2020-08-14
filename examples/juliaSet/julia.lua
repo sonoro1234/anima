@@ -1,7 +1,7 @@
 -- ported from https://github.com/BrutPitt/imGuIZMO.quat qJset example
 require"anima"
 
-local GL = GLcanvas{H=600,aspect=1}
+local GL = GLcanvas{H=600,aspect=1,profile="CORE"}
 
 local Ldir =  {3,3,3}
 local Quat = ffi.new("quat",{0,0,0,1})

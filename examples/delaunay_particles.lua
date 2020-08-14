@@ -20,7 +20,7 @@ local frag_sh = [[
 	]]
 
 
-GL = GLcanvas{H=800,aspect=1}
+GL = GLcanvas{H=800,aspect=1,profile="CORE"}
 
 local N = 500
 local prog,vaop,vaoCH,vaoT,vaoTD
@@ -76,7 +76,7 @@ function GL.draw(t,w,h)
 	gl.glDisable(glc.GL_DEPTH_TEST)
 	gl.glViewport(0,0,w,h)
 	prog:use()
-	prog.unif.MVP:set(mat.identity.gl)
+	prog.unif.MVP:set(mat.identity().gl)
 	
 	gl.glPointSize(5)
 	prog.unif.color:set{1,0,0}
