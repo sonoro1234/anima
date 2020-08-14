@@ -244,7 +244,8 @@ local function char2str(charp)
 	end
 end
 local function HasVersion(code)
-	return code:match("^%s*#version")
+	--return code:match("^%s*#version")
+	return code:match("^[^/]*%s*#version") or code:match("\n[^/]*%s*#version")
 end
 local function CheckVersion(code)
 	if GLSL.default_version and not HasVersion(code) then
