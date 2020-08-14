@@ -311,13 +311,13 @@ function print_glinfo(self)
 	print("print_glinfo")
 	--not glu in this:
 	if not self.restricted then
-		GetGLError("in EXTENSIONS 0")
+		--GetGLError("in EXTENSIONS 0",true)
 		print("glu.VERSION ",ffistr(glu.gluGetString(glc.GLU_VERSION)))
 		print("glu.EXTENSIONS ",ffistr(glu.gluGetString(glc.GLU_EXTENSIONS)))
 	else
 		print("GLU not usable in CORE and >=3.2")
 	end
-	GetGLError("in EXTENSIONS 1")
+	--GetGLError("in EXTENSIONS 1",true)
 	print("gl.VENDOR ",ffistr(gl.glGetString(glc.GL_VENDOR)))
 	print("gl.RENDERER ",ffistr(gl.glGetString(glc.GL_RENDERER)))
 	print("gl.VERSION ",ffistr(gl.glGetString(glc.GL_VERSION))) 
@@ -329,7 +329,7 @@ function print_glinfo(self)
 		print(ffistr(glext.glGetStringi(glc.GL_EXTENSIONS, i)));
 	end
 
-			GetGLError"in infooooooo"
+	--GetGLError"in infooooooo"
 	-- local nunits = ffi.new("int[1]")
 	-- gl.glGetIntegerv(glc.GL_MAX_TEXTURE_UNITS,nunits)
 	-- print("GL_MAX_TEXTURE_UNITS",string.format("%d",nunits[0]))
@@ -350,7 +350,7 @@ function print_glinfo(self)
 	gl.glGetIntegerv(glc.GL_MAX_VIEWPORT_DIMS,colenc)
 	print("GL_MAX_VIEWPORT_DIMS",colenc[0],colenc[1])
 	print("GL_SHADING_LANGUAGE_VERSION",ffistr(gl.glGetString(glc.GL_SHADING_LANGUAGE_VERSION)));
-	GetGLError("print glinfo end",true)
+	--GetGLError("print glinfo end",true)
 	
 	local NumOfSamples = ffi.new("GLuint[1]")
 	gl.glGetIntegerv(glc.GL_MAX_SAMPLES, NumOfSamples);
@@ -1208,23 +1208,23 @@ function GLcanvas(GL)
 		self.offX, self.offY, self.scale = 0, 0, 1
 	end
 	
-	GL.textures = {}
+	GL.chktextures = {}
 	function GL:addTexture(n,info)
-		if(self.textures[n]) then
+		if(self.chktextures[n]) then
 			print("texture ",n,"already present",info)
-			prtable(GL.textures)
+			prtable(GL.chktextures)
 			error("hhh",2)
 		end
-		self.textures[n] = info
+		self.chktextures[n] = info
 	end
 	function GL:removeTexture(n,info)
-		if not self.textures[n] then
+		if not self.chktextures[n] then
 			print("texture",n,"not present",info)
 			--print(debug.traceback())
-			prtable(GL.textures)
+			prtable(GL.chktextures)
 			error("iii",2)
 		end
-		self.textures[n] = nil
+		self.chktextures[n] = nil
 	end
 	
 	local function doinitCOMMON(self)
