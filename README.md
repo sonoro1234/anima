@@ -25,9 +25,21 @@ end
 
 GL:start()
 ```
+
+# cloning
+
+Remember to do a recursive cloning of the repo to pull submodules also.
+    git clone --recurse-submodules https://github.com/sonoro1234/anima.git
+
 # compiling
 
+In Linux you will need to install opengl libraries before building.
+
 Started a building CMake system only needing -DLUAJIT_BIN="path where you desire installation".
+From a sibling folder to the repo:
+
+    cmake -DLUAJIT_BIN="/home/user/anima" ../anima
+    make install
 
 CMake 3.13 is needed for installing git submodules. (If your system doesnt have it it can be downloaded from https://cmake.org/download/ and then used from a script that sets the PATH)
 
@@ -40,3 +52,10 @@ Some CMake option to allow-disable building are:
 * ANIMA_BUILD_IMGUI - Building of ImGui (This needs ANIMA_BUILD_GLFW or ANIMA_BUILD_SDL)
 * ANIMA_BUILD_SNDFILE - Building of libsndfile and libsamplerate
 * ANIMA_BUILD_RTAUDIO - Building of LuaJIT-rtaudio (defaults to OFF)
+
+# running
+
+In windows use:
+    luajit script_to_run
+In linux use:
+    ./anima_launcher script_to_run
