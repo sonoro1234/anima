@@ -57,6 +57,9 @@ Some CMake option to allow-disable building are:
 # running
 
 In windows use:
+
     luajit script_to_run
+
 In linux use:
+
     ./anima_launcher script_to_run
