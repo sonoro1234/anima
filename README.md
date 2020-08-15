@@ -29,6 +29,7 @@ GL:start()
 # cloning
 
 Remember to do a recursive cloning of the repo to pull submodules also.
+
     git clone --recurse-submodules https://github.com/sonoro1234/anima.git
 
 # compiling
