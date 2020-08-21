@@ -262,7 +262,7 @@ local function Filterer(GL,args)
 		presets.draw()
 		serializer.draw()
 		if args.power then
-			ig.SliderFloat("max", maxvalp, 0, 0.001, "%0.4f", 1);
+			ig.SliderFloat("max", maxvalp, 0, 0.001, "%0.4f");
 			ig.PlotLines("powers", powersdata, END_EDIT_FREQUENCY, 0, nil, 0,maxvalp[0], ig.ImVec2(400,200));
 		end
 	end)

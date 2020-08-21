@@ -482,7 +482,7 @@ function gui.ImGui_Transport(GL)
 			
 			ig.PushItemWidth(-1)
 			--print("slider", GL.globaltime[0], 0, tonumber(GL.timeprovider.totdur), "%.3f", 1.0)
-			if ig.SliderFloat("", GL.globaltime, 0, tonumber(GL.timeprovider.totdur), "%.3f", 1.0) then
+			if ig.SliderFloat("", GL.globaltime, 0, tonumber(GL.timeprovider.totdur), "%.3f") then
 				GL.timeprovider:set_time(GL.globaltime[0])
 			end
 			ig.PopItemWidth()
@@ -699,7 +699,8 @@ function gui.Dialog(name,vars,func, invisible)
 			end
 			
 			if v[3] == guitypes.val then
-				if ig.SliderFloat(v[1], pointers[v[1]], v[4].min, v[4].max, v[4].format or "%.3f",v[4].power or 1.0) then
+				local flag = (v[4].power and v[4].power ~=1) and imgui.ImGuiSliderFlags_Logarithmic or imgui.ImGuiSliderFlags_None
+				if ig.SliderFloat(v[1], pointers[v[1]], v[4].min, v[4].max, v[4].format or "%.3f",flag) then
 					self.dirty = true
 					namevar = v[1]
 					if v[5] then 
@@ -710,7 +711,7 @@ function gui.Dialog(name,vars,func, invisible)
 				if v[4] and v[4].olddrag then
 					local vspeed = v[4].precission or 0.003
 					if defs[v[1]].size > 1 then
-						if imgui["igDragFloat"..defs[v[1]].sizeN](v[1], pointers[v[1]].data,vspeed, v[4].min or ig.FLT_MAX , v[4].max or ig.FLT_MAX , "%.3f", 1.0) then
+						if ig["DragFloat"..defs[v[1]].sizeN](v[1], pointers[v[1]].data,vspeed, v[4].min or ig.FLT_MAX , v[4].max or ig.FLT_MAX , "%.3f") then
 							self.dirty = true
 							namevar = v[1]
 							if v[5] then 
@@ -718,7 +719,7 @@ function gui.Dialog(name,vars,func, invisible)
 							end
 						end
 					else
-						if imgui.igDragFloat(v[1], pointers[v[1]],vspeed, v[4].min, v[4].max, "%.3f", 1.0) then
+						if ig.DragFloat(v[1], pointers[v[1]],vspeed, v[4].min, v[4].max, "%.3f") then
 							self.dirty = true
 							namevar = v[1]
 							if v[5] then 
@@ -755,7 +756,7 @@ function gui.Dialog(name,vars,func, invisible)
 					end
 				end
 			elseif v[3] == guitypes.valint then
-				if imgui.igSliderInt(v[1], pointers[v[1]], v[4].min, v[4].max, "%.0f") then
+				if ig.SliderInt(v[1], pointers[v[1]], v[4].min, v[4].max, "%.0f") then
 					self.dirty = true
 					namevar = v[1]
 					if v[5] then v[5](pointers[v[1]][0],self) end
@@ -1453,7 +1454,7 @@ function gui.Histogram(GL,bins,linear)
 			ig.SameLine()
 			ig.Checkbox("showlinear",showlinear)
 			ig.SameLine()
-			ig.SliderFloat("max", maxval, 0, 0.1, "%0.4f", 1);
+			ig.SliderFloat("max", maxval, 0, 0.1, "%0.4f");
 			if automaxval[0] then maxval[0] = ig.FLT_MAX end 
 			ig.PushItemWidth(-1)
 			ig.PlotLines("histo", histovalues, bins, 0, nil, 0,maxval[0], ig.ImVec2(0,200));
