@@ -524,20 +524,20 @@ local function Objects(GL,camera,args)
 		ig.Separator()
 		NMzmo:draw()
 		if NMzmo.zmoC or NMzmo.zmoO then
-			ig.zmoBeginFrame() 
+			ig.ImGuizmo_BeginFrame() 
 			MVmo = camera:MV().gl
 			MPmo = camera:MP().gl
-			ig.zmoSetRect(unpack(GL.stencil_sizes))
+			ig.ImGuizmo_SetRect(unpack(GL.stencil_sizes))
 			if NMzmo.zmoC then
-				ig.zmoSetOrthographic(camera.NM.ortho);
-				ig.zmoViewManipulate(MVmo,camera.NM.dist or 1,ig.ImVec2(0,0),ig.ImVec2(128,128),0x01010101)
-				if NMzmo.grid then ig.zmoDrawGrid(MVmo,MPmo,mat.identity().gl,10) end
+				ig.ImGuizmo_SetOrthographic(camera.NM.ortho);
+				ig.ImGuizmo_ViewManipulate(MVmo,camera.NM.dist or 1,ig.ImVec2(0,0),ig.ImVec2(128,128),0x01010101)
+				if NMzmo.grid then ig.ImGuizmo_DrawGrid(MVmo,MPmo,mat.identity().gl,10) end
 				camera:setMV(mat.gl2mat4(MVmo))
 			end
 			if NMzmo.zmoO and editor.object then
 				MOmo = editor.object:getModelM().gl
-				--ig.zmoDrawCube(MVmo,MPmo,MOmo)
-				ig.zmoManipulate(MVmo,MPmo,zmoOP[0],zmoMODE[0],MOmo,nil,nil,zmoOP[0]==imgui.BOUNDS and editor.object.zmobounds or nil,nil)
+				--ig.ImGuizmo_DrawCube(MVmo,MPmo,MOmo)
+				ig.ImGuizmo_Manipulate(MVmo,MPmo,zmoOP[0],zmoMODE[0],MOmo,nil,nil,zmoOP[0]==imgui.BOUNDS and editor.object.zmobounds or nil,nil)
 				editor.object:setModelM(mat.gl2mat4(MOmo))
 			end
 		end
