@@ -32,6 +32,10 @@ Remember to do a recursive cloning of the repo to pull submodules also.
 
     git clone --recurse-submodules https://github.com/sonoro1234/anima.git
 
+If already cloned and updating do from this repo folder:
+
+    git submodule update --init --recursive
+
 # compiling
 
 In Linux you will need to install opengl libraries before building.
