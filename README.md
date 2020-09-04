@@ -34,6 +34,8 @@ Remember to do a recursive cloning of the repo to pull submodules also.
 
 If already cloned and updating do from this repo folder:
 
+    git checkout master
+    git pull
     git submodule update --init --recursive
 
 # compiling
