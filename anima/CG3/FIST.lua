@@ -78,16 +78,20 @@ function CG.degenerate_poly_repair(poly,verbose)
 	local rem = 0
 
 	rem = rem + remove_consec_repeated(poly,verbose)
+	if poly.holes then
 	for j=1,#poly.holes do
 		rem = rem + remove_consec_repeated(poly.holes[j],verbose)
 		if #poly.holes[j] == 0 then table.remove(poly.holes,j) end
 	end
+	end
 
 
 	rem = rem + remove_colinear(poly,verbose)
+	if poly.holes then
 	for j=1,#poly.holes do
 		rem = rem + remove_colinear(poly.holes[j],verbose,true)
 		if #poly.holes[j] == 0 then table.remove(poly.holes,j) end
+	end
 	end
 
 	return rem
