@@ -51,7 +51,7 @@ local function remove_colinear(pt,verbose)
 		if s==0 then  
 			if cose<0 then
 				colin[#colin+1] = i
-			elseif pt[mod(i-1,numpt)]==pt[mod(i+1,numpt)] then --cose>0 and repeated
+			elseif pt[mod(i-1,numpt)]==pt[mod(i+1,numpt)] then --cose>=0 and repeated
 				colin[#colin+1] = i
 			end
 		end
@@ -65,7 +65,13 @@ end
 local function remove_consec_repeated(poly,verbose)
 	local toremove = {}
 	for i=1,#poly-1 do
-		if poly[i]==poly[i+1] then toremove[#toremove+1] = i end
+		local j = i + 1
+		while poly[i]==poly[j] do
+			toremove[#toremove+1] = j 
+			j = j + 1
+			if j == #poly then j = 1 end
+			if j == i then break end
+		end
 	end
 	if poly[#poly]==poly[1] then toremove[#toremove+1] = #poly end
 	for i=#toremove,1,-1 do 
@@ -75,26 +81,26 @@ local function remove_consec_repeated(poly,verbose)
 end
 
 function CG.degenerate_poly_repair(poly,verbose)
-	local rem = 0
+	local remr = 0
 
-	rem = rem + remove_consec_repeated(poly,verbose)
+	remr = remr + remove_consec_repeated(poly,verbose)
 	if poly.holes then
 	for j=1,#poly.holes do
-		rem = rem + remove_consec_repeated(poly.holes[j],verbose)
+		remr = remr + remove_consec_repeated(poly.holes[j],verbose)
 		if #poly.holes[j] == 0 then table.remove(poly.holes,j) end
 	end
 	end
 
-
-	rem = rem + remove_colinear(poly,verbose)
+	local remc = 0
+	remc = remc + remove_colinear(poly,verbose)
 	if poly.holes then
 	for j=1,#poly.holes do
-		rem = rem + remove_colinear(poly.holes[j],verbose,true)
+		remc = remc + remove_colinear(poly.holes[j],verbose,true)
 		if #poly.holes[j] == 0 then table.remove(poly.holes,j) end
 	end
 	end
 
-	return rem
+	return remr,remc
 end
 
 

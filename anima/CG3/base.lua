@@ -80,6 +80,7 @@ local function IntersecPoint(a,b,c,d)
 end
 M.IntersecPoint = IntersecPoint
 
+--returns point, true is not paralled, and t should be 0<=t>=1 for being inside segment
 function M.IntersecPoint2(a,b,c,d)
 	local den = (a.x - b.x)*(c.y - d.y) - (a.y - b.y)*(c.x - d.x)
 	if den==0 then return 0,false end
@@ -87,6 +88,20 @@ function M.IntersecPoint2(a,b,c,d)
 	local t = num/den
 	
 	return a + t*(b - a), true, t
+end
+
+--tries to get the same as calling IntersecPoint2 twice
+function M.IntersecPoint3(a,b,c,d)
+	local den = (a.x - b.x)*(c.y - d.y) - (a.y - b.y)*(c.x - d.x)
+	if den==0 then return 0,false end
+	local num = (a.x - c.x)*(c.y - d.y) - (a.y - c.y)*(c.x - d.x)
+	local t = num/den
+	local pt = a + t*(b - a)
+	local t2 = (pt-c)/(d - c)
+	--local pt2,ok2,tb2 = M.IntersecPoint2(c,d,a,b)
+	--print("IntersecPoint3",pt,pt2,pt==pt2,ok2,tb2,t2,string.format("%g , %g",(pt-pt2).norm, t2.x-tb2))
+	--assert(t2.x==t2.y,t2)
+	return pt, true, t, t2.x
 end
 
 -- as IsPointInTri but including closure

@@ -56,19 +56,20 @@ local function IsPointInSegment(pt,a,b)
 end
 
 local function SegmentIntersectC(a,b,c,d,deqa)
+	--print("SegmentIntersectC",a,b,c,d)
 	local A,B,C,D,E = CG.SegmentIntersect(a,b,c,d), IsPointInSegment(c,a,b), IsPointInSegment(d,a,b),
 			IsPointInSegment(a,c,d),IsPointInSegment(b,c,d)
 	
 	if deqa then
 		if A then 
-			print("SIC A",A)
+			--print("SIC A",A)
 			return true
 		else
 			return false
 		end
 	end
 	if A or B or C or D or E then 
-		print("SIC",A,B,C,D,E);
+		--print("SIC",A,B,C,D,E);
 		return true 
 	else 
 		return false 
@@ -79,7 +80,8 @@ local function mod(a,b)
 	return ((a-1)%b)+1
 end
 
-local function check2poly_crossings(poly1,poly2)
+local function check2poly_crossings(poly1,poly2,crossings)
+	crossings = crossings or {}
 	for i=1,#poly1 do
 		local ai,bi = i,mod(i+1,#poly1)
 		local a,b = poly1[ai],poly1[bi]
@@ -88,50 +90,69 @@ local function check2poly_crossings(poly1,poly2)
 			local c,d = poly2[ci],poly2[di]
 			if SegmentIntersectC(a,b,c,d) 
 			then
-				print("poly1-poly2 crossing",ai,bi,ci,di)
-				error"self crossing"
+				--print("poly1-poly2 crossing",ai,bi,ci,di)
+				--error"self crossing"
+				local pt = CG.IntersecPoint(a,b,c,d)
+				table.insert(crossings,{pt,poly1,ai,poly2,ci})
 			end
 		end
 	end
-
+	return crossings
 end
 
-local function check_self_crossings(poly,donterror)
+
+
+local function check_self_crossings(poly,crossings)
+	crossings = crossings or {}
 	for i=1,#poly do
 		local ai,bi = i,mod(i+1,#poly)
 		local a,b = poly[ai],poly[bi]
-		local lim = #poly --math.min(mod(i-2,#poly),#poly)
+		local lim = math.min(i + #poly - 2,#poly)
 		for j=i+2,lim do
 			local ci,di = j,mod(j+1,#poly)
 			local c,d = poly[ci],poly[di]
-			if SegmentIntersectC(a,b,c,d,d==a)
+			if SegmentIntersectC(a,b,c,d)--,d==a)
 			then
-				print(a,b,c,d,d==a)
-				--print((a-b).normalize,(c-d).normalize)
-				print("self crossing",ai,bi,ci,di,"#poly",#poly)
-				if not donterror then error"self crossing" end
-				--has_cros = true
+				local pt = CG.IntersecPoint(a,b,c,d)
+				table.insert(crossings,{pt,poly,ai,poly,ci})
 			end
 		end
 	end
+	return crossings
 end
 
-local function check_crossings(poly)
-	local has_cros = false
-	check_self_crossings(poly)
+local function check_crossings(poly,crossings)
+	crossings = crossings or {}
+	check_self_crossings(poly,crossings)
+	if poly.holes then
 	for nh,hole in ipairs(poly.holes) do
-		check_self_crossings(hole)
-		check2poly_crossings(poly,hole)
+		check_self_crossings(hole,crossings)
+		check2poly_crossings(poly,hole,crossings)
 		for nh2=nh+1,#poly.holes do
-			check2poly_crossings(hole,poly.holes[nh2])
+			check2poly_crossings(hole,poly.holes[nh2],crossings)
 		end
 	end
-	return has_cros
+	end
+	return crossings
+end
+
+local function check_polyset_crossings(polyset,crossings)
+	crossings = crossings or {}
+	for i=1,#polyset-1 do
+		check_crossings(polyset[i],crossings)
+		for j=i+1,#polyset do
+			check2poly_crossings(polyset[i],polyset[j],crossings)
+		end
+	end
+	check_crossings(polyset[#polyset],crossings)
+	return crossings
 end
 
 local function CHECKPOLY(poly)
-	check_point_repetition(poly)
-	check_crossings(poly)
+	local has = check_point_repetition(poly)
+	if has then print"point repetition" end
+	local cross = check_crossings(poly)
+	if #cross > 0 then print(#cross,"self crossings") end
 end
 
 local function check_collinear(poly)
@@ -152,5 +173,5 @@ local function check_collinear(poly)
 	end
 
 end
-local M = {CHECKPOLY=CHECKPOLY,CHECKCOLIN=check_collinear,check_self_crossings=check_self_crossings}
+local M = {CHECKPOLY=CHECKPOLY,CHECKCOLIN=check_collinear,check_self_crossings=check_self_crossings,check2poly_crossings=check2poly_crossings,check_polyset_crossings=check_polyset_crossings}
 return M
