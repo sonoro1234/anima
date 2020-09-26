@@ -28,7 +28,8 @@ local function Angle(p1,p2,p3,CW)
 	
 	local a = p1-p2
 	local b = p3-p2
-	local cose = a*b/(a.norm*b.norm)
+	local normprod = a.norm*b.norm
+	local cose = a*b/(normprod)
 	--if cose > 1 or cose < -1 then print(p1,p2,p3);print(a,b); error"bad cose" end
 	--happening when a = l*b
 	cose = (cose > 1 and 1) or (cose < -1 and -1) or cose
@@ -36,10 +37,10 @@ local function Angle(p1,p2,p3,CW)
 	local ang = acos(cose)
 	local s = Sign(p1,p2,p3)
 	if s==0 then
-		if cose < 0 then return ang,false,s,cose
-		else return 0,true,s,cose end
-	elseif s <0 then return ang,true,s,cose 
-	else return 2*math.pi-ang,false ,s,cose
+		if cose < 0 then return ang,false,s,cose,s/normprod
+		else return 0,true,s,cose,s/normprod end
+	elseif s <0 then return ang,true,s,cose,s/normprod 
+	else return 2*math.pi-ang,false ,s,cose,s/normprod
 	end
 end
 
@@ -52,6 +53,35 @@ local function SegmentIntersect(a,b,c,d)
 	return (sc*sd < 0) and (sgabcd < 0),sc,sd
 end
 M.SegmentIntersect = SegmentIntersect
+
+--semiclosed segment [a,b)
+function M.IsPointInSegment(pt,a,b)
+	assert(not (a==b)) 
+	local A = b - a
+	local B = pt - a
+	if not (A.x*B.y==A.y*B.x) then return false end
+	local t
+	if A.x == 0 then
+		t = B.y/A.y
+	else
+		t = B.x/A.x
+	end
+	local isIn = (t >=0) and (t<1)
+	return isIn,t
+end
+
+--[a,b) and [c,d)
+function M.SegmentIntersectC(a,b,c,d)
+	--print("SegmentIntersectC",a,b,c,d)
+	--local A,B,C,D,E = CG.SegmentIntersect(a,b,c,d), IsPointInSegment(c,a,b), IsPointInSegment(d,a,b),IsPointInSegment(a,c,d),IsPointInSegment(b,c,d)
+	local A,B,C = M.SegmentIntersect(a,b,c,d), M.IsPointInSegment(c,a,b),M.IsPointInSegment(a,c,d)
+	
+	if A or B or C  then --or D or E then 
+		return true 
+	else 
+		return false 
+	end
+end
 
 local function QuadSigns(a,b,c,d)
 	local sc,sd = Sign(a,b,c),Sign(a,b,d)
@@ -128,6 +158,7 @@ local function IsPointInTri( pt,  v1,  v2,  v3)
 	return ((b1 == b2) and (b2 == b3));
 end
 
+--pt in interior CW or CCW
 local function IsPointInTri2( pt, v1, v2, v3 ) 
 	local l2 = (pt.x-v1.x)*(v3.y-v1.y) - (v3.x-v1.x)*(pt.y-v1.y) 
     local l3 = (pt.x-v2.x)*(v1.y-v2.y) - (v1.x-v2.x)*(pt.y-v2.y) 
@@ -142,6 +173,7 @@ end
 M.TArea = TArea
 
 local function signed_area(poly)
+	if #poly < 3 then return 0 end
 	local sum = 0
 	-- for i=2,#poly-1 do
 		-- sum = sum + Sign(poly[1],poly[i],poly[i+1])

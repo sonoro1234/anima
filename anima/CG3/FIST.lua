@@ -41,28 +41,52 @@ local function IsPointInPolyBorder(poly,p)
 	end
 	return false
 end
-local function remove_colinear(pt,verbose)
 
-	local colin = {}
+
+local function equal(p1,p2)
+	--return (p1 - p2).norm < 1e-15
+	return p1==p2
+end
+local function remove_colinear(pt,verbose)
+	local abs = math.abs
+	local colin = 0
 	local numpt = #pt
-	for i=1,numpt do
-		local ang,conv,s,cose = Angle(pt[mod(i-1,numpt)],pt[i],pt[mod(i+1,numpt)])
-		--if s==0 and cose<0 then colin[#colin+1] = i end
-		if s==0 then  
-			if cose<0 then
-				colin[#colin+1] = i
-			elseif pt[mod(i-1,numpt)]==pt[mod(i+1,numpt)] then --cose>=0 and repeated
-				colin[#colin+1] = i
+	local i = 1
+	while i <= numpt and numpt > 2 do
+		--print(numpt, "Angle of:",mod(i-1,numpt),i,mod(i+1,numpt))
+		local ang,conv,s,cose,sine = Angle(pt[mod(i-1,numpt)],pt[mod(i,numpt)],pt[mod(i+1,numpt)])
+		if s==0 then
+		--if abs(s) < 1e-15 then
+		--if abs(sine) < 1e-12 then
+			colin = colin + 1
+			table.remove(pt,i)
+			--print("remove_colinear",i,numpt)
+			numpt = #pt
+			i = mod(i,numpt)
+			--if pt[mod(i-1,numpt)]==pt[mod(i,numpt)] then 
+			local repe = false
+			--while pt[mod(i-1,numpt)]==pt[mod(i,numpt)] do
+			while equal(pt[mod(i-1,numpt)],pt[mod(i,numpt)]) do
+				assert(cose >= 0)
+				--print(i,"pt[mod(i-1,numpt)]==pt[mod(i,numpt)]",mod(i-1,numpt),mod(i,numpt),numpt)
+				colin = colin + 1
+				table.remove(pt,i)
+				numpt = #pt
+				repe = true
 			end
+			if repe then i = mod(i-1,numpt) end
+		else
+			i = i + 1 
 		end
 	end
-	for i=#colin,1,-1 do
-		if verbose then print("collinear removes",colin[i]) end
-		table.remove(pt,colin[i]) end
-	return #colin
+	if #pt < 3 then pt[2]=nil;pt[1]=nil;print"zero poly--------------" end
+	if verbose then print("collinear removes",colin) end
+
+	return colin
 end
 
 local function remove_consec_repeated(poly,verbose)
+	if #poly==0 then return 0 end
 	local toremove = {}
 	for i=1,#poly-1 do
 		local j = i + 1
@@ -154,12 +178,55 @@ local function CorrectHole(poly,hole,bridgei)
 	return hasC
 end
 
-
+local function Equiv()
+	local E = {data={}}
+	function E:equal(a,b)
+		return (self.data[a] and self.data[b] and self.data[a]==self.data[b]) or false
+	end
+	function E:has(a)
+		return self.data[a]
+	end
+	function E:inc(lim, inc)
+		local newdata = {}
+		for k,v in pairs(self.data) do
+			if k >= lim then 
+				newdata[k+inc]=v
+			else
+				newdata[k]=v
+			end
+		end
+		self.data = newdata
+	end
+	function E:add(a,b)
+		local A = self.data[a]
+		local B = self.data[b]
+		if A==nil then
+			if B==nil then
+				self.data[a] = {}
+				self.data[b] = self.data[a]
+			else
+				self.data[a] = B
+			end
+		else
+			if B==nil then
+				self.data[b] = A
+			else --A and B not nil
+				if not A==B then --do union
+					for k,v in pairs(self.data) do
+						if v == B then self.data[k]=A end
+					end
+				end
+			end
+		end
+	end
+	return E
+end
 
 local function InsertHoles(poly,skip_check)
-
+	local EQ = Equiv()
 	local algo = require"anima.algorithm.algorithm"
 	local holes = poly.holes
+	poly.EQ = EQ
 	if not holes then
 		poly.holes = {}
 		poly.bridges = {}
@@ -297,18 +364,22 @@ local function InsertHoles(poly,skip_check)
 	--]=]
 	--classify holes according to leftmost vertex
 	local bridges = {}
+	local br_equal = {} --same point because of bridge
 	local holes_order = {}
 	for i,hole in ipairs(holes) do
 		
 		local minx,mini = leftmostvertex(hole)
 		holes_order[i] = {i=i,minx=minx,mini=mini}
 		--assert(not CG.IsPointInPoly(poly,hole[mini]))
+		--print("hole",i,minx,mini)
 	end
 
 	-- table.sort(holes_order,function(a,b) return a.minx < b.minx end)
 	algo.quicksort(holes_order, 1, #holes_order, function(a,b) return a.minx < b.minx end)
+
 	for i,horder in ipairs(holes_order) do
 		--prtable(horder)
+		--print("horder",i)
 		local hole = holes[horder.i]
 		local minx = horder.minx
 		local minv = hole[horder.mini]
@@ -325,15 +396,19 @@ local function InsertHoles(poly,skip_check)
 		--test then to find bridge
 		local bridgedone = false
 		for j,dd in ipairs(sortedp) do
+			--print("hole sorted",j)
 			local found = true
 			for k,p in ipairs(poly) do
 				if CG.SegmentIntersect(minv,poly[dd.j],p,poly[mod(k+1,#poly)]) then
+					--print("hole intersec",j)
 					found = false
 					break
 				end
 			end
 			if found then
+				--print("create bridge",dd.j,#hole)
 				--create bridge minv to poly(dd.j)
+
 				local newpoly = {}
 				for ii=1,dd.j do
 					newpoly[ii] = poly[ii]
@@ -349,12 +424,42 @@ local function InsertHoles(poly,skip_check)
 				end
 				poly = newpoly
 				
-				bridges[dd.j]= true
-				--bridges[dd.j+1] = true
-				bridges[indmini]= true
-				--bridges[indmini+1] = true
-				--bridges1[dd.j]=indmini
+				--update EQ structure
+				local hasEQ = EQ:has(dd.j)
+				EQ:inc(dd.j,#hole + 2)
+				if hasEQ then EQ:add(dd.j,dd.j+#hole + 2) end --make new dd.j equal class that old dd.j
+				EQ:add(dd.j,indmini+1)
+				EQ:add(dd.j + 1,indmini)
+				--update old bridges indexes
+				local newbridges = {}
+				local newbr_equal = {}
+				local inc = #hole + 2
+				for k,v in pairs(bridges) do
+					if k > dd.j then
+						--bridges[k] = nil
+						newbridges[k+inc] = true
+						newbr_equal[k+inc] = br_equal[k] > dd.j and (br_equal[k] + inc) or br_equal[k]
+						--newbr_equal[br_equal[k] + inc] = k + inc
+					else
+						newbridges[k] = true
+						newbr_equal[k] = br_equal[k] > dd.j and (br_equal[k] + inc) or br_equal[k]
+						--newbr_equal[br_equal[k]] = k
+					end
+				end
+				bridges = newbridges
+				br_equal = newbr_equal
+				-----------------------
 				
+				bridges[dd.j]= true
+				br_equal[dd.j] = indmini+1
+
+				bridges[indmini]= true
+				br_equal[indmini] = dd.j + 1
+				
+				--print"------------"
+				--prtable(bridges,br_equal)
+				--prtable(EQ)
+
 				--print("bridge added",i,"was",horder.i,horder.mini,"inds",dd.j,dd.j+1,indmini,indmini+1)
 				if CG.check_crossings(poly,true) then
 					print("bad bridge insertion of hole",i,"was",hole)
@@ -367,7 +472,17 @@ local function InsertHoles(poly,skip_check)
 		if not bridgedone then error"not bridge" end
 	end
 	poly.holes = {}
+	--add reversed br_equal
+	local br_equal_r = {}
+	for k,v in pairs(br_equal) do
+		br_equal_r[v] = k
+	end
+	for k,v in pairs(br_equal_r) do
+		br_equal[k] = v
+	end
+	poly.br_equal = br_equal
 	poly.bridges = bridges
+	poly.EQ = EQ
 	return poly
 end
 CG.InsertHoles = InsertHoles
@@ -710,7 +825,8 @@ function CG.EarClipFIST(poly)
 		CG.check_simple(restpoly,true)
 		print("rest poly check self crossings------")
 		local cc = require"anima.CG3.check_poly"
-		cc.check_self_crossings(restpoly,true)
+		local ret = cc.check_self_crossings(restpoly)
+		if #ret>0 then print(#ret,"self crossings found") end
 		return poly,tr,false,restpoly
 	end	
 	return poly,tr,true
