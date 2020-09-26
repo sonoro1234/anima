@@ -1115,6 +1115,7 @@ function VAO(t,program,indices,tsize,isize)
 		type = type or glc.GL_TRIANGLES
 		self:check_counts()
 		count = count or self.count
+		count = math.min(count , self.count)
 		ini = ini or 0
 		primcount = primcount or 0
 		glext.glBindVertexArray(vao[0]);
@@ -1129,15 +1130,18 @@ function VAO(t,program,indices,tsize,isize)
 		local inip = ffi.cast("void*",(ini)*3*ffi.sizeof"int")
 		type = type or glc.GL_TRIANGLES
 		count = count or self.num_indices
+		count = math.min(count , self.num_indices)
 		glext.glBindVertexArray(vao[0]);
 		--gl.glDrawElements(type, count, glc.GL_UNSIGNED_INT, nil);
 		gl.glDrawElements(type, count, glc.GL_UNSIGNED_INT, inip);
 	end
-	function tVao:draw_mesh(count,type)
+	function tVao:draw_mesh(count,ini,type)
+		ini = ini or 1
 		count = count or self.num_indices/3
+		count = math.min(count , self.num_indices/3)
 		type = type or glc.GL_LINE_LOOP
 		glext.glBindVertexArray(vao[0]);
-		for i=1,count do
+		for i=ini,count do
 			gl.glDrawElements(type, 3, glc.GL_UNSIGNED_INT, ffi.cast("void*",(i-1)*3*ffi.sizeof"int"));
 		end
 	end
