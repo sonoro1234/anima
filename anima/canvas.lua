@@ -207,12 +207,16 @@ function PrepareAudioRT(GL,soundfile,offset,args)--asio,dev_id)
 	local AudioPlayer = require("rtAudioPlayer")
 	local sndf = require"sndfile_ffi"
 	
-	local apis = rt.compiled_api()
-	local api = apis[0]
-	--local api = rt.API_WINDOWS_WASAPI
+	if args.api then
+		api = rt.compiled_api_by_name(args.api)
+	else
+		local apis = rt.compiled_api()
+		api = apis[0]
+	end
+	
 	local dac = rt.create(api)
 	local device = rt.get_default_output_device(dac)
-	print("using",ffi.string(rt.api_name(api)))
+	print("dac using",ffi.string(rt.api_name(api)))
 --copy specs from file
 	local info = sndf.get_info(soundfile)
 	local audioplayer,err = AudioPlayer({
