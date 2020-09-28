@@ -109,7 +109,7 @@ local function getframes(timebegin , frdur ,nimages,args)
 	else
 		fr = ((timebegin/frdur))
 	end
-	args.last = {fr=fr,ti=timebegin}
+	--args.last = {fr=fr,ti=timebegin} --rounding error are bad, dont use arg.last
 	if not args.rloop then
 		T1 = math.floor(fr)
 		alfa = fr - T1
@@ -133,6 +133,7 @@ local function getframes(timebegin , frdur ,nimages,args)
 			T2 = T1 - 1
 		end
 	end
+	--print(T1+1,T2+1,alfa,timebegin,1/frdur,timebegin/frdur)
 	return T1 + 1, T2 + 1, alfa
 end
 
@@ -349,7 +350,7 @@ function sequencer:make_clip(dir,frdur,inifr,endfr,dur,ga,args)
 	funcdir(dir,function(f) table.insert(imagsrc,f) end)
 	inifr,endfr = (inifr or 1),(endfr or #imagsrc)
 	table.sort(imagsrc)
-	dur =  dur or ((endfr - inifr + 1)*frdur)
+	dur =  dur or ((endfr - inifr + 0)*frdur)
 	local imags = {}
 	for i =  inifr,endfr do
 		table.insert(imags,imagsrc[i])
