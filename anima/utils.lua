@@ -694,3 +694,17 @@ function table_continue(T,...)
 		T[#T+1]=t 
 	end
 end
+
+function getImageDims(fname)
+	local image,err = im.FileImageLoad(fname)
+	if (image==nil) then
+		print ("Unnable to open the file:", fileName)
+		error(im.ErrorStr(err))
+	end
+
+	local ancho = image:Width()
+	local alto = image:Height()
+	local aspect = ancho/alto
+	image:Destroy()
+	return ancho, alto, aspect
+end
