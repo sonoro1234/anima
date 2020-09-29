@@ -63,11 +63,13 @@ function W.SingleValueEdit()
 		
 		--- A horrible ImGui work around to have button that stays active while its label changes.  
         function SVE:DrawButtonWithDynamicLabel(label, size)
-            local color1 = ig.GetColorU32(ig.lib.ImGuiCol_Text);
-            local keepPos = ig.GetCursorScreenPos();
-            ig.Button("##dial"..tostring(self), size);
-            ig.GetWindowDrawList():AddText(keepPos + ig.ImVec2(4, 4), color1, label);
-
+            --local color1 = ig.GetColorU32(ig.lib.ImGuiCol_Text);
+            --local keepPos = ig.GetCursorScreenPos();
+            --ig.Button("##dial"..tostring(self), size);
+            --ig.GetWindowDrawList():AddText(keepPos + ig.ImVec2(4, 4), color1, label);
+			ig.SetNextItemWidth(size.x)
+			local ttt = ffi.new("char[20]",label)
+			ig.InputText("##dial"..tostring(self),ttt,20,ig.lib.ImGuiInputTextFlags_ReadOnly)
         end
 		
 		function SVE:DrawInt(value, min, max, scale, size)
@@ -85,8 +87,7 @@ function W.SingleValueEdit()
 			self._numberFormat = format;
 			
 			local iog = ig.GetIO();
-            local id = ig.GetIDStr("jog")--..tostring(self));
-            
+            local id = ig.GetIDStr("jog"..tostring(self));
             if (id == self._activeJogDialId) then
 
                 if self._state == JogDialStates.Dialing then
@@ -156,7 +157,8 @@ function W.SingleValueEdit()
             end
 
             self:DrawButtonWithDynamicLabel(self:FormatValueForButton(value[0]), size);
-            if (ig.IsItemActivated()) then
+            --if (ig.IsItemActivated()) then
+			 if (ig.IsItemClicked()) then
                 self._activeJogDialId = id;
                 self._editValue = value[0];
                 self._startValue = value[0];
@@ -234,7 +236,7 @@ function W.SingleValueEdit()
                 end
 
                 --delta = math.floor((delta * 50)+0.5) / 50;
-
+				if iog.KeyCtrl then activeSpeed = activeSpeed*0.1 end
                 self._editValue = self._editValue + delta * activeSpeed * scale * 100;
                 self._editValue = math.min(max, math.max(min,self._editValue))
             end
