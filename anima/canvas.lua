@@ -1477,6 +1477,7 @@ function GLcanvas(GL)
 	-- wraps plugins.process and process_fbo functions to be called only if is dirty
 	-- because changed NM values or new texture provided
 	function GL:DirtyWrap()
+		self.dirty_wrapped = true
 		self.plugins = self.plugins or {}
 		for i,p in ipairs(self.plugins) do
 			print("GL:DirtyWrap",i,p,p.name)

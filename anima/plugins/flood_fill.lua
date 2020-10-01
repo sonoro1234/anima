@@ -261,6 +261,7 @@ local function FloodF(GL)
 	local fbo, adder
 	local NM = GL:Dialog("flood_fill",{
 	{"threshold",0.1,guitypes.val,{min=0,max=1},function() DOFINDCOMPONENTS=true end},
+	{"show_image",1,guitypes.toggle},
 	{"pick",0,guitypes.button,function(this) 
 
 		GL.mouse_pick = {action=function(X,Y)
@@ -309,8 +310,12 @@ end},
 		}]]
 	end
 	
+	local texsign
 	function M:process(texture)
-	
+		if GL.dirty_wrapped and (not texsign or texsign~=texture:get_signature()) then
+			DOFINDCOMPONENTS = true
+			texsign = texture:get_signature()
+		end
 		if DOFINDCOMPONENTS then
 			fbo:Bind()
 			ut.Clear()
@@ -335,10 +340,14 @@ end},
 				adder:process_fbo(fboF,{self.mask,texF})
 				self.mask = fboF:tex()
 			end
+			self.mask:inc_signature()
 			DOFINDCOMPONENTS = false
 		end
 		
-		texture:drawcenter()
+		ut.Clear()
+		if NM.show_image then
+			texture:drawcenter()
+		end
 		ut.ClearDepth()
 		gl.glEnable(glc.GL_BLEND)
 		gl.glBlendFunc(glc.GL_SRC_ALPHA, glc.GL_ONE_MINUS_SRC_ALPHA)
@@ -357,10 +366,10 @@ local GL = GLcanvas{H=700,aspect=1,DEBUG=false,fbo_nearest=false}
 
 local path = require"anima.path"
 --fileName = [[C:\luaGL\frames_anima\msquares\imagen.png]]
---fileName = [[C:\luaGL\frames_anima\im_test\Cosmos_original.jpg]]
+fileName = [[C:\luaGL\frames_anima\im_test\Cosmos_original.jpg]]
 --fileName = path.this_script_path()..[[\imagenes\unnamed0.jpg]]
 --fileName=[[C:\luagl\animacion\resonator6\resonator-038.jpg]]
-fileName = [[C:\LuaGL\frames_anima\flood_fill\labyrinth.png]]
+--fileName = [[C:\LuaGL\frames_anima\flood_fill\dummy.png]]
 local texture
 local FF,mixer,fbo
 function GL.init()
