@@ -53,10 +53,11 @@ local function remove_colinear(pt,verbose)
 	local numpt = #pt
 	local i = 1
 	while i <= numpt and numpt > 2 do
-		--print(numpt, "Angle of:",mod(i-1,numpt),i,mod(i+1,numpt))
+		
 		local ang,conv,s,cose,sine = Angle(pt[mod(i-1,numpt)],pt[mod(i,numpt)],pt[mod(i+1,numpt)])
+		--print(numpt, "Angle of:",mod(i-1,numpt),i,mod(i+1,numpt),"vals",ang,conv,s,cose,sine)
 		if s==0 then
-		--if abs(s) < 1e-15 then
+		--if abs(s) < 1e-12 then
 		--if abs(sine) < 1e-12 then
 			colin = colin + 1
 			table.remove(pt,i)
@@ -185,6 +186,16 @@ local function Equiv()
 	end
 	function E:has(a)
 		return self.data[a]
+	end
+	function E:get_equals(a)
+		local equals = {}
+		if not self.data[a] then return nil end
+		for k,v in pairs(self.data) do
+			if self.data[a] == v then
+				equals[#equals+1] = k
+			end
+		end
+		return equals
 	end
 	function E:inc(lim, inc)
 		local newdata = {}
@@ -387,8 +398,21 @@ local function InsertHoles(poly,skip_check)
 		--sort outer vertex to the left according to distance
 		local sortedp = {}
 		for j,p in ipairs(poly) do
-			if p.x < minx then
-				sortedp[#sortedp+1] = {j=j,dist=(minv-p).norm}
+			if p.x < minx 
+			--and not bridges[j]
+			-- and not EQ:has(j)
+			then
+				--when p is in bridge we have equal p and p1, choose the one having minv to the left
+				if not EQ:has(j) then
+					sortedp[#sortedp+1] = {j=j,dist=(minv-p).norm}
+				else
+					local a,b
+					if bridges[j] then a=j;b=j+1 else a=j-1;b=j end
+					--print("check",j,b,CG.Sign(poly[mod(a,#poly)],poly[mod(b,#poly)],minv))
+					if CG.Sign(poly[mod(a,#poly)],poly[mod(b,#poly)],minv) > 0 then
+						sortedp[#sortedp+1] = {j=j,dist=(minv-p).norm}
+					end
+				end
 			end
 		end
 		-- table.sort(sortedp,function(a,b) return a.dist < b.dist end)
@@ -400,13 +424,15 @@ local function InsertHoles(poly,skip_check)
 			local found = true
 			for k,p in ipairs(poly) do
 				if CG.SegmentIntersect(minv,poly[dd.j],p,poly[mod(k+1,#poly)]) then
-					--print("hole intersec",j)
 					found = false
 					break
 				end
 			end
 			if found then
-				--print("create bridge",dd.j,#hole)
+				-- print("create bridge",dd.j,#hole)
+				-- prtable(EQ)
+				-- prtable(bridges)
+				-- prtable(br_equal)
 				--create bridge minv to poly(dd.j)
 
 				local newpoly = {}
@@ -430,6 +456,7 @@ local function InsertHoles(poly,skip_check)
 				if hasEQ then EQ:add(dd.j,dd.j+#hole + 2) end --make new dd.j equal class that old dd.j
 				EQ:add(dd.j,indmini+1)
 				EQ:add(dd.j + 1,indmini)
+				
 				--update old bridges indexes
 				local newbridges = {}
 				local newbr_equal = {}
@@ -461,10 +488,11 @@ local function InsertHoles(poly,skip_check)
 				--prtable(EQ)
 
 				--print("bridge added",i,"was",horder.i,horder.mini,"inds",dd.j,dd.j+1,indmini,indmini+1)
-				if CG.check_crossings(poly,true) then
-					print("bad bridge insertion of hole",i,"was",hole)
-					--error"bad bridge"
-				end
+				
+				-- if CG.check_crossings(poly,true) then
+					-- print("bad bridge insertion of hole",i,"was",hole)
+				-- end
+				
 				bridgedone = true
 				break
 			end
@@ -483,6 +511,9 @@ local function InsertHoles(poly,skip_check)
 	poly.br_equal = br_equal
 	poly.bridges = bridges
 	poly.EQ = EQ
+	-- prtable(EQ)
+	-- prtable(bridges)
+	-- prtable(br_equal)
 	return poly
 end
 CG.InsertHoles = InsertHoles
