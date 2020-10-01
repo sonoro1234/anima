@@ -128,6 +128,7 @@ local function PolySimplifyNC1(poly,eps)
 			FF(i,kmax)
 			FF(kmax,j)
 		else
+			---[[
 			--check crossings
 			local a,b,c = poly[i],poly[kmax],poly[j]
 			--could be faster with sorted list
@@ -141,6 +142,23 @@ local function PolySimplifyNC1(poly,eps)
 				end
 				j1 = mod(j1+1,#poly)
 			end
+			--]]
+			--[[
+			--check crossings
+			local a,b,c = poly[i],poly[kmax],poly[j]
+			--could be faster with sorted list
+			local empty = true
+			local j1 = j
+			local jlimit = mod(i-1,#poly)
+			while j1~=jlimit do
+				--if CG.IsPointInTriC(poly[j1],a,b,c) then
+				if CG.SegmentIntersect(a,c,poly[j1],poly[mod(j1+1,#poly)]) then
+					empty = false
+					break
+				end
+				j1 = mod(j1+1,#poly)
+			end
+			--]]
 			if not empty then
 				--recursion
 				FF(i,kmax)
@@ -176,11 +194,12 @@ function CG.PolySimplifyNC3(poly,eps)
 	
 	
 	if #poly.holes> 0 then 
-		poly = InsertHoles(poly,true)
+		poly = CG.InsertHoles(poly,true)
 	end
 	assert(#poly.holes== 0)
 	
-	return PolySimplifyNC1(poly,eps)
+	local _,removedS = PolySimplifyNC1(poly,eps)
+	return removedS
 end
 
 
@@ -314,7 +333,8 @@ local function PolySimplifyNC2(poly,list,eps)
 end
 
 --use list of all points and simplifies poly and holes with it
-function CG.PolySimplifyNC(poly,eps)
+--not only slow but also PolySimplifyNC1 point in tri test is not enough to avoid crossings
+function CG.PolySimplifyNCList(poly,eps)
 	local mat = require"anima.matrixffi"
 	local vec2 = mat.vec2
 	
@@ -337,22 +357,182 @@ function CG.PolySimplifyNC(poly,eps)
 	CG.lexicografic_sort(list)
 	--delete repeated
 	for i,v in ipairs(list) do
-		while i<#list and v==list[i+1] do table.remove(list,i+1) end
+		while i<#list and v==list[i+1] do table.remove(list,i+1);print("remo",i+1) end
 	end
 	
 	if #poly.holes> 0 then 
 		for nh,hole in ipairs(poly.holes) do
-			local _,removedS = PolySimplifyNC2(hole,list,eps)
+			-- local _,removedS = PolySimplifyNC2(hole,list,eps)
+			local _,removedS = PolySimplifyNC1(hole,eps)
 			removed = removed + removedS
 		end
 	end
 	
-	local _,removedS = PolySimplifyNC2(poly,list,eps)
+	-- local _,removedS = PolySimplifyNC2(poly,list,eps)
+	local _,removedS = PolySimplifyNC1(poly,eps)
 	removed = removed + removedS
 	
 	return removed
 end
 
+--------------------------------------begin PolySimplifyNC-------------------
+--checks segment intersec (point in tri is not enough)
+local function mod(a,b)
+	return ((a-1)%b)+1
+end
+local function check_other_cross(a,b,other)
+	for i=1,#other-1 do
+		if CG.SegmentIntersect(a,b,other[i],other[i+1]) then
+			return true
+		end
+	end
+	if CG.SegmentIntersect(a,b,other[#other],other[1]) then
+		return true
+	end
+	return false
+end
+local function check_self_cross(poly,i,j)
+	local a,b = poly[i],poly[j]
+	local j1 = j
+	local jlimit = mod(i-1,#poly)
+	while j1~=jlimit do
+		if CG.SegmentIntersect(a,b,poly[j1],poly[mod(j1+1,#poly)]) then
+			return true
+		end
+		j1 = mod(j1+1,#poly)
+	end
+	return false
+end
+local function check_simp_cross(poly,i,j,mainpoly)
+	local a, b = poly[i],poly[j]
+	if mainpoly==poly then
+		if check_self_cross(poly,i,j) then
+			return true
+		end
+		for ih,h in ipairs(mainpoly.holes) do
+			if check_other_cross(a,b,h) then
+				return true
+			end
+		end
+	else --is hole
+		if check_other_cross(a,b,mainpoly) then
+			return true
+		end
+		for ih,h in ipairs(mainpoly.holes) do
+			if h==poly then
+				if check_self_cross(poly,i,j) then
+					return true
+				end
+			else
+				if check_other_cross(a,b,h) then
+					return true
+				end
+			end
+		end
+	end
+	return false
+end
+local function PolySimplifyNCh1(poly,mainpoly,eps)
+	local mat = require"anima.matrixffi"
+	local vec2 = mat.vec2
+	
+	eps = eps or math.sqrt(2)*0.5 --half diagonal pixel length, good after image vectorization
+	
+	
+	local toremove = {}
+	--find maxx minx
+	local minx,maxx = math.huge, -math.huge
+	local im,iM
+	for i=1,#poly do
+		local p = poly[i]
+		if minx > p.x then minx = p.x; im = i end
+		if maxx < p.x then maxx = p.x; iM = i end
+		toremove[i] = false
+	end
+	
+	local function mod(a,b)
+		return ((a-1)%b)+1
+	end
+	
+	local function FF(i,j)
+		if i==j then return end
+		local k = mod(i+1,#poly)
+		if j == k then return end
+		
+		local a,b = poly[i],poly[j]
+		local ab = (b-a).normalize
+		local N = vec2(ab.y,-ab.x)
+		local maxd,kmax = -math.huge
+		
+		
+		while k~=j do
+			--assert(not toremove[k])
+			if toremove[k] then
+				print("simp error: #poly",#poly,i,j,mod(i+1,#poly),k)
+				error"polysimp"
+			end
+			local dis = math.abs((poly[k]-a)*N)
+			if dis > maxd then
+				maxd = dis
+				kmax = k
+			end
+			k = mod(k+1,#poly)
+		end
+		
+		if maxd >= eps then
+			--recursion
+			FF(i,kmax)
+			FF(kmax,j)
+		else
+			local empty = not check_simp_cross(poly,i,j,mainpoly)
+			if not empty then
+				--recursion
+				FF(i,kmax)
+				FF(kmax,j)
+			else
+				local k = mod(i+1,#poly)
+				while k~=j do
+					toremove[k] = true
+					k = mod(k+1,#poly)
+				end
+			end
+		end
+	end
+	
+	FF(im,iM)
+	FF(iM,im)
+	
+	local before = #poly
+	for ii=#toremove,1,-1 do
+		if toremove[ii] then table.remove(poly,ii) end
+	end
+	--number of removed vertices
+	return poly,before - #poly
+end
+
+function CG.PolySimplifyNC(poly,eps)
+	local mat = require"anima.matrixffi"
+	local vec2 = mat.vec2
+	
+	eps = eps or math.sqrt(2)*0.5 --half diagonal pixel length, good after image vectorization
+	
+	local removed = 0
+	
+	if #poly.holes> 0 then 
+		for nh,hole in ipairs(poly.holes) do
+			-- local _,removedS = PolySimplifyNC2(hole,list,eps)
+			local _,removedS = PolySimplifyNCh1(hole,poly,eps)
+			removed = removed + removedS
+		end
+	end
+	
+	-- local _,removedS = PolySimplifyNC2(poly,list,eps)
+	local _,removedS = PolySimplifyNCh1(poly,poly,eps)
+	removed = removed + removedS
+	
+	return removed
+end
+---------------------------------end PolySimplifyNC----------------------
 
 --avoid crossings with Pset of points
 local function PolySimplifyNC3(poly,pset,eps)
