@@ -44,8 +44,8 @@ void main()
 		else
 			rest = kernelsize;
 		for(int y=-rest;y<=rest;y++){
-			float val = texelFetch(tex,ivec2(gl_FragCoord.xy)+ivec2(x,y),0).r;
-			//float val = texture(tex,(gl_FragCoord.xy+vec2(x,y))/texs,0).r;
+			//float val = texelFetch(tex,ivec2(gl_FragCoord.xy)+ivec2(x,y),0).r;
+			float val = texture(tex,(gl_FragCoord.xy+vec2(x,y))/texs,0).r;
 			valmin = min(valmin,val);
 		}
 	}
@@ -76,7 +76,7 @@ local function morphology(GL,args)
 	local plugin = require"anima.plugins.plugin"
 	local M = plugin.new({res={GL.W,GL.H}},GL)
 	local NM = GL:Dialog("morphol",
-	{{"op",0,guitypes.combo,{"erode","dilate","open","close","TopHatW","TopHatB","border"}},
+	{{"op",0,guitypes.combo,{"erode","dilate","open","close","TopHatW","TopHatB","border","cl-op","op-cl"}},
 	{"kernelsize",1,guitypes.valint,{min=0,max=10}},
 	{"iters",1,guitypes.valint,{min=1,max=30}},
 	{"cross",false,guitypes.toggle},
@@ -99,61 +99,74 @@ local function morphology(GL,args)
 		slab = GL:make_slab()
 	end
 	
-	local program,quad,program2,quad2
+	local program,quad,program2,quad2,program3
 	function M:process(srctex,w,h)
 		if NM.bypass then srctex:drawcenter(w,h); return end
-		srctex:Bind()
-		srctex:set_wrap(glc.GL_MIRRORED_REPEAT)
+
 		local subs = false
-		if NM.op == 0 then
+		program3 = nil
+		if NM.op == 0 then --erode
 			program = program_erode
 			quad = quade
 			program2 = nil
-		elseif NM.op == 1 then
+		elseif NM.op == 1 then --dilate
 			program = program_dilate
 			quad = quadd
 			program2 = nil
-		elseif NM.op == 2 then
+		elseif NM.op == 2 then --open
 			program = program_erode
 			quad = quade
 			program2 = program_dilate
 			quad2 = quadd
-		elseif NM.op == 3 then
+		elseif NM.op == 3 then --close
 			program = program_dilate
 			quad = quadd
 			program2 = program_erode
 			quad2 = quade
-		elseif NM.op == 4 then
+		elseif NM.op == 4 then --tophatW
 			program = program_erode
 			quad = quade
 			program2 = program_dilate
 			quad2 = quadd
 			subs = true
-		elseif NM.op == 5 then
+		elseif NM.op == 5 then --tophatB
 			program = program_dilate
 			quad = quadd
 			program2 = program_erode
 			quad2 = quade
 			subs = true
-		elseif NM.op == 6 then
+		elseif NM.op == 6 then --border
 			program = program_erode
 			quad = quade
 			program2 = nil
 			subs = true
+		elseif NM.op == 7 then --cl-op
+			program = program_dilate
+			program2 = program_erode
+			program3 = program_dilate
+		elseif NM.op == 8 then --op-cl
+			program = program_erode
+			program2 = program_dilate
+			program3 = program_erode
 		end
 
+		srctex:Bind()
+		srctex:set_wrap(glc.GL_MIRRORED_REPEAT)
+		
 		slab:Bind()
 		program:use()
 		program.unif.kernelsize:set{NM.kernelsize}
 		program.unif.cross:set{NM.cross}
 		program.unif.tex:set{0}
 		gl.glViewport(0,0,w or self.res[1], h or self.res[2])
-		quad:draw_elm()
+		--quad:draw_elm()
+		program.vaos[1]:draw_elm()
 		slab:UnBind()
 		for i=2,NM.iters do
 			slab:tex():Bind()
 			slab:Bind()
-			quad:draw_elm()
+			program.vaos[1]:draw_elm()
+			--quad:draw_elm()
 			slab:UnBind()
 		end
 
@@ -164,22 +177,43 @@ local function morphology(GL,args)
 			program2.unif.kernelsize:set{NM.kernelsize}
 			program2.unif.tex:set{0}
 			gl.glViewport(0,0,w or self.res[1], h or self.res[2])
-			quad2:draw_elm()
+			--quad2:draw_elm()
+			program2.vaos[1]:draw_elm()
+			slab:UnBind()
+			local mul = program3 and 2 or 1 --cl-op or op-cl
+			for i=2,NM.iters*mul do
+				slab:tex():Bind()
+				slab:Bind()
+				--quad2:draw_elm()
+				program2.vaos[1]:draw_elm()
+				slab:UnBind()
+			end
+		end
+		
+		if program3 then
+			slab:tex():Bind()
+			slab:Bind()
+			program3:use()
+			program3.unif.kernelsize:set{NM.kernelsize}
+			program3.unif.tex:set{0}
+			gl.glViewport(0,0,w or self.res[1], h or self.res[2])
+			program3.vaos[1]:draw_elm()
 			slab:UnBind()
 			for i=2,NM.iters do
 				slab:tex():Bind()
 				slab:Bind()
-				quad2:draw_elm()
+				program3.vaos[1]:draw_elm()
 				slab:UnBind()
 			end
 		end
+		
 		if not subs then 
 			slab:tex():drawcenter()
 		else
-			if NM.op == 4 or NM.op == 6 then
+			if NM.op == 4 or NM.op == 6 then --tophatW or border
 				srctex:Bind(0)
 				slab:tex():Bind(1)
-			else -- op==5
+			else -- op==5 -- tophatB
 				srctex:Bind(1)
 				slab:tex():Bind(0)
 			end
@@ -188,8 +222,8 @@ local function morphology(GL,args)
 			program_substract.unif.tex2:set{1}
 			program_substract.unif.doneg:set{NM.doneg}
 			gl.glViewport(0,0,w or self.res[1], h or self.res[2])
-			--ut.Clear()
-			quads:draw_elm()
+			--quads:draw_elm()
+			program_substract.vaos[1]:draw_elm()
 		end
 	end
 	GL:add_plugin(M,"morphology")
@@ -206,7 +240,7 @@ NM = GL:Dialog("test",{
 
 --fileName = [[C:\luaGL\frames_anima\msquares\imagen2.tif]]
 fileName = [[C:\luaGL\frames_anima\im_test\Cosmos_original.jpg]]
-fileName = [[C:\luaGL\frames_anima\flood_fill\dummy.png]]
+--fileName = [[C:\luaGL\frames_anima\flood_fill\dummy.png]]
 --fileName = [[C:\luaGL\frames_anima\im_test\unnamed0.jpg]]
 local im = require"imffi"
 local vicim = require"anima.vicimag"
