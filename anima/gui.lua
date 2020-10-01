@@ -1046,7 +1046,7 @@ function gui.SetImGui(GL)
 	-----------------------
 	local W = require"anima.igwidgets"
 	for k,v in pairs(W) do
-		assert(not gui[k])
+		assert(not gui[k],"gui already open")
 		gui[k] = v
 	end
 	-------------------------
