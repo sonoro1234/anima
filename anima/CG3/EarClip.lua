@@ -286,15 +286,18 @@ local function EarClipSimple2(poly, use_closed)
 	local IsPointInTriI
 	if use_closed then
 		IsPointInTriI = function(pti,ai,bi,ci)
-		
-		---[[
-			--if br_equal[ai]==pti or br_equal[bi]==pti or br_equal[ci]==pti then
+		--[[
 			if EQ:equal(ai,pti) or EQ:equal(bi,pti) or EQ:equal(ci,pti) then
 				--assert(CG.IsPointInTriC(poly[pti],poly[ai],poly[bi],poly[ci]))
 				return CG.IsPointInTri(poly[pti],poly[ai],poly[bi],poly[ci])
 			end
-			--]]
 			return CG.IsPointInTriC(poly[pti],poly[ai],poly[bi],poly[ci])
+			--]]
+			local isintri = CG.IsPointInTriC(poly[pti],poly[ai],poly[bi],poly[ci])
+			if isintri and (EQ:equal(ai,pti) or EQ:equal(bi,pti) or EQ:equal(ci,pti)) then
+				return CG.IsPointInTri(poly[pti],poly[ai],poly[bi],poly[ci])
+			end
+			return isintri
 		end
 	else
 		IsPointInTriI = function(pti,ai,bi,ci)
@@ -381,6 +384,35 @@ local function EarClipSimple2(poly, use_closed)
 		return checkCE1_3(i)
 	end
 
+	local function update_all_ears_init()
+		for i=2,#ind-1 do
+			angles[i],convex[i] = Angle(poly[i-1],poly[i],poly[i+1])
+		end
+		angles[1],convex[1] = Angle(poly[#ind],poly[1],poly[2])
+		angles[#ind],convex[#ind] = Angle(poly[#ind-1],poly[#ind],poly[1])
+		
+		
+		--find eartips
+		for i=1,#ind do
+			if convex[i] then
+				local empty = true
+				local a,b,c = poly[mod(i-1,#ind)],poly[i],poly[mod(i+1,#ind)]
+				local jlimit = mod(i-1,#ind)
+				local j = mod(i+2,#ind)
+				while j~=jlimit do
+					--if not convex[j] and 
+					if IsPointInTri(poly[j],a,b,c) then
+						empty = false
+						break
+					end
+					--j = mod(j+1,#ind)
+					j = j + 1
+					if j > #ind then j = 1 end
+				end
+				eartips[i] = empty
+			end
+		end
+	end
 	
 	local function update_all_ears()
 		for i=2,#ind-1 do
@@ -406,7 +438,9 @@ local function EarClipSimple2(poly, use_closed)
 						empty = false
 						break
 					end
-					j = mod(j+1,#ind)
+					--j = mod(j+1,#ind)
+					j = j + 1
+					if j > #ind then j = 1 end
 				end
 				--local emptyCE1 = checkCE1(i) 
 				--empty = empty and checkCE1_3(i)
@@ -422,7 +456,7 @@ local function EarClipSimple2(poly, use_closed)
 		end
 	end
 	
-	update_all_ears()
+	update_all_ears_init()
 	--[=[
 	for kk=1,#ind do
 		print(kk,ind[kk],convex[ind[kk]],eartips[ind[kk]],angles[ind[kk]])
@@ -446,7 +480,9 @@ local function EarClipSimple2(poly, use_closed)
 					empty = false
 					break
 				end
-				j = mod(j+1,#ind)
+				--j = mod(j+1,#ind)
+				j = j + 1
+				if j > #ind then j = 1 end
 			end
 			--local emptyCE1 = checkCE1(i)
 			--empty = empty and checkCE1_3(i)
