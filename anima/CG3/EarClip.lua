@@ -245,9 +245,9 @@ function check_self_repetition(poly)
 	return reps
 end
 local function EarClipSimple2(poly, use_closed)
-	
+
 	--if poly.holes then
-		poly = CG.InsertHoles(poly)--,true)
+		poly = CG.InsertHoles(poly,true)
 		--assert(poly.EQ)
 		--print("poly is",poly)
 		--prtable(poly.br_equal)
@@ -290,13 +290,7 @@ local function EarClipSimple2(poly, use_closed)
 		---[[
 			--if br_equal[ai]==pti or br_equal[bi]==pti or br_equal[ci]==pti then
 			if EQ:equal(ai,pti) or EQ:equal(bi,pti) or EQ:equal(ci,pti) then
-			--print("EQ",EQ:equal(ai,pti) , EQ:equal(bi,pti) , EQ:equal(ci,pti))
-			--print("br_equal",br_equal[ai]==pti , br_equal[bi]==pti , br_equal[ci]==pti)
-			--assert(EQ:equal(ai,pti) or EQ:equal(bi,pti) or EQ:equal(ci,pti))
-			--assert(br_equal[ai]==pti or br_equal[bi]==pti or br_equal[ci]==pti)
-			--if repseq[ai]==pti or repseq[bi]==pti or repseq[ci]==pti then
-				--print("IsPointInTriI",pti,ai,bi,ci)
-				assert(CG.IsPointInTriC(poly[pti],poly[ai],poly[bi],poly[ci]))
+				--assert(CG.IsPointInTriC(poly[pti],poly[ai],poly[bi],poly[ci]))
 				return CG.IsPointInTri(poly[pti],poly[ai],poly[bi],poly[ci])
 			end
 			--]]
@@ -429,12 +423,12 @@ local function EarClipSimple2(poly, use_closed)
 	end
 	
 	update_all_ears()
-	
-	-- for kk=1,#ind do
-		-- print(kk,ind[kk],convex[ind[kk]],eartips[ind[kk]],angles[ind[kk]])
-	-- end
-	--do return poly,{},true end
-	
+	--[=[
+	for kk=1,#ind do
+		print(kk,ind[kk],convex[ind[kk]],eartips[ind[kk]],angles[ind[kk]])
+	end
+	do return poly,{},false,poly end
+	--]=]
 	local function update_ear(i)
 		if not convex[ind[i]] then 
 			eartips[ind[i]] = false
@@ -569,10 +563,12 @@ local function EarClipSimple2(poly, use_closed)
 			return poly,tr,false,restpoly
 		end
 		--]=]
-		-- print"before repair"
-		-- for kk=1,#ind do
-			-- print(kk,ind[kk],convex[ind[kk]],eartips[ind[kk]],angles[ind[kk]])
-		-- end
+		--[=[
+		print"before repair"
+		for kk=1,#ind do
+			print(kk,ind[kk],convex[ind[kk]],eartips[ind[kk]],angles[ind[kk]])
+		end
+		--]=]
 			-- try to repair
 			--find consecutive repeated
 			print("\n-----------trying to repair",#ind)
