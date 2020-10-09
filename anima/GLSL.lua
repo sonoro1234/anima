@@ -482,7 +482,7 @@ function initFBO(wFBO,hFBO,args)
 	local old_tex_binded = ffi.new("GLint[1]",0)
 	gl.glGetIntegerv(glc.GL_TEXTURE_BINDING_2D, old_tex_binded)
 	--the fbo
-	local thefbo = {w = wFBO, h = hFBO, GL=args.GL}
+	local thefbo = {w = wFBO, h = hFBO, GL=args.GL,isFBO=true}
 	thefbo.fb = ffi.new("GLuint[1]")
 	glext.glGenFramebuffers(1, thefbo.fb);
 	dprint("initFBO",wFBO,hFBO,thefbo.fb[0],thefbo)
@@ -656,7 +656,7 @@ function initFBO(wFBO,hFBO,args)
 		return pixelsUserData,w,h
    end
 	function thefbo:Dump(framebuffer)
-		framebuffer = framebuffer or self.old_framebuffer
+		framebuffer = framebuffer and (type(framebuffer)=="table" and framebuffer.fb[0] or framebuffer) or self.old_framebuffer
 		local w,h = wFBO,hFBO
 		local old_read_framebuffer = ffi.new("GLint[1]",0)
 		gl.glGetIntegerv(glc.GL_READ_FRAMEBUFFER_BINDING, old_read_framebuffer)
@@ -801,7 +801,7 @@ function initFBOMultiSample(GL,wFBO,hFBO,args)
 	glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, old_framebuffer[0]); 
 	gl.glBindTexture(glc.GL_TEXTURE_2D_MULTISAMPLE, old_tex_binded[0]);
 	print("MultiSample fbo",NumOfSamples[0],g_MultiSampleFrameBufferObject_ID[0],g_MultiSampleTexture_ID[0])
-	local ret = {color_tex = g_MultiSampleTexture_ID ,fb = g_MultiSampleFrameBufferObject_ID,GL=GL}
+	local ret = {color_tex = g_MultiSampleTexture_ID ,fb = g_MultiSampleFrameBufferObject_ID,GL=GL,w=wFBO,h=hFBO}
 	
 	function ret:Bind(val)
 		gl.glEnable(glc.GL_MULTISAMPLE);
@@ -812,14 +812,13 @@ function initFBOMultiSample(GL,wFBO,hFBO,args)
 		return old_framebuffer[0]
 	end
 	function ret:UnBind(fbo)
-		--assert(self.old_framebuffer)
 		fbo = fbo or self.old_framebuffer
 		glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, fbo);
 		self.old_framebuffer = nil
 	end
 	--------ms tosingle fbo
 	function ret:Dump(framebuffer)
-		framebuffer = framebuffer or self.old_framebuffer
+		framebuffer = framebuffer and (type(framebuffer)=="table" and framebuffer.fb[0] or framebuffer) or self.old_framebuffer
 		local w,h = wFBO,hFBO
 		local old_read_framebuffer = ffi.new("GLint[1]",0)
 		gl.glGetIntegerv(glc.GL_READ_FRAMEBUFFER_BINDING, old_read_framebuffer)
@@ -835,6 +834,9 @@ function initFBOMultiSample(GL,wFBO,hFBO,args)
 		glext.glBlitFramebuffer(0, 0, w, h, 0, 0, w, h, glc.GL_COLOR_BUFFER_BIT, glc.GL_LINEAR);
 		glext.glBindFramebuffer(glc.GL_READ_FRAMEBUFFER,  old_read_framebuffer[0]);
 		self:UnBind()
+	end
+	function ret:viewport()
+		gl.glViewport(0,0,self.w,self.h)
 	end
 		------------------------
 	GetGLError"initMSSA"
