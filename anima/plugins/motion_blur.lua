@@ -65,9 +65,10 @@ void main()
 ]]
 
 local M = {}
-function M.make(GL)
-	
-	local Clip = {}
+function M.make(GL,args)
+	args = args or {}
+	local plugin = require"anima.plugins.plugin"
+	local Clip = plugin.new{res={args.W or GL.W,args.H or GL.H}}
 	local NM = GL:Dialog("mblur",
 {
 {"alpha",0.0,guitypes.val,{min=0.0,max=1}},
@@ -84,8 +85,8 @@ function M.make(GL)
 	local quads = {}
 	function Clip:init()
 		fbo = GL:initFBO()
-		mixfbos[0] = GL:initFBO()
-		mixfbos[1] = GL:initFBO()
+		mixfbos[0] = GL:initFBO({no_depth=true},args.W,args.H)
+		mixfbos[1] = GL:initFBO({no_depth=true},args.W,args.H)
 		program = {}
 		program[1] = GLSL:new():compile(vert_shad,frag_shad);
 		program[2] = GLSL:new():compile(vert_shad,frag_shad2);
@@ -95,9 +96,42 @@ function M.make(GL)
 		end
 		Clip.inited = true
 	end
+	function Clip:process(texture,w,h)
+		--print(w , self.res[1], h , self.res[2])
+		w,h = w or self.res[1], h or self.res[2]
+		gl.glViewport(0,0,w, h)
+		local program = program[NM.mode]
+		program:use()
+		mixindex = (mixindex + 1)%2
+		mixfbos[mixindex]:Bind()
+		
+		--fbo:UseTexture()
+		texture:Bind()
+		mixindex = (mixindex + 1)%2
+		mixfbos[mixindex]:UseTexture(1,0)
+		
+		local alpha = NM.alpha
+		if NM.reset then
+			alpha = 0
+			NM.vars.reset[0] = false
+		end
+		program.unif.tex0:set{0}
+		program.unif.tex1:set{1}
+		program.unif.alpha:set{alpha}
+		program.unif.alpha2:set{NM.alpha2}
 
+		gl.glClearColor(0.0, 0.0, 0.0, 0)
+		ut.Clear()
 
+		quads[NM.mode]:draw_elm()
 
+		mixindex = (mixindex + 1)%2
+		mixfbos[mixindex]:UnBind()
+		--fbo:UnBind()
+		ut.Clear()
+		mixfbos[mixindex]:tex():drawcenter(w,h)
+
+	end
 	function Clip:draw(timebegin,w,h,args)
 
 		if not self.inited then self:init() end
@@ -140,7 +174,6 @@ function M.make(GL)
 		ut.Clear()
 		mixfbos[mixindex]:tex():drawcenter(w,h)
 		
-
 	end
 	GL:add_plugin(Clip)
 	return Clip
