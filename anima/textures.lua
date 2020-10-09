@@ -1197,14 +1197,21 @@ function Texture(w,h,formato,pTexor,args)
 		negprog:process(self.width,self.height)
 	end
 
-	function tex:make_neg()
-		local fbo = self.GL:get_fbo()
+	function tex:make_neg(fbo1)
+		local fbo = fbo1 and fbo1 or self:make_fbo()
+		--local fbo = self.GL:get_fbo()
 		fbo:Bind()
 		self:neg()
 		fbo:UnBind()
-		return fbo:tex()
-		-- fbo:release()
-		-- return fbo:texcopy()
+		local ret 
+		if not fbo1 then
+			ret = fbo:texcopy()
+			fbo:delete()
+		else
+			ret = fbo:tex()
+		end
+		--fbo:release()
+		return ret
 	end
 	function tex:resample(w,h)
 		local resfbo = self.GL:initFBO({no_depth=true},w,h)
