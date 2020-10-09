@@ -347,13 +347,15 @@ end},
 		ut.Clear()
 		if NM.show_image then
 			texture:drawcenter()
+			ut.ClearDepth()
+			gl.glEnable(glc.GL_BLEND)
+			gl.glBlendFunc(glc.GL_SRC_ALPHA, glc.GL_ONE_MINUS_SRC_ALPHA)
+			glext.glBlendEquation(glc.GL_FUNC_ADD)
+			self.mask:drawcenter()
+			gl.glDisable(glc.GL_BLEND)
+		else
+			self.mask:drawcenter()
 		end
-		ut.ClearDepth()
-		gl.glEnable(glc.GL_BLEND)
-		gl.glBlendFunc(glc.GL_SRC_ALPHA, glc.GL_ONE_MINUS_SRC_ALPHA)
-		glext.glBlendEquation(glc.GL_FUNC_ADD)
-		self.mask:drawcenter()
-		gl.glDisable(glc.GL_BLEND)
 	end
 	
 	GL:add_plugin(M,"flood_fill")
@@ -384,7 +386,7 @@ function GL.init()
 end
 
 function GL.draw(t,w,h)
-
+--gl.glClearColor(0,0,0,0)
 	ut.Clear()
 	FF:process_fbo(fbo,texture)
 	fbo:tex():drawcenter()
