@@ -184,15 +184,12 @@ local function Object(name,objtree)
 		self.vaomesh = self.vao:clone(progmesh) 
 		--TFV
 		self.orig_vao = mesh:vao(prog_twist, true)
-		if not self.m_transformFeedback then
-			self.m_transformFeedback = ffi.new("GLuint[1]") 
-			glext.glGenTransformFeedbacks(1, self.m_transformFeedback);
+		self.vaomeshtfb = self.vaomesh:clone(prog_twist)
+		if not self.tfv1 then
+			self.tfv1 = TFV1({position="position_out"},prog_twist,self.orig_vao,self.vaomeshtfb)
+		else
+			self.tfv1:set_vaos(self.orig_vao,self.vaomeshtfb)
 		end
-		self.vaomeshtfb = VAO({position=self.vaomesh:vbo"position"},prog_twist)
-		self.vaomeshtfb.clonedvbos = true
-		glext.glBindTransformFeedback(glc.GL_TRANSFORM_FEEDBACK, self.m_transformFeedback[0]);
-        glext.glBindBufferBase(glc.GL_TRANSFORM_FEEDBACK_BUFFER, prog_twist.tfv.position_out, self.vaomeshtfb:vbo("position").vbo[0]);
-		glext.glBindTransformFeedback(glc.GL_TRANSFORM_FEEDBACK, 0);
 	end
 	
 	function O:make_localM()
@@ -358,22 +355,13 @@ local function Object(name,objtree)
 	
 	function O:do_twist()
 		if self.orig_vao then
-		prog_twist:use()
-		prog_twist.unif.ang:set{self.deformang[0]}
-		prog_twist.unif.benddir:set{self.benddir[0]}
-		prog_twist.unif.axisperm:set{self.axisperm[0]}
-		prog_twist.unif.op:set{self.deformop[0]}
-		prog_twist.unif.MF:set(self.MF.gl)
-		gl.glEnable(glc.GL_RASTERIZER_DISCARD);
-		
-		--tfb:Bind(0)
-		glext.glBindTransformFeedback(glc.GL_TRANSFORM_FEEDBACK, self.m_transformFeedback[0]);
-		glext.glBeginTransformFeedback(glc.GL_POINTS);
-		self.orig_vao:draw(glc.GL_POINTS)
-		glext.glEndTransformFeedback();
-		glext.glBindTransformFeedback(glc.GL_TRANSFORM_FEEDBACK, 0);
-		gl.glDisable(glc.GL_RASTERIZER_DISCARD);
-		gl.glFlush()
+			prog_twist:use()
+			prog_twist.unif.ang:set{self.deformang[0]}
+			prog_twist.unif.benddir:set{self.benddir[0]}
+			prog_twist.unif.axisperm:set{self.axisperm[0]}
+			prog_twist.unif.op:set{self.deformop[0]}
+			prog_twist.unif.MF:set(self.MF.gl)
+			self.tfv1:Update()
 		end
 		for i,child in ipairs(O.childs) do
 			child:do_twist()
@@ -552,7 +540,7 @@ local function Objects(GL,camera,args)
 			program_discard = GLSL:new():compile(vert_sh,frag_shdiscard)
 			progmesh = GLSL:new():compile(vertmesh,fragmesh)
 			
-			prog_twist = GLSL:new():compile(vert_twist,fragmesh)
+			prog_twist = GLSL:new():compile(vert_twist)--,fragmesh)
 			prog_twist:set_TFV({"position_out"},true)
 			
 			--initial object
@@ -697,19 +685,20 @@ local function make_cyl(pos, scl,eje)
 	return inimesh
 end
 
-local GL = GLcanvas{H=800,aspect=1,use_log=true}
+local GL = GLcanvas{H=800,aspect=1,use_log=false}
 
 local camera = Camera(GL,"tps")
+camera.NM.vars.dist[0] = 12
 local objects
 function GL:init()
 	objects = Objects(GL,camera)--,{doinit=true})
-	objects.root:set_frame(nil,vec3(0,0,-12))
+	objects.root:set_frame(nil,vec3(0,0,-12*0))
 	local child,ich = objects.root:add_child("Xcyl")
-	child:setMesh(make_cyl(vec3(-3,0,-12),1,vec3(1,0,0)))
+	child:setMesh(make_cyl(vec3(-3,0,-12*0),1,vec3(1,0,0)))
 	local child, ich = objects.root:add_child("Ycyl")
-	child:setMesh(make_cyl(vec3(3,0,-12),1,vec3(0,1,0)))
+	child:setMesh(make_cyl(vec3(3,0,-12*0),1,vec3(0,1,0)))
 	child = child:add_child("Zcyl")
-	child:setMesh(make_cyl(vec3(0,0,-12),1,vec3(0,0,1)))
+	child:setMesh(make_cyl(vec3(0,0,-12*0),1,vec3(0,0,1)))
 	--child:setMesh(make_cyl(vec3(1.5,0,0.5),0.5)ex)
 end
 function GL.draw(t,w,h)
