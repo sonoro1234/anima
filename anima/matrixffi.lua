@@ -566,7 +566,8 @@ function M.rotAB(A,B)
 	local v = a:cross(b)
 	local sine = v.norm
 	local cose = a*b
-	if sine == 0 then
+	--print(sine,cose)
+	if sine == 0 or cose == -1 then
 		if cose == 1 then
 			return M.identity3()
 		elseif cose == -1 then
@@ -664,5 +665,5 @@ print(aa,bb,cc)
 
 --print(vec3(vec2(1,2)),vec3(1,2,3))
 --print(vec4(1,2,3,4),vec4(vec3(1,2,3),4))
-			
+--print(M.rotAB(vec3(-1,0,-1.2246063538224e-16),vec3(1,0,0)))
 return M
