@@ -310,6 +310,7 @@ function GLSL:setShaders(vert,frag,geom,tfvar)
 	return p
 end
 function GLSL:set_TFV(tfvar,separate)
+	if self.has_tfv then return end -- to avoid redoing from TFV or TFV1
 	print"set_TFV______________________________________________________________________"
 	separate = (separate==nil) and true or separate
 	local mode = separate and glc.GL_SEPARATE_ATTRIBS or glc.GL_INTERLEAVED_ATTRIBS
@@ -322,6 +323,7 @@ function GLSL:set_TFV(tfvar,separate)
 	self:printProgramInfoLog();
 	--self:TFVinfo()
 	self:getunif()
+	self.has_tfv = true
 end
 function GLSL:TFVinfo()
 	print"TFVinfo______________________________________________________________________"
@@ -1183,6 +1185,7 @@ function image2D(w,h,type,data)
 	return im
 end
 
+--transform feedback with ping-pong
 function TFV(t,prog_update,update_vao)
 	local tfb = {}
 	local varyings = {}
@@ -1220,6 +1223,49 @@ function TFV(t,prog_update,update_vao)
 		return self.currenttfb
 	end
 	tfb.currenttfb = 0
+	tfb.m_transformFeedback = m_transformFeedback
+	return tfb
+end
+
+--transform feedback with orig and dest vaos
+function TFV1(t,prog_update,orig_vao,dest_vao)
+	local tfb = {}
+	local varyings = {}
+	local vars = {}
+	for k,v in pairs(t) do
+		varyings[#varyings + 1] = v
+		vars[#vars + 1] = k
+	end
+	prog_update:set_TFV(varyings,true)
+	local m_transformFeedback = ffi.new("GLuint[1]") 
+    glext.glGenTransformFeedbacks(1, m_transformFeedback);
+
+	function tfb:set_vaos(orig,dest)
+		self.orig_vao = orig
+		glext.glBindTransformFeedback(glc.GL_TRANSFORM_FEEDBACK, m_transformFeedback[0]);
+		for j,v in ipairs(vars) do
+			glext.glBindBufferBase(glc.GL_TRANSFORM_FEEDBACK_BUFFER, prog_update.tfv[varyings[j]], dest:vbo(vars[j]).vbo[0]);
+		end
+		glext.glBindTransformFeedback(glc.GL_TRANSFORM_FEEDBACK, 0);
+	end
+	
+	tfb:set_vaos(orig_vao, dest_vao)
+	
+	function tfb:Bind()
+		glext.glBindTransformFeedback(glc.GL_TRANSFORM_FEEDBACK, m_transformFeedback[0]);
+	end
+	function tfb:Update(type)
+		type = type or glc.GL_POINTS
+		gl.glEnable(glc.GL_RASTERIZER_DISCARD);
+		tfb:Bind(self.currenttfb)
+		glext.glBeginTransformFeedback(type);
+		--ut.Clear() --needed for consecutive TF to work
+		self.orig_vao:draw(type)
+		glext.glEndTransformFeedback();
+		gl.glDisable(glc.GL_RASTERIZER_DISCARD);
+		gl.glFlush() --needed for consecutive TF to work
+		glext.glBindTransformFeedback(glc.GL_TRANSFORM_FEEDBACK, 0);
+	end
 	tfb.m_transformFeedback = m_transformFeedback
 	return tfb
 end
