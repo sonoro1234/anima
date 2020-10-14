@@ -396,6 +396,29 @@ function M.par_shapes_program()
 	return GLSL:new():compile(vert,frag)
 end
 
+--expects two ortogonal directions
+function M.make_frame(t)
+	if not t.X then
+		t.Y = t.Y.normalize
+		t.Z = t.Z.normalize
+		assert(t.Y*t.Z==0)
+		t.X = t.Y:cross(t.Z)
+	elseif not t.Y then
+		t.X = t.X.normalize
+		t.Z = t.Z.normalize
+		assert(t.X*t.Z==0)
+		t.Y = t.Z:cross(t.X)
+	elseif not t.Z then
+		t.Y = t.Y.normalize
+		t.X = t.X.normalize
+		assert(t.Y*t.X==0)
+		t.Z = t.X:cross(t.Y)
+	else
+		error"make frame called with more than two axis"
+	end
+	return t
+end
+
 function M.move_frame(frame,MM)
 	local MMnor = MM.inv.t
 	return {X = MMnor*frame.X, Y = MMnor*frame.Y, Z=MMnor*frame.Z, center=MM*frame.center}
@@ -504,12 +527,22 @@ function M.mesh(t)
 	end
 	
 	function mesh:M4(MM)
-		for i=1,#self.points do
+		local M3,tt
+		if ffi.istype(mat.mat4, MM) then
+			M3 = MM.mat3
+			tt = MM*mat.vec4(0,0,0,1)
+			tt = tt.xyz/tt.w
+		else
+			M3 = MM
+			tt = vec3(0,0,0)
+		end
+		local points = self.points
+		for i=1,#points do
 			-- local vec = mat.vec4(self.points[i],1)
 			-- local pR = MM * vec
 			-- pR = pR/pR.w
 			-- self.points[i] = pR.xyz
-			self.points[i] = MM * self.points[i]
+			points[i] = M3 * points[i] + tt
 		end
 	end
 	function mesh:scale(f)
