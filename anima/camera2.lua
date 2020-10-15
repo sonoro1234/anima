@@ -6,15 +6,15 @@ local vec2 = mat.vec2
 local vec3 = mat.vec3
 local vec4 = mat.vec4
 local R = require"anima.rotations"
-
+local sin,cos,atan2,sqrt,asin,tan,atan = math.sin,math.cos,math.atan2,math.sqrt,math.asin,math.tan,math.atan
 --http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
 --rotates point(x,y,z) om radians around (u,v,w)
 local function Twist(x,y,z,u,v,w,om)
-	local norm = math.sqrt(u*u+v*v+w*w)
+	local norm = sqrt(u*u+v*v+w*w)
 	u = u/norm
 	v = v/norm
 	w = w/norm
-	local sinom,cosom = math.sin(om),math.cos(om)
+	local sinom,cosom = sin(om),cos(om)
 	local ux = (u*x + v*y + w*z)*(1-cosom)
 	local X = u*ux+x*cosom+(-w*y+v*z)*sinom
 	local Y = v*ux+y*cosom+(w*x-u*z)*sinom
@@ -22,7 +22,32 @@ local function Twist(x,y,z,u,v,w,om)
 	return X, Y, Z
 end
 
+local function getgizmofunc(cam)
+	local dollyscale = ffi.new("float[1]",1)
+	local panscale = ffi.new("float[1]",1)
+	local func = function()
+		ig.Separator()
+		local Quat,pos = ig.quat_pos_cast(cam:MV().gl)
+		if ig.gizmo3D("###guizmo0",pos,Quat,150) then 
+			local mat4 = ig.mat4_pos_cast(Quat,pos)
+			local AA2 = mat.gl2mat4(mat4.f)
+			cam:setMV(AA2)
+		end
+		if ig.SliderFloat("dolly scale",dollyscale,0,100) then
+			ig.imguiGizmo_setDollyScale(dollyscale[0])
+		end
+		if ig.SliderFloat("pan scale",panscale,0,100) then
+			ig.imguiGizmo_setPanScale(panscale[0])
+		end
+	end
+	return func
+end
+
 local function imgui_lookat_cameraDialog(name,zforh,GL, invisible,cam)
+		local func
+		if cam.args.gizmo then
+			func = getgizmofunc(cam)
+		end
 		local NMC =GL:Dialog(name .."_cam",
 		{
 		{"printMV",0,guitypes.button,function() print(cam:MV());print(cam:MP()) end},
@@ -34,21 +59,21 @@ local function imgui_lookat_cameraDialog(name,zforh,GL, invisible,cam)
 						end}
 		end},
 		{"use_dir",true,guitypes.toggle},
-		{"center",{0,0,-1},guitypes.drag,{min=-5,max=5}},
-		{"position",{0,0,0},guitypes.drag,{minv=-5,maxv=5}},
-		{"focal",35,guitypes.val,{min=0,max=180}},
-		{"focal_fac",1,guitypes.val,{min=0.01,max=5,sameline=true}},
-		{"nearZ",0.1,guitypes.val,{min=0.01,max=1}},
-		{"farZ",1000,guitypes.val,{min=1,max=1000,sameline=true}},
+		{"center",{0,0,-1},guitypes.drag},
+		{"position",{0,0,0},guitypes.drag},
+		{"focal",35,guitypes.drag,{min=0,max=180,precission=0.1,separator=true}},
+		{"focal_fac",1,guitypes.drag,{min=0.01,max=5,precission=0.1,sameline=true}},
+		{"nearZ",0.1,guitypes.drag,{min=0.01,max=1,precission=0.1}},
+		{"farZ",1000,guitypes.drag,{min=1,max=1000,precission=0.1,sameline=true}},
 		{"ortho",0,guitypes.toggle}}
-		,nil,invisible)
+		,func,invisible)
 		return NMC
 end
 
 
 local function imgui_cameraDialog(name,zforh,GL, invisible,cam)
-		local NMC =GL:Dialog(name .."_cam",
-		{
+		
+		local guitable = {
 		{"printMV",0,guitypes.button,function() print(cam:MV());print();print(cam:MP()) end},
 		{"azimuth",0,guitypes.dial},
 		{"elevation",0,guitypes.dial},
@@ -61,30 +86,38 @@ local function imgui_cameraDialog(name,zforh,GL, invisible,cam)
 		end},
 		{"dist",zforh,guitypes.drag,{precission=0.1}},
 		{"pos",{0,0,0},guitypes.drag,{precission=0.1}},
-		-- {"xcamL",0,guitypes.drag,{min=-5,max=5,precission=0.1}},
-		-- {"ycamL",0,guitypes.drag,{min=-5,max=5,precission=0.1}},
-		-- {"zcamL",0,guitypes.dial,{min=-5*zforh,max=5*zforh}},
 		{"focal",35,guitypes.drag,{min=0,max=180,precission=0.1,separator=true}},
 		{"focal_fac",1,guitypes.drag,{min=0.01,max=5,precission=0.1,sameline=true}},
 		{"nearZ",0.1,guitypes.drag,{min=0.01,max=1,precission=0.1}},
 		{"farZ",1000,guitypes.drag,{min=1,max=1000,precission=0.1,sameline=true}},
 		{"ortho",0,guitypes.toggle}}
-		,nil,invisible)
+		if cam.type == "fps" then table.remove(guitable,6) end
+		local func
+		if cam.args.gizmo then
+			func = getgizmofunc(cam)
+		end
+		local NMC =GL:Dialog(name .."_cam",guitable,func,invisible)
 		return NMC
 end
 	
    
 function Camera(GL,cam_type, name,initialDist)
-
-	name = name or "cam"
 	local cam = {}
+	if type(cam_type)=="table" then
+		cam.args = cam_type
+		cam_type = cam.args.type or "tps"
+	else
+		cam.args = {}
+	end
+	name = name or "cam"
+	
 	function cam:set_dir3Euler(dir)
 		dir = dir.normalize
 		print("dir",dir)
-		local elev = math.asin(dir.y)
+		local elev = asin(dir.y)
 		self.NMC.vars.elevation[0] = elev
-		local cosel = math.cos(elev)
-		local azim = math.atan2(dir.x,-dir.z)
+		local cosel = cos(elev)
+		local azim = atan2(dir.x,-dir.z)
 		self.NMC.vars.azimuth[0] = azim
 	end
 	function cam:set_dir3lookat(dir)
@@ -150,8 +183,10 @@ function Camera(GL,cam_type, name,initialDist)
 	end
 	function cam:CalcCameraEuler(dist, azim,elev,twist)
 		local NMC = self.NMC
-		dist = dist or NMC.dist
-		dist = dist * NMC.focal_fac
+		if cam.type~="fps" then
+			dist = dist or NMC.dist
+			dist = dist * NMC.focal_fac
+		end
 		azim = azim or NMC.azimuth
 		elev = elev or NMC.elevation
 		twist = twist or NMC.twist
@@ -168,12 +203,24 @@ function Camera(GL,cam_type, name,initialDist)
 	function cam:MV()
 		return self:CalcCamera()
 	end
+
 	function cam:setMV(MV)
 		if self.type == "lookat" then
 			local eye,center,up = mat.matToLookAt(MV)
-			--only for lookat camera now, twist not done
 			self.NM.vars.position:set(eye)
-			self.NM.vars.center:set(center)
+			local dir
+			if self.NMC.use_dir then
+				self.NM.vars.center:set(center-eye)
+				dir = eye-center
+			else
+				self.NM.vars.center:set(center)
+				dir = center
+			end
+			dir = dir.normalize
+			local side = -dir:cross(vec3(0,1,0))
+			local upv = dir:cross(side)
+			local ang = atan2(dir*up:cross(upv),upv*up)
+			self.NM.vars.twist[0] = ang
 		else --tps,fps
 			local tw,el,az = R.ZXYE2angles(MV.mat3)
 			tw = -tw; az = -az
@@ -185,17 +232,11 @@ function Camera(GL,cam_type, name,initialDist)
 				local Ri = MV.mat3.t.mat4 --inverse of rotation part
 				local tt = Ri*MV
 				local tran = vec3(tt.m41,tt.m42,tt.m43)
-				-- self.NM.vars.xcamL[0] = -tran.x
-				-- self.NM.vars.ycamL[0] = -tran.y
-				-- self.NM.vars.zcamL[0] = -tran.z
 				self.NM.vars.pos:set{-tran.x,-tran.y,-tran.z}
 			else --tps
 				local Ri = MV.mat3.t.mat4 --inverse of rotation part
 				local tt = MV*Ri
 				local tran = vec3(tt.m41,tt.m42,tt.m43)
-				-- self.NM.vars.xcamL[0] = -tran.x
-				-- self.NM.vars.ycamL[0] = -tran.y
-				-- self.NM.vars.zcamL[0] = -tran.z - self.NM.dist
 				self.NM.vars.pos:set{-tran.x,-tran.y,-tran.z - self.NM.dist}
 			end
 		end
@@ -224,7 +265,7 @@ function Camera(GL,cam_type, name,initialDist)
 			if NMC.focal_fac == 1 then
 				focal = NMC.focal
 			else
-				focal = 360*math.atan(math.tan(NMC.focal*math.pi/360)/NMC.focal_fac)/math.pi
+				focal = 360*atan(tan(NMC.focal*math.pi/360)/NMC.focal_fac)/math.pi
 			end
 			self.focal = focal
 			return mat.perspective(focal,w/h,NMC.nearZ,NMC.farZ)
@@ -245,10 +286,10 @@ function Camera(GL,cam_type, name,initialDist)
 	end
 	
 	function cam:GetZforHeight(height)
-		return height*0.5/math.tan(0.5*math.pi*self.NMC.focal/180)
+		return height*0.5/tan(0.5*math.pi*self.NMC.focal/180)
 	end
 	function cam:GetHeightForZ(Z)
-		return 2*Z*math.tan(0.5*math.pi*self.NMC.focal/180)
+		return 2*Z*tan(0.5*math.pi*self.NMC.focal/180)
 	end
 	
 
@@ -261,7 +302,7 @@ function Camera(GL,cam_type, name,initialDist)
 	--cam:setsize(GL.W,GL.H)
 	cam.drawsize = {}
 	cam.type = cam_type
-	local zforh = initialDist or 0.5/math.tan(0.5*math.pi*35/180)
+	local zforh = initialDist or 0.5/tan(0.5*math.pi*35/180)
 	if cam_type=="tps" or cam_type=="fps" or (type(cam_type)=="boolean" and cam_type==true) then
 		cam.CalcCamera = cam.CalcCameraEuler
 		cam.set_dir3 = cam.set_dir3Euler
