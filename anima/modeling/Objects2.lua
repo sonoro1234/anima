@@ -128,11 +128,6 @@ local function Object(name,objtree)
 	O.rot = vec3(0,0,0)
 	O.pos = vec3(0,0,0)
 	O.twisters = {}
-	-- O.twisters = {{}}
-	-- O.twisters[1].deformang = ffi.new("float[1]")
-	-- O.twisters[1].benddir = ffi.new("int[1]")
-	-- O.twisters[1].axisperm = ffi.new("int[1]")
-	-- O.twisters[1].deformop = ffi.new("int[1]")
 	O.MF = mat.identity()
 	O.MFinv = O.MF.inv
 	O.ModelM = mat.identity()
@@ -534,6 +529,7 @@ local function Objects(GL,camera,args)
 				pos.x,pos.y,pos.z = fpos[0],fpos[1],fpos[2]
 				object:make_model_mat()
 			end
+			ig.SetNextItemWidth(80.0)
 			ig.SliderInt("twister",twn,0,#object.twisters)
 			ig.SameLine()
 			if ig.SmallButton("add") then object:add_twister() end
@@ -757,8 +753,8 @@ end
 
 local GL = GLcanvas{H=800,aspect=1,use_log=false}
 
-local camera = Camera(GL,"tps")
-camera.NM.vars.dist[0] = 19
+local camera = Camera(GL,{gizmo=true,type="tps"})
+--camera.NM.vars.pos:set{0,0,19}
 local objects,msaa
 function GL:init()
 	objects = Objects(GL,camera)--,{doinit=true})
