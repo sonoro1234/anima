@@ -1,4 +1,5 @@
 -- several utility functions
+local ffi = require"ffi"
 function LogFile(str,filename)
 	filename = filename or "logsc.txt"
 	file = io.open(lua2scpath..filename,"w+")
