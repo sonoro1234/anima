@@ -335,7 +335,7 @@ local function Norm(a)
 	if type(a)=="number" then 
 		return math.abs(a) 
 	else
-		return a.norm
+		return a:norm()
 	end
 end
 --this version allows identical points

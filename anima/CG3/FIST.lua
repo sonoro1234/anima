@@ -44,7 +44,7 @@ end
 
 
 local function equal(p1,p2)
-	--return (p1 - p2).norm < 1e-15
+	--return (p1 - p2):norm() < 1e-15
 	return p1==p2
 end
 local function remove_colinear(pt,verbose)
@@ -404,13 +404,13 @@ local function InsertHoles(poly,skip_check)
 			then
 				--when p is in bridge we have equal p and p1, choose the one having minv to the left
 				if not EQ:has(j) then
-					sortedp[#sortedp+1] = {j=j,dist=(minv-p).norm}
+					sortedp[#sortedp+1] = {j=j,dist=(minv-p):norm()}
 				else
 					local a,b
 					if bridges[j] then a=j;b=j+1 else a=j-1;b=j end
 					--print("check",j,b,CG.Sign(poly[mod(a,#poly)],poly[mod(b,#poly)],minv))
 					if CG.Sign(poly[mod(a,#poly)],poly[mod(b,#poly)],minv) > 0 then
-						sortedp[#sortedp+1] = {j=j,dist=(minv-p).norm}
+						sortedp[#sortedp+1] = {j=j,dist=(minv-p):norm()}
 					end
 				end
 			end

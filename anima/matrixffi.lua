@@ -33,7 +33,7 @@ typedef struct vec4 { double x, y, z, w; } vec4;
 local glFloatv = ffi.typeof('float[?]')
 
 local vec2
-vec2 = ffi.metatype('vec2', {
+local metav2 = {
 	__eq = function(a,b) return a.x == b.x and a.y == b.y end,
   __add = function(a, b) return vec2(a.x + b.x, a.y + b.y) end,
   __sub = function(a, b) return vec2(a.x - b.x, a.y - b.y) end,
@@ -54,27 +54,24 @@ vec2 = ffi.metatype('vec2', {
     return vec2(a.x ^ b, a.y ^ b) end
     return a.x * b.x + a.y * b.y
   end,
-  __index = function(v, i)
-    if i == 'gl' then return glFloatv(2, v.x, v.y) end
-	if i == 'xy' then return v end
-	if i == 'norm' then return sqrt(v*v) end
-	if i == 'normalize' then return v/sqrt(v*v) end
-	if i == 'cross' then
-		return function(_,w)
-					 return v.x*w.y-v.y*w.x
-				end
-	end
-	if i == '__serialize' then 
-		return function(v) 
-			return table.concat{"mat.vec2(",v.x,",",v.y,")"}
-		end
-	end
-    return nil
+  gl = function(v) return glFloatv(2, v.x, v.y) end,
+  xy = function(v) return v end,
+  norm = function(v) return sqrt(v*v) end,
+  normalize = function(v) return v/sqrt(v*v) end,
+  cross = function(v,w)
+	return v.x*w.y-v.y*w.x
+  end,
+  __serialize = function(v) 
+	return table.concat{"mat.vec2(",v.x,",",v.y,")"}
   end,
   __tostring = function(v) return '<'..v.x..','..v.y..'>' end
-})
+}
+metav2.__index = metav2
+vec2 = ffi.metatype('vec2',metav2)
+
 local vec3
-vec3 = ffi.metatype('vec3', {
+local metav3 
+metav3 =  {
 	__new = function(tp,x,y,z)
 		if ffi.istype(vec2,x) then
 			return ffi.new(tp,x.x,x.y,y or 0)
@@ -106,38 +103,35 @@ vec3 = ffi.metatype('vec3', {
 		return vec3(a.x ^ b, a.y ^ b, a.z ^ b) end
 		return a.x * b.x + a.y * b.y + a.z * b.z
 	end,
-	__index = function(v, i)
-		if i == 'gl' then return glFloatv(3, v.x, v.y, v.z) end
-		if i == 'xy' then return vec2(v.x, v.y) end
-		if i == 'norm' then return sqrt(v*v) end
-		if i == 'normalize' then return v/sqrt(v*v) end
-		if i == 'cross' then
-			return function(_,w)
-						return vec3(v.y*w.z-v.z*w.y, v.z*w.x-v.x*w.z, v.x*w.y-v.y*w.x)
-					end
-		end
-		if i == 'set' then
-			return function(_,w)
-				v.x,v.y,v.z = w.x,w.y,w.z
-			end
-		end
-		if i == '__serialize' then 
-			return function(v) 
-				return table.concat{"mat.vec3(",v.x,",",v.y,",",v.z,")"}
-			end
-		end
-		return nil
+	gl = function(v)
+		return glFloatv(3, v.x, v.y, v.z)
 	end,
-	-- __newindex = function(v, i, val)
-		-- if i == 0 then 
-			-- v.x = val.x;v.y=val.y;v.z=val.z 
-		-- end
-	--end,
+	xy = function(v)
+		return vec2(v.x, v.y)
+	end,
+	norm = function(v)
+		return sqrt(v*v)
+	end,
+	normalize = function(v)
+		return v/sqrt(v*v)
+	end,
+	cross = function(v,w)
+		return vec3(v.y*w.z-v.z*w.y, v.z*w.x-v.x*w.z, v.x*w.y-v.y*w.x)
+	end,
+	set = function(v,w)
+		v.x,v.y,v.z = w.x,w.y,w.z
+	end,
+	__serialize = function(v) 
+		return table.concat{"mat.vec3(",v.x,",",v.y,",",v.z,")"}
+	end,
 	__tostring = function(v) return '<'..v.x..','..v.y..','..v.z..'>' end,
 	
-})
+}
+metav3.__index = metav3
+vec3 = ffi.metatype('vec3',metav3)
+
 local vec4
-vec4 = ffi.metatype('vec4', {
+local metav4 = {
 	__new = function(tp,x,y,z,w)
 		if ffi.istype(vec3,x) then
 			return ffi.new(tp,x.x,x.y,x.z,y)
@@ -163,19 +157,16 @@ vec4 = ffi.metatype('vec4', {
     return vec4(a.x ^ b, a.y ^ b, a.z ^ b, a.w ^ b) end
     return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w
   end,
-  __index = function(v, i)
-    if i == 'gl' then return glFloatv(4, v.x, v.y, v.z, v.w) end
-	if i == 'xyz' then return vec3(v.x, v.y, v.z) end
-	if i == 'xy' then return vec2(v.x, v.y) end
-	if i == '__serialize' then 
-			return function(v) 
-				return table.concat{"mat.vec4(",v.x,",",v.y,",",v.z,",",v.w,")"}
-			end
-		end
-    return nil
+  gl = function(v) return glFloatv(4, v.x, v.y, v.z, v.w) end,
+  xyz = function(v) return vec3(v.x, v.y, v.z) end,
+  xy = function(v) return vec2(v.x, v.y) end,
+  __serialize = function(v) 
+		return table.concat{"mat.vec4(",v.x,",",v.y,",",v.z,",",v.w,")"}
   end,
   __tostring = function(v) return '<'..v.x..','..v.y..','..v.z..','..v.w..'>' end
-})
+}
+metav4.__index = metav4
+vec4 = ffi.metatype('vec4', metav4)
 
 local M = {vec2 = vec2, vec3 = vec3, vec4 = vec4, vec = vec4,
         vvec2 = ffi.typeof('vec2[?]'),
@@ -317,7 +308,7 @@ mat4 = ffi.metatype('mat4', {
         local v4 = vec4(b.x,b.y,b.z,1)
 		v4 = a*v4
 		v4 = v4/v4.w
-		return v4.xyz
+		return v4:xyz()
     end
     return mat4(
       a.m11*b, a.m21*b, a.m31*b, a.m41*b,
@@ -428,7 +419,7 @@ local function rotate4(rx, ry, rz)
 end
 
 function M.rotate_axis(theta, axis)
-	local u = axis.normalize
+	local u = axis:normalize()
 	local xy = u.x * u.y
 	local xz = u.x * u.z
 	local yz = u.y * u.z
@@ -526,12 +517,12 @@ function M.ortho(l, r, b, t, n, f)
 end
 function M.lookAt(eye,center,up)
 	local Z = eye - center;
-    Z = Z.normalize
+    Z = Z:normalize()
     Y = up;
     X = Y:cross( Z );
 	Y = Z:cross( X )
-	X = X.normalize
-	Y = Y.normalize
+	X = X:normalize()
+	Y = Y:normalize()
 	return mat4(X.x,X.y,X.z,-(X*eye),
 				Y.x,Y.y,Y.z,-(Y*eye),
 				Z.x,Z.y,Z.z,-(Z*eye),
@@ -562,9 +553,9 @@ end
 --gives matrix rotating A to B
 --about axis AxB
 function M.rotAB(A,B)
-	local a,b = A.normalize, B.normalize
+	local a,b = A:normalize(), B:normalize()
 	local v = a:cross(b)
-	local sine = v.norm
+	local sine = v:norm()
 	local cose = a*b
 	--print(sine,cose)
 	if sine == 0 or cose == -1 then
@@ -594,8 +585,8 @@ function M.rotABCD(A,B,C,D)
 end
 
 function M.sin2d(a,b)
-	a = a.normalize
-	b = b.normalize
+	a = a:normalize()
+	b = b:normalize()
 	return a.x*b.y-a.y*b.x
 end
 function M.vec2vao(t,n)
@@ -645,17 +636,17 @@ end
 eye = vec3(1,2,3)
 MV = M.lookAt(eye,vec3(0,0,0),vec3(0,1,0))
 MVinv =MV.inv
-print(MVinv*vec4(0,0,0,1))
+print(MVinv*vec3(0,0,0))
 --]]
 --[[
 aa = vec2(1,2)
 bb = vec2(3,4)
 cc = aa*aa
 aa = vec3(2,2,2)
-print(aa,aa.norm)
+print(aa,aa:norm())
 aa1 = vec2(3,2)
 print(aa1,aa1.norm)
-bb = aa.normalize
+bb = aa:normalize()
 cc = aa + math.sqrt(12)*bb
 print(aa,bb,cc)
 --]]

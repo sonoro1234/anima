@@ -144,7 +144,7 @@ local function AngleI(Ind,i1,i2,i3)
 	
 	local a = p1-p2
 	local b = p3-p2
-	local cose = a*b/(a.norm*b.norm)
+	local cose = a*b/(a:norm()*b:norm())
 	--if cose > 1 or cose < -1 then print(p1,p2,p3);print(a,b); error"bad cose" end
 	--happening when a = l*b
 	cose = (cose > 1 and 1) or (cose < -1 and -1) or cose
@@ -188,7 +188,7 @@ local function PolySimplifyNC_Ind1(poly,Ind,list,eps)
 		if j == k then return end
 		
 		local a,b = Ind.P[poly[i]],Ind.P[poly[j]]
-		local ab = (b-a).normalize
+		local ab = (b-a):normalize()
 		local N = vec2(ab.y,-ab.x)
 		local maxd,kmax = -math.huge
 		
@@ -463,7 +463,7 @@ local function InsertHoles(Ind,skip_check)
 		local sortedp = {}
 		for j,p in ipairs(Ind) do
 			if p < minx then
-				sortedp[#sortedp+1] = {j=j,dist=(Ind.P[minv]-Ind.P[p]).norm}
+				sortedp[#sortedp+1] = {j=j,dist=(Ind.P[minv]-Ind.P[p]):norm()}
 			end
 		end
 		-- table.sort(sortedp,function(a,b) return a.dist < b.dist end)

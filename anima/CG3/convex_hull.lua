@@ -31,8 +31,8 @@ function CG.Jarvis_Conv(P)
 			if (det > 0) then 
 				q_next = i
 			elseif det == 0 then
-				local a = (P[q_next] - P[q_now]).xy.norm
-				local b = (P[q_now] - P[i]).xy.norm
+				local a = (P[q_next] - P[q_now]):xy():norm()
+				local b = (P[q_now] - P[i]):xy():norm()
 				if(a==b) then
 					print(a,b,P[q_now], P[q_next], P[i])
 					error("bad jarvis")

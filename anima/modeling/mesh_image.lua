@@ -46,8 +46,8 @@ local function MeshRectify(GL,camara,tex,facdim)
 
 
 local function rotAB2d(a,b)
-	local an = a.normalize
-	local bn = b.normalize
+	local an = a:normalize()
+	local bn = b:normalize()
 	local cosR = an*bn
 	local sinR = an.x*bn.y-an.y*bn.x
 	return mat.mat3(cosR,-sinR,0,
@@ -57,7 +57,7 @@ end
 -- a being new y destination
 local function shearH(a,inv)
 	local yinv = false
-	local an = a.normalize
+	local an = a:normalize()
 	if an.y < 0 then an.y = -an.y;yinv=true end
 	local cosS = an.x
 	local sinS = an.y
@@ -116,7 +116,7 @@ function MR:MeshRectifyTriang(num)
 	
 	local has_nans = false
 	
-	local R = rotAB2d(uA.xy,mat.vec2(1,0))
+	local R = rotAB2d(uA:xy(),mat.vec2(1,0))
 	
 	local A1,ok = shearH(R*vA,true)
 	if not ok then return end

@@ -100,14 +100,14 @@ local function Editor(GL,updatefunc,args)
 			local mposvp = vec2(ScreenToViewport(mpos.x, mpos.y))
 			if curr_hole[0] == 0 then
 				for i,sc in ipairs(M.sccoors[NM.curr_spline]) do
-					if (sc-mposvp).norm < 5 then
+					if (sc-mposvp):norm() < 5 then
 						dl:AddCircleFilled(ViewportToScreen(sc.x,sc.y), 4, ig.U32(1,1,1,1))
 					end
 				end
 			else
 				local hole = M.sccoors[NM.curr_spline].holes[curr_hole[0]]
 				for i,sc in ipairs(hole) do
-					if (sc-mposvp).norm < 5 then
+					if (sc-mposvp):norm() < 5 then
 						dl:AddCircleFilled(ViewportToScreen(sc.x,sc.y), 4, ig.U32(1,1,1,1))
 					end
 				end
@@ -142,13 +142,13 @@ local function Editor(GL,updatefunc,args)
 				if curr_hole[0] == 0 then
 					for i,v in ipairs(M.sccoors[NM.curr_spline]) do
 						local vec = v - mposvp
-						if (vec.norm) < 5 then touched = i; break end
+						if (vec:norm()) < 5 then touched = i; break end
 					end
 				else
 					local hole = M.sccoors[NM.curr_spline].holes[curr_hole[0]]
 					for i,v in ipairs(hole) do
 						local vec = v - mposvp
-						if (vec.norm) < 5 then touched = i; break end
+						if (vec:norm()) < 5 then touched = i; break end
 					end
 				end
 				if touched > 0 then
@@ -188,13 +188,13 @@ local function Editor(GL,updatefunc,args)
 				if curr_hole[0] == 0 then
 					for i,v in ipairs(M.sccoors[NM.curr_spline]) do
 						local vec = v - mposvp
-						if (vec.norm) < 5 then touched = i; break end
+						if (vec:norm()) < 5 then touched = i; break end
 					end
 				else
 					local hole = M.sccoors[NM.curr_spline].holes[curr_hole[0]]
 					for i,v in ipairs(hole) do
 						local vec = v - mposvp
-						if (vec.norm) < 5 then touched = i; break end
+						if (vec:norm()) < 5 then touched = i; break end
 					end
 				end
 				if touched > 0 then doingedit = touched end
@@ -205,7 +205,7 @@ local function Editor(GL,updatefunc,args)
 				if curr_hole[0] == 0 then
 					for i,v in ipairs(M.sccoors[NM.curr_spline]) do
 						local vec = v - mposvp
-						if (vec.norm) < 5 then touched = i; break end
+						if (vec:norm()) < 5 then touched = i; break end
 					end
 					if touched > 0 then
 						table.remove(M.sccoors[NM.curr_spline],touched)
@@ -215,7 +215,7 @@ local function Editor(GL,updatefunc,args)
 					local hole = M.sccoors[NM.curr_spline].holes[curr_hole[0]]
 					for i,v in ipairs(hole) do
 						local vec = v - mposvp
-						if (vec.norm) < 5 then touched = i; break end
+						if (vec:norm()) < 5 then touched = i; break end
 					end
 					if touched > 0 then
 						table.remove(hole,touched)

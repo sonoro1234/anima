@@ -75,7 +75,7 @@ function newCamera(GL,cam_type, name,initialDist)
 	name = name or "cam"
 	local cam = {}
 	function cam:set_dir3Euler(dir)
-		dir = dir.normalize
+		dir = dir:normalize()
 		print("dir",dir)
 		local elev = math.asin(dir.y)
 		self.NMC.vars.elevation[0] = elev
@@ -84,7 +84,7 @@ function newCamera(GL,cam_type, name,initialDist)
 		self.NMC.vars.azimuth[0] = azim
 	end
 	function cam:set_dir3lookat(dir)
-		dir = dir.normalize
+		dir = dir:normalize()
 		print("dir",dir)
 		local center = self.NMC.center
 		local pos = self.NMC.position
@@ -101,7 +101,7 @@ function newCamera(GL,cam_type, name,initialDist)
 		local near = cam.NMC.nearZ
 		local dir = cam:MP().inv * (mat.vec4(ndc.x,ndc.y,-1,1)*near)
 		dir = dir/dir.w
-		dir = vec3(dir.x,dir.y,dir.z).normalize
+		dir = vec3(dir.x,dir.y,dir.z):normalize()
 		self:set_dir3(dir)
 	end
 	function cam:CalcCameraLookat()

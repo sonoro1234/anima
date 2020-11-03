@@ -113,15 +113,15 @@ function M.sanitize_boundary(polys)
 				if pt==pt2 then 
 					local a = poly[i] - poly[mod(i-1,#poly)]
 					local b = poly[mod(i+1,#poly)] - poly[i]
-					local ap = vec2(-a.y,a.x).normalize 
-					local bp = vec2(-b.y,b.x).normalize
-					local cp = (0.5*(ap+bp)).normalize
+					local ap = vec2(-a.y,a.x):normalize() 
+					local bp = vec2(-b.y,b.x):normalize()
+					local cp = (0.5*(ap+bp)):normalize()
 					modpoly[i] = poly[i] - cp*0.025 --out
 					local a = poly[j] - poly[mod(j-1,#poly)]
 					local b = poly[mod(j+1,#poly)] - poly[j]
-					local ap = vec2(-a.y,a.x).normalize 
-					local bp = vec2(-b.y,b.x).normalize
-					local cp = (0.5*(ap+bp)).normalize
+					local ap = vec2(-a.y,a.x):normalize() 
+					local bp = vec2(-b.y,b.x):normalize()
+					local cp = (0.5*(ap+bp)):normalize()
 					modpoly[j] = poly[j] - cp*0.025 --out
 				end
 			end
@@ -134,9 +134,9 @@ function M.sanitize_boundary(polys)
 				--if pt == hole[j] then
 					local a = hole[j] - hole[mod(j-1,#hole)]
 					local b = hole[mod(j+1,#hole)] - hole[j]
-					local ap = vec2(a.y,-a.x).normalize 
-					local bp = vec2(b.y,-b.x).normalize
-					local cp = (0.5*(ap+bp)).normalize
+					local ap = vec2(a.y,-a.x):normalize() 
+					local bp = vec2(b.y,-b.x):normalize()
+					local cp = (0.5*(ap+bp)):normalize()
 					modhole[j] = hole[j] + cp*0.05
 				--end
 			end

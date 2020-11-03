@@ -114,8 +114,8 @@ local function Object(GL,camera,args)
 	
 		--get position
 		local mbounds = {M*self.bounds[1],M*self.bounds[2]}
-		--prtable(self.bounds,self.bounds[2]-self.bounds[1],(self.bounds[2]-self.bounds[1]).norm)
-		--prtable(mbounds,mbounds[2]-mbounds[1],(mbounds[2]-mbounds[1]).norm)
+		--prtable(self.bounds,self.bounds[2]-self.bounds[1],(self.bounds[2]-self.bounds[1]):norm())
+		--prtable(mbounds,mbounds[2]-mbounds[1],(mbounds[2]-mbounds[1]):norm())
 		--local height = mbounds[2].y*2 -- - self.frame.center.y) --self.bounds[1].y
 		local height = math.abs(mbounds[2].y - mbounds[1].y)
 		--print("height",height)
@@ -168,12 +168,12 @@ local function Object(GL,camera,args)
 		NM.vars.pos:set{M.m41,M.m42,M.m43}
 		
 		local scale = {}
-		-- scale[1] = vec3(M.m11, M.m21, M.m31).norm
-		-- scale[2] = vec3(M.m12, M.m22, M.m32).norm
-		-- scale[3] = vec3(M.m13, M.m23, M.m33).norm
-		scale[1] = vec3(M.m11, M.m12, M.m13).norm
-		scale[2] = vec3(M.m21, M.m22, M.m23).norm
-		scale[3] = vec3(M.m31, M.m32, M.m33).norm
+		-- scale[1] = vec3(M.m11, M.m21, M.m31):norm()
+		-- scale[2] = vec3(M.m12, M.m22, M.m32):norm()
+		-- scale[3] = vec3(M.m13, M.m23, M.m33):norm()
+		scale[1] = vec3(M.m11, M.m12, M.m13):norm()
+		scale[2] = vec3(M.m21, M.m22, M.m23):norm()
+		scale[3] = vec3(M.m31, M.m32, M.m33):norm()
 		NM.vars.scale:set(scale)
 		
 		M = M*mat.scale(1/scale[1],1/scale[2],1/scale[3])

@@ -27,7 +27,7 @@ function CG.PolySimplify(poly,eps)
 		if j == k then return end
 		
 		local a,b = poly[i],poly[j]
-		local ab = (b-a).normalize
+		local ab = (b-a):normalize()
 		local N = vec2(ab.y,-ab.x)
 		local maxd,kmax = -math.huge
 		
@@ -104,7 +104,7 @@ local function PolySimplifyNC1(poly,eps)
 		if j == k then return end
 		
 		local a,b = poly[i],poly[j]
-		local ab = (b-a).normalize
+		local ab = (b-a):normalize()
 		local N = vec2(ab.y,-ab.x)
 		local maxd,kmax = -math.huge
 		
@@ -233,7 +233,7 @@ local function PolySimplifyNC2(poly,list,eps)
 		if j == k then return end
 		
 		local a,b = poly[i],poly[j]
-		local ab = (b-a).normalize
+		local ab = (b-a):normalize()
 		local N = vec2(ab.y,-ab.x)
 		local maxd,kmax = -math.huge
 		
@@ -460,7 +460,7 @@ local function PolySimplifyNCh1(poly,mainpoly,eps)
 		if j == k then return end
 		
 		local a,b = poly[i],poly[j]
-		local ab = (b-a).normalize
+		local ab = (b-a):normalize()
 		local N = vec2(ab.y,-ab.x)
 		local maxd,kmax = -math.huge
 		
@@ -563,7 +563,7 @@ local function PolySimplifyNC3(poly,pset,eps)
 		if j == k then return end
 		
 		local a,b = poly[i],poly[j]
-		local ab = (b-a).normalize
+		local ab = (b-a):normalize()
 		local N = vec2(ab.y,-ab.x)
 		local maxd,kmax = -math.huge
 		
@@ -709,7 +709,7 @@ function CG.PolygonPad(pol,dis,square,minlen)
 	local signs = {}
 	for i=1,#pol do
 		signs[i] = CG.Sign(pol[mod(i-1,#pol)],pol[i],pol[mod(i+1,#pol)])
-		local edge = (pol[mod(i+1,#pol)]-pol[i]).normalize
+		local edge = (pol[mod(i+1,#pol)]-pol[i]):normalize()
 		local nor = vec2(edge.y,-edge.x) 
 		pol2[#pol2+1] = dis*nor+pol[i]
 		pol2[#pol2+1] = dis*nor+pol[mod(i+1,#pol)]
@@ -724,8 +724,8 @@ function CG.PolygonPad(pol,dis,square,minlen)
 			if signs[i] > 0 then 
 				local center = pol[i]
 				local p1,p2 = pol2[a],pol2[b]
-				local dir1 = (p1 - center).normalize
-				local dir2 = (p2 - center).normalize
+				local dir1 = (p1 - center):normalize()
+				local dir2 = (p2 - center):normalize()
 				local iniang = atan2(dir1.y, dir1.x)
 				local endang = atan2(dir2.y, dir2.x)
 				--print("convex",i,iniang, endang, dir1, dir2)

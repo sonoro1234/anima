@@ -37,10 +37,10 @@ local function InCircle(e,points)
 end
 
 function M.Circumcircle(a,b,c,d,points)
-	local a1 = points[a].xy --TODO xy is just in case points are xyz
-	local b1 = points[b].xy
-	local c1 = points[c].xy
-	local d = points[d].xy
+	local a1 = points[a]:xy() --TODO xy is just in case points are xyz
+	local b1 = points[b]:xy()
+	local c1 = points[c]:xy()
+	local d = points[d]:xy()
 	local sign = CG.Sign(a1,b1,c1)--rightturn_2(a1,b1,c1)
 	--sign = ((sign > 0) and 1) or ((sign < 0) and -1) or 0
 	local a,b,c = a1-d, b1-d, c1-d

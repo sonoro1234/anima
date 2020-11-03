@@ -255,9 +255,9 @@ local function Object(name,objtree)
 		self.pos = vec3(M.m41,M.m42,M.m43)
 		
 		local scale = {}
-		scale[1] = vec3(M.m11, M.m12, M.m13).norm
-		scale[2] = vec3(M.m21, M.m22, M.m23).norm
-		scale[3] = vec3(M.m31, M.m32, M.m33).norm
+		scale[1] = vec3(M.m11, M.m12, M.m13):norm()
+		scale[2] = vec3(M.m21, M.m22, M.m23):norm()
+		scale[3] = vec3(M.m31, M.m32, M.m33):norm()
 		self.scale = vec3(scale[1],scale[2],scale[3])
 		
 		M = M*mat.scale(1/scale[1],1/scale[2],1/scale[3])
@@ -480,7 +480,7 @@ local function Objects(GL,camera,args)
 		Os.root:tree(editor)
 		ig.Separator()
 		if editor.object then
-			local scale = editor.object.scale.gl
+			local scale = editor.object.scale:gl()
 			if MVEscale:Draw(scale,nil,nil,0.1) then
 				editor.object.scale = vec3(scale)
 				editor.object:make_model_mat()

@@ -399,18 +399,18 @@ end
 --expects two ortogonal directions
 function M.make_frame(t)
 	if not t.X then
-		t.Y = t.Y.normalize
-		t.Z = t.Z.normalize
+		t.Y = t.Y:normalize()
+		t.Z = t.Z:normalize()
 		assert(t.Y*t.Z==0)
 		t.X = t.Y:cross(t.Z)
 	elseif not t.Y then
-		t.X = t.X.normalize
-		t.Z = t.Z.normalize
+		t.X = t.X:normalize()
+		t.Z = t.Z:normalize()
 		assert(t.X*t.Z==0)
 		t.Y = t.Z:cross(t.X)
 	elseif not t.Z then
-		t.Y = t.Y.normalize
-		t.X = t.X.normalize
+		t.Y = t.Y:normalize()
+		t.X = t.X:normalize()
 		assert(t.Y*t.X==0)
 		t.Z = t.X:cross(t.Y)
 	else
@@ -479,7 +479,7 @@ function M.mesh(t)
 				-- print(normals[i],#normals,i) 
 				-- assert(not alltris[i])
 			-- end
-			normals[i] = normals[i] and normals[i].normalize or zerovec
+			normals[i] = normals[i] and normals[i]:normalize() or zerovec
 		end
 		--assert(#normals == #self.points)
 		self.normals = normals
@@ -520,7 +520,7 @@ function M.mesh(t)
 		local minb,maxb = CG.bounds(self.points)
 		local diff = maxb-minb
 		for i,v in ipairs(self.points) do
-			local vv = v.xy - minb
+			local vv = v:xy() - minb
 			self.tcoords[i] = vec2(vv.x/diff.x,vv.y/diff.y)
 		end
 		return self
@@ -531,7 +531,7 @@ function M.mesh(t)
 		if ffi.istype(mat.mat4, MM) then
 			M3 = MM.mat3
 			tt = MM*mat.vec4(0,0,0,1)
-			tt = tt.xyz/tt.w
+			tt = tt:xyz()/tt.w
 		else
 			M3 = MM
 			tt = vec3(0,0,0)
@@ -541,7 +541,7 @@ function M.mesh(t)
 			-- local vec = mat.vec4(self.points[i],1)
 			-- local pR = MM * vec
 			-- pR = pR/pR.w
-			-- self.points[i] = pR.xyz
+			-- self.points[i] = pR:xyz()
 			points[i] = M3 * points[i] + tt
 		end
 	end

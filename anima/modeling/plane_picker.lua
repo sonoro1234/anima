@@ -56,7 +56,7 @@ local function PlanePicker(GL,camera,updatefunc)
 							local touched = -1
 							for i,v in ipairs(PR.sccoors) do
 								local vec = mat.vec2(v[1] - X, v[2] - Y)
-								if (vec.norm) < 3 then touched = i; break end
+								if (vec:norm()) < 3 then touched = i; break end
 							end
 							--print(touched)
 							if touched > 0 then
@@ -147,7 +147,7 @@ local function PlanePicker(GL,camera,updatefunc)
 		eyepoint = eyepoint/eyepoint.w
 
 		table.insert(self.sccoors,{X,Y})
-		table.insert(eyepoints,eyepoint.xyz)
+		table.insert(eyepoints,eyepoint:xyz())
 		return X,Y
 	end
 
@@ -233,9 +233,9 @@ local function PlanePicker(GL,camera,updatefunc)
 		local eyenorm = self.height --(eyepointsR[4]-eyepointsR[1]).norm --eye.norm
 		local eyeW = eye2world(eye)
 
-		local p1 = eye2world(eye - self.vpointX.normalize*eyenorm*0.5)
-		local p2 = eye2world(eye - self.vpointY.normalize*eyenorm*0.5)
-		local p3 = eye2world(eye + self.vpointY.normalize*eyenorm*0.5)
+		local p1 = eye2world(eye - self.vpointX:normalize()*eyenorm*0.5)
+		local p2 = eye2world(eye - self.vpointY:normalize()*eyenorm*0.5)
+		local p3 = eye2world(eye + self.vpointY:normalize()*eyenorm*0.5)
 		
 		local fx = eye2world(eye + self.frame.X * eyenorm)
 		local fy = eye2world(eye + self.frame.Y * eyenorm)
@@ -287,22 +287,22 @@ local function PlanePicker(GL,camera,updatefunc)
 		end
 	end
 	function PR:set_pointsR()
-		local vlineN = self.vline.normalize --/self.vline.z --.normalize 
+		local vlineN = self.vline:normalize() --/self.vline.z --:normalize() 
 		local centroid = vec3(0,0,0)
 		--get plane on point1 at distance zval
-		local D = vlineN * eyepoints[1].normalize*NM.zval 
+		local D = vlineN * eyepoints[1]:normalize()*NM.zval 
 		-- move all points to be in same plane -> eyepointsR[i]*vlineN == D
 		-- but make the plane distance to origin == zval instead of D
 		for i,pO in ipairs(eyepoints) do
-			local ray = pO.normalize
+			local ray = pO:normalize()
 			eyepointsR[i] = ray * (D/(vlineN*ray))
 			centroid = centroid + eyepointsR[i]
 		end
 		
 		self.centroid = centroid*0.25
 		self.frame.center = self.centroid
-		self.width = (eyepointsR[2]-eyepointsR[1]).norm
-		self.height = (eyepointsR[2]-eyepointsR[3]).norm
+		self.width = (eyepointsR[2]-eyepointsR[1]):norm()
+		self.height = (eyepointsR[2]-eyepointsR[3]):norm()
 		
 	end
 	
@@ -335,8 +335,8 @@ local function PlanePicker(GL,camera,updatefunc)
 		self.vline = vpointX:cross(vpointY)
 		
 		self.frame = {}
-		self.frame.X = vpointX.normalize
-		self.frame.Z = self.vline.normalize
+		self.frame.X = vpointX:normalize()
+		self.frame.Z = self.vline:normalize()
 		self.frame.Y = self.frame.Z:cross(self.frame.X)
 		
 		self:set_pointsR()

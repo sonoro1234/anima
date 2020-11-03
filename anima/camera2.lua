@@ -112,7 +112,7 @@ function Camera(GL,cam_type, name,initialDist)
 	name = name or "cam"
 	
 	function cam:set_dir3Euler(dir)
-		dir = dir.normalize
+		dir = dir:normalize()
 		print("dir",dir)
 		local elev = asin(dir.y)
 		self.NMC.vars.elevation[0] = elev
@@ -121,7 +121,7 @@ function Camera(GL,cam_type, name,initialDist)
 		self.NMC.vars.azimuth[0] = azim
 	end
 	function cam:set_dir3lookat(dir)
-		dir = dir.normalize
+		dir = dir:normalize()
 		print("dir",dir)
 		local center = self.NMC.center
 		local pos = self.NMC.position
@@ -137,7 +137,7 @@ function Camera(GL,cam_type, name,initialDist)
 		local near = cam.NMC.nearZ
 		local dir = cam:MP().inv * (mat.vec4(ndc.x,ndc.y,-1,1)*near)
 		dir = dir/dir.w
-		dir = vec3(dir.x,dir.y,dir.z).normalize
+		dir = vec3(dir.x,dir.y,dir.z):normalize()
 		self:set_dir3(dir)
 	end
 	------------------coordinate transforms
@@ -146,14 +146,14 @@ function Camera(GL,cam_type, name,initialDist)
 		local v2 = v2*2/vec2(GL.W,GL.H) - vec2(1,1)
 		local eyepoint = MPinv * vec4(v2.x,v2.y,-1,1)
 		eyepoint = eyepoint/eyepoint.w
-		eyepoint = (-1*(eyepoint/eyepoint.z)).xyz
+		eyepoint = (-1*(eyepoint/eyepoint.z)):xyz()
 		return eyepoint
 	end
 	function cam:Eye2Viewport(eyep, MP)
 		MP = MP or self:MP()
 		local ndc = MP*mat.vec4(eyep,1)
-		ndc = (ndc/ndc.w).xyz
-		ndc = (ndc.xy + vec2(1,1))
+		ndc = (ndc/ndc.w):xyz()
+		ndc = (ndc:xy() + vec2(1,1))
 		ndc = vec2(ndc.x*GL.W*0.5,ndc.y*GL.H*0.5)
 		return ndc
 	end
@@ -216,7 +216,7 @@ function Camera(GL,cam_type, name,initialDist)
 				self.NM.vars.center:set(center)
 				dir = center
 			end
-			dir = dir.normalize
+			dir = dir:normalize()
 			local side = -dir:cross(vec3(0,1,0))
 			local upv = dir:cross(side)
 			local ang = atan2(dir*up:cross(upv),upv*up)

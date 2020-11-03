@@ -84,7 +84,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 		end
 		local vpoint1 = quad.vpoints[1].vp
 		if vpoint1.z == 0 then --ideal point
-			vpoint1 = notin1 + vec2(vpoint1.x,vpoint1.y).normalize
+			vpoint1 = notin1 + vec2(vpoint1.x,vpoint1.y):normalize()
 		else
 			vpoint1 = PR:Eye2Viewport(vpoint1)
 		end
@@ -102,7 +102,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 		end
 		local vpoint2 = quad.vpoints[2].vp
 		if vpoint2.z == 0 then --ideal point
-			vpoint2 = notin2 + vec2(vpoint2.x,vpoint2.y).normalize
+			vpoint2 = notin2 + vec2(vpoint2.x,vpoint2.y):normalize()
 		else
 			vpoint2 = PR:Eye2Viewport(vpoint2)
 		end
@@ -114,7 +114,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 		--reuse if already exists
 		c = ig.ImVec2(c.x,c.y)
 		for i,p in ipairs(points) do
-			if (p-c).norm < 0.1 then
+			if (p-c):norm() < 0.1 then
 				quad[4] = i
 				return 
 			end
@@ -187,7 +187,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 			a = vec2(a.x,a.y)
 			local b = points[quad[nottouched[2]]]
 			b = vec2(b.x,b.y)
-			local ray = vec2(vpoint.x, vpoint.y).normalize
+			local ray = vec2(vpoint.x, vpoint.y):normalize()
 			local proj = ray*(b-a)
 			local c = a + ray*proj
 			points[quad[nottouched[2]]] = ig.ImVec2(c.x,c.y)
@@ -196,7 +196,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 		vpoint = PR:Eye2Viewport(vpoint)
 		local a = points[quad[nottouched[1]]]
 		a = vec2(a.x,a.y)
-		local ray = (a - vpoint).normalize
+		local ray = (a - vpoint):normalize()
 		local b = points[quad[nottouched[2]]]
 		b = vec2(b.x,b.y)
 		local ray2 = b-vpoint
@@ -236,7 +236,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 			local mposvp = ig.ImVec2(ScreenToViewport(mpos.x, mpos.y))
 			for i,plane in ipairs(PR.planes) do
 				local center = PR:Eye2Viewport(plane.frame.center)
-				if (center - mposvp).norm < 5 then
+				if (center - mposvp):norm() < 5 then
 					curr_plane = i 
 					NM.vars.choose_p[0] = false
 				end
@@ -255,7 +255,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 			local touched = -1
 			local mposvp = ig.ImVec2(ScreenToViewport(mpos.x, mpos.y))
 			for i=1,#points do 
-				if (points[i] - mposvp).norm < 5 then touched = i;break end
+				if (points[i] - mposvp):norm() < 5 then touched = i;break end
 			end
 			if touched < 0 then 
 				points[#points+1]= mposvp 
@@ -346,7 +346,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 		end
 		local vpoint1 = quad.vpoints[1].vp
 		if vpoint1.z == 0 then --ideal point
-			vpoint1 = notin1 + vec2(vpoint1.x,vpoint1.y).normalize
+			vpoint1 = notin1 + vec2(vpoint1.x,vpoint1.y):normalize()
 		else
 			vpoint1 = PR:Eye2Viewport(vpoint1)
 		end
@@ -364,7 +364,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 		end
 		local vpoint2 = quad.vpoints[2].vp
 		if vpoint2.z == 0 then --ideal point
-			vpoint2 = notin2 + vec2(vpoint2.x,vpoint2.y).normalize
+			vpoint2 = notin2 + vec2(vpoint2.x,vpoint2.y):normalize()
 		else
 			vpoint2 = PR:Eye2Viewport(vpoint2)
 		end
@@ -458,7 +458,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 			local touched = -1
 			local mposvp = ig.ImVec2(ScreenToViewport(mpos.x, mpos.y))
 			for i=1,#points do 
-				if (points[i] - mposvp).norm < 5 then touched = i end
+				if (points[i] - mposvp):norm() < 5 then touched = i end
 			end
 			if touched > 0 then editind=touched end
 		end
@@ -490,7 +490,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 				local point = points[quad[i]]
 				local scpoint = ViewportToScreen(point)
 				dl:AddCircleFilled(scpoint, 4, ig.U32(1,0,0,1))
-				if (picking or NM.edit) and (scpoint - mpos).norm < 5 then 
+				if (picking or NM.edit) and (scpoint - mpos):norm() < 5 then 
 					dl:AddCircleFilled(scpoint, 6, ig.U32(1,1,0,1)) 
 				end
 				pointsI[i-1] = scpoint
@@ -534,7 +534,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 							local ray
 							--ideal point
 							if vpoint.z == 0 then
-								ray = vpoint.normalize
+								ray = vpoint:normalize()
 							else
 								vpoint = PR:Eye2Viewport(vpoint)
 								ray = a - vpoint
@@ -879,14 +879,14 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 		local eyepoint = camera:MP().inv * (mat.vec4(ndc.x,ndc.y,1,1))
 		eyepoint = eyepoint/eyepoint.w
 		eyepoint = - eyepoint/eyepoint.z
-		return eyepoint.xyz
+		return eyepoint:xyz()
 	end
 	
 	function PR:Eye2Viewport(eyep)
 		local ndc = camera:MP()*mat.vec4(eyep,1)
-		ndc = (ndc/ndc.w).xyz
+		ndc = (ndc/ndc.w):xyz()
 		--ndc = ndc/ndc.z
-		ndc = (ndc.xy + vec2(1,1))
+		ndc = (ndc:xy() + vec2(1,1))
 		ndc = vec2(ndc.x*GL.W*0.5,ndc.y*GL.H*0.5)
 		return ndc
 	end
@@ -947,11 +947,11 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 			
 			---lines
 			local eye = eyepointsR[1]
-			local eyenorm = (eyepointsR[4]-eyepointsR[1]).norm --eye.norm
+			local eyenorm = (eyepointsR[4]-eyepointsR[1]):norm() --eye.norm
 	
-			local p1 = eye - plane.vpointX.normalize*eyenorm*0.5
-			local p2 = eye - plane.vpointY.normalize*eyenorm*0.5
-			local p3 = eye + plane.vpointY.normalize*eyenorm*0.5
+			local p1 = eye - plane.vpointX:normalize()*eyenorm*0.5
+			local p2 = eye - plane.vpointY:normalize()*eyenorm*0.5
+			local p3 = eye + plane.vpointY:normalize()*eyenorm*0.5
 			
 			local fx = eye + plane.frame.X * eyenorm
 			local fy = eye + plane.frame.Y * eyenorm
@@ -997,14 +997,14 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 			for j=1,4 do
 				local ind = plane.quad[j]
 				local epoint = self.epoints[ind]
-				local ray = epoint.normalize
+				local ray = epoint:normalize()
 				local old = self.epointsR[ind]
 				self.epointsR[ind] = ray * (D/(vlineN*ray))
 				centroid = centroid + self.epointsR[ind]
 				cent = cent + self.epointsR[ind]
 				if old then
-					if (old - self.epointsR[ind]).norm > 1e-5 then
-						print("---old-new plane:",i,j,(old - self.epointsR[ind]).norm)
+					if (old - self.epointsR[ind]):norm() > 1e-5 then
+						print("---old-new plane:",i,j,(old - self.epointsR[ind]):norm())
 						print(old, self.epointsR[ind] )
 					end
 				end
@@ -1014,8 +1014,8 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 		
 		self.centroid = centroid/(4*#self.planes)
 		--self.frame.center = self.centroid
-		--self.width = (eyepointsR[2]-eyepointsR[1]).norm
-		--self.height = (eyepointsR[2]-eyepointsR[3]).norm
+		--self.width = (eyepointsR[2]-eyepointsR[1]):norm()
+		--self.height = (eyepointsR[2]-eyepointsR[3]):norm()
 		
 	end
 	
@@ -1129,9 +1129,9 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 
 			local vpointX, vpointY, vline = calcVline(epoints)
 			local frame = {}
-			frame.X = vpointX.normalize
-			frame.Z = vline.normalize
-            frame.Y = frame.Z:cross(frame.X).normalize
+			frame.X = vpointX:normalize()
+			frame.Z = vline:normalize()
+            frame.Y = frame.Z:cross(frame.X):normalize()
 			
 			local lvao 
 			if self.planes[i] then

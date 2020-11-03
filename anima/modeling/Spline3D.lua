@@ -105,23 +105,23 @@ local function Spline3D(GL, camera,updatefunc)
 			end
 			--make planes coord sys
 			local Mt = mat.translate(-prsc[1])
-			local X = (prsc[2] - prsc[1]).normalize
+			local X = (prsc[2] - prsc[1]):normalize()
 			local Mr = mat.rotABCD(R,vec3(0,0,1),X,vec3(1,0,0))--.mat4
 			Mr = Mr.mat4
 			local Mtr = Mr*Mt
 			for i,v in ipairs(prsc) do
 				local vv = Mtr*vec4(v,1)
-				prsc[i] = (vv/vv.w).xyz
+				prsc[i] = (vv/vv.w):xyz()
 			end
 			--calc minlen for spline
 			local minb,maxb = CG.bounds(prsc)
 			local diff = maxb - minb
-			local minlen = 5*diff.norm/400
+			local minlen = 5*diff:norm()/400
 			if prsc.holes then
 				for i,hole in ipairs(prsc.holes) do
 					for j,v in ipairs(hole) do
 						local vv = Mtr*vec4(v,1)
-						hole[j] = (vv/vv.w).xyz
+						hole[j] = (vv/vv.w):xyz()
 					end
 				end
 			end

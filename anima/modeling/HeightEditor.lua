@@ -92,18 +92,18 @@ local function HeightEditor(GL,updatefunc)
 	local function HeightSet(P,Pol,bridges)
 		if NM.height == 0 then return end
 		local function dist2seg(a,b,c)
-			local ac = (c - a).xy
-			local bc = (c - b).xy
-			local ab = (b - a).xy
+			local ac = (c - a):xy()
+			local bc = (c - b):xy()
+			local ab = (b - a):xy()
 			
 			local scosa = ab*ac
 			local scosb = -ab*bc
 			if scosa < 0 or scosb < 0 then --angulo obtuso cogemos la menor
-				local dista = ac.norm
-				local distb = bc.norm
+				local dista = ac:norm()
+				local distb = bc:norm()
 				return (dista < distb) and dista or distb
 			else --angulos agudos distancia punto recta
-				local abn = ab.normalize
+				local abn = ab:normalize()
 				abn = vec2(-abn.y,abn.x)
 				return math.abs(abn*ac)
 			end
@@ -203,7 +203,7 @@ local function HeightEditor(GL,updatefunc)
 		local diff = maxb-minb
 		local tcoords = {}
 		for i,v in ipairs(polypoints) do
-			local vv = v.xy - minb
+			local vv = v:xy() - minb
 			 tcoords[i] = vec2(vv.x/diff.x,vv.y/diff.y)
 		end
 		local ps = {}
@@ -269,7 +269,7 @@ local function HeightEditor(GL,updatefunc)
 		local diff = maxb-minb
 		local tcoords = {}
 		for i,v in ipairs(points_add) do
-			local vv = v.xy - minb
+			local vv = v:xy() - minb
 			 tcoords[i] = vec2(vv.x/diff.x,vv.y/diff.y)
 		end
 		

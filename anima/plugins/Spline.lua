@@ -76,7 +76,7 @@ local function Editor(GL,updatefunc,args)
 							local touched = -1
 							for i,v in ipairs(M.sccoors[NM.curr_spline]) do
 								local vec = mat.vec2(v[1] - X, v[2] - Y)
-								if (vec.norm) < 3 then touched = i; break end
+								if (vec:norm()) < 3 then touched = i; break end
 							end
 							if touched > 0 then
 								GL.mouse_pos_cb = function(x,y)
@@ -99,7 +99,7 @@ local function Editor(GL,updatefunc,args)
 							local touched = -1
 							for i,v in ipairs(M.sccoors[NM.curr_spline]) do
 								local vec = mat.vec2(v[1] - X, v[2] - Y)
-								if (vec.norm) < 3 then touched = i; break end
+								if (vec:norm()) < 3 then touched = i; break end
 							end
 							if touched > 0 then
 								table.remove(M.sccoors[NM.curr_spline],touched)
@@ -118,7 +118,7 @@ local function Editor(GL,updatefunc,args)
 							local touched = -1
 							for i,v in ipairs(M.sccoors[NM.curr_spline]) do
 								local vec = mat.vec2(v[1] - X, v[2] - Y)
-								if (vec.norm) < 3 then touched = i; break end
+								if (vec:norm()) < 3 then touched = i; break end
 							end
 							if touched > 0 then
 								M:set_last(touched)

@@ -28,7 +28,7 @@ local function Angle(p1,p2,p3,CW)
 	
 	local a = p1-p2
 	local b = p3-p2
-	local normprod = a.norm*b.norm
+	local normprod = a:norm()*b:norm()
 	local cose = a*b/(normprod)
 	--if cose > 1 or cose < -1 then print(p1,p2,p3);print(a,b); error"bad cose" end
 	--happening when a = l*b
@@ -129,7 +129,7 @@ function M.IntersecPoint3(a,b,c,d)
 	local pt = a + t*(b - a)
 	local t2 = (pt-c)/(d - c)
 	--local pt2,ok2,tb2 = M.IntersecPoint2(c,d,a,b)
-	--print("IntersecPoint3",pt,pt2,pt==pt2,ok2,tb2,t2,string.format("%g , %g",(pt-pt2).norm, t2.x-tb2))
+	--print("IntersecPoint3",pt,pt2,pt==pt2,ok2,tb2,t2,string.format("%g , %g",(pt-pt2):norm(), t2.x-tb2))
 	--assert(t2.x==t2.y,t2)
 	return pt, true, t, t2.x
 end
