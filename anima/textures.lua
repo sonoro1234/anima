@@ -1213,6 +1213,19 @@ function Texture(w,h,formato,pTexor,args)
 		--fbo:release()
 		return ret
 	end
+	
+	function tex:resample_nearest(w,h)
+		local resfbo = self.GL:initFBO({no_depth=true},w,h)
+		resfbo:Bind()
+		self:Bind()
+		gl.glTexParameteri(glc.GL_TEXTURE_2D,glc.GL_TEXTURE_MAG_FILTER,glc.GL_NEAREST)
+		gl.glTexParameteri(glc.GL_TEXTURE_2D,glc.GL_TEXTURE_MIN_FILTER,glc.GL_NEAREST)
+		self:drawcenter(resfbo.w,resfbo.h)
+		resfbo:UnBind()
+		local tex = resfbo:tex()
+		resfbo:delete(true) --keep texture
+		return tex
+	end
 	function tex:resample(w,h)
 		local resfbo = self.GL:initFBO({no_depth=true},w,h)
 		resfbo:Bind()
