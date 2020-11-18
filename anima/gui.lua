@@ -708,10 +708,11 @@ function gui.Dialog(name,vars,func, invisible)
 					end
 				end
 			elseif v[3] == guitypes.drag then
+				local formatst = v[4].format or "%.3f"
 				if v[4] and v[4].olddrag then
 					local vspeed = v[4].precission or 0.003
 					if defs[v[1]].size > 1 then
-						if ig["DragFloat"..defs[v[1]].sizeN](v[1], pointers[v[1]].data,vspeed, v[4].min or ig.FLT_MAX , v[4].max or ig.FLT_MAX , "%.3f") then
+						if ig["DragFloat"..defs[v[1]].sizeN](v[1], pointers[v[1]].data,vspeed, v[4].min or ig.FLT_MAX , v[4].max or ig.FLT_MAX , formatst) then
 							self.dirty = true
 							namevar = v[1]
 							if v[5] then 
@@ -719,7 +720,7 @@ function gui.Dialog(name,vars,func, invisible)
 							end
 						end
 					else
-						if ig.DragFloat(v[1], pointers[v[1]],vspeed, v[4].min, v[4].max, "%.3f") then
+						if ig.DragFloat(v[1], pointers[v[1]],vspeed, v[4].min, v[4].max, formatst) then
 							self.dirty = true
 							namevar = v[1]
 							if v[5] then 
@@ -729,7 +730,7 @@ function gui.Dialog(name,vars,func, invisible)
 					end
 				else
 					local pp = defs[v[1]].size > 1 and pointers[v[1]].data or pointers[v[1]]
-					if defs[v[1]].MVE:Draw(pp,v[4].min, v[4].max,v[4].precission or 0.1,nil,nil) then
+					if defs[v[1]].MVE:Draw(pp,v[4].min, v[4].max,v[4].precission or 0.1,formatst,nil) then
 						self.dirty = true
 						namevar = v[1]
 						if v[5] then 
