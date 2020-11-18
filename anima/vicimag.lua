@@ -142,7 +142,8 @@ function M.pixel_data(data,w,h,p)
 			else
 				dx = dx + 1
 			end
-			return dx, dy, self:pix(i+dx,j+dy)
+			return dx, dy, self:pixR(i+dx,j+dy)
+			--return dx, dy, self.data + (i + dx + (j+dy)*w)*p
 		end
 	end
 	--returns i1,j1 indexes as relative increments respect i,j and pix with max increment==r
@@ -156,7 +157,8 @@ function M.pixel_data(data,w,h,p)
 			else
 				state.dx = state.dx + 1
 			end
-			return state.dx, state.dy, state.self:pix(state.i+state.dx,state.j+state.dy)
+			return state.dx, state.dy, state.self:pixR(state.i+state.dx,state.j+state.dy)
+			--return state.dx, state.dy, state.self.data + (state.i + state.dx + (state.j+state.dy)*w)*p
 		end
 	function pdat:square_it2(i,j,r)
 		local state = {
