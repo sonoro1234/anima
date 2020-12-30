@@ -375,35 +375,35 @@ void main()
 {
 	vec3 color = vec3(0);
 	
-	for( int m=0; m<AA; m++ )
+	for( int m=0; m<AA; m++ ){
         for( int n=0; n<AA; n++ )
         {
-		vec2 rr = vec2( float(m), float(n) ) / float(AA);
-		vec2 fcoord = gl_FragCoord.xy + rr;
-		vec3 dir = GetDir(fcoord);
+			vec2 rr = vec2( float(m), float(n) ) / float(AA);
+			vec2 fcoord = gl_FragCoord.xy + rr;
+			vec3 dir = GetDir(fcoord);
 	
-	if (Jitter) {
-        uint seed = uint(fcoord.x) * uint(fcoord.y);
-        eyepos += dir * (-0.5 + randhash(seed, 1.0));
-    }
+			if (Jitter) {
+				uint seed = uint(fcoord.x) * uint(fcoord.y);
+				eyepos += dir * (-0.5 + randhash(seed, 1.0));
+			}
 	
-	vec3 p = vec3(0);
-	float dist = raymarch(eyepos,dir,p);
-	//float dist = raymarchHeight(eyepos,dir,p);
+			vec3 p = vec3(0);
+			float dist = raymarch(eyepos,dir,p);
+			//float dist = raymarchHeight2(eyepos,dir,p);
 	
-	if (dophong){
-	//if (dist < end && dist > -0.5){
-	if (dist > 0.0){
-		vec3 normal = estimateNormal(p);
-		float brigth = phong_light(dist,p,eyepos,normal,LightPosition);	
-		color += vec3(1)*brigth;
-	}//else
-		//color += vec3(0,1,0);
-	}else{
-		color += render(p,eyepos,dist,dir,tecnique);
+			if (dophong){
+				//if (dist < end && dist > -0.5){
+				if (dist > 0.0){
+					vec3 normal = estimateNormal(p);
+					float brigth = phong_light(dist,p,eyepos,normal,LightPosition);	
+					color += vec3(1)*brigth;
+				}//else
+				//color += vec3(0,1,0);
+			}else{
+				color += render(p,eyepos,dist,dir,tecnique);
+			}
+		}
 	}
-	}
-	
 	
 	color /= float(AA*AA);
     // post
