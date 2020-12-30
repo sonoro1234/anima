@@ -212,6 +212,10 @@ function PrepareAudioRT(GL,soundfile,offset,args)--asio,dev_id)
 	else
 		local apis = rt.compiled_api()
 		api = apis[0]
+		print"available RtAudio APIs"
+		for i=0,rt.get_num_compiled_apis() do
+			print(i,ffi.string(rt.api_name(apis[i])))
+		end
 	end
 	
 	local dac = rt.create(api)
@@ -1439,13 +1443,15 @@ function GLcanvas(GL)
 	end
 	GL.render_source = "master1080"
 	GL.comp_source = "compressed1080"
+	GL.comp_ext = ".cmp"
+	GL.render_ext = ".tif"
 	function GL:Texture(w,h,form,texor)
 		local tex = Texture(w,h,form,texor,{GL=self})
 		tex.GL = self
 		local path = require"anima.path"
 		function tex:GLLoad(filename)
 			local sourcedir = (self.GL.DORENDER and self.GL.render_source) or self.GL.comp_source
-			local ext = (self.GL.DORENDER and ".tif") or ".cmp"
+			local ext = (self.GL.DORENDER and self.GL.render_ext) or self.GL.comp_ext
 			local fname = path.chain(self.GL.rootdir,sourcedir,filename..ext)
 			return self:Load(fname,self.GL.SRGB,self.GL.mipmaps)
 		end
