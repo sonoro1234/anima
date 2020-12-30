@@ -1011,6 +1011,7 @@ function VAO(t,program,indices,tsize,isize)
 			tVao.num_indices = isize
 			i_b_sizes = isize * ffi.sizeof("GLuint")
 		end
+		tVao.ffiindices = ffiindices
 		local ebo = ffi.new("GLuint[1]")
 		glext.glGenBuffers(1, ebo);
 		glext.glBindBuffer(glc.GL_ELEMENT_ARRAY_BUFFER, ebo[0]);
@@ -1128,6 +1129,18 @@ function VAO(t,program,indices,tsize,isize)
 		else
 			gl.glDrawArrays(type, ini, count);
 		end
+	end
+	function tVao:multi_draw(type,first,count,primcount)
+		type = type or glc.GL_TRIANGLES
+		self:check_counts()
+		glext.glBindVertexArray(vao[0]);
+		glext.glMultiDrawArrays(type, first,count,primcount);
+	end
+	function tVao:multi_draw_elm(type,first,count,primcount)
+		type = type or glc.GL_TRIANGLES
+		self:check_counts()
+		glext.glBindVertexArray(vao[0]);
+		glext.glMultiDrawElements(type,count,glc.GL_UNSIGNED_INT,first,primcount);
 	end
 	function tVao:draw_elm(type,count,ini)
 		ini = ini or 0
