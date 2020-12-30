@@ -5,12 +5,12 @@ local fonter = require"fonter"
 local filen = [[C:\anima\lua\anima\fonts\ProggyTiny.ttf]]
 local filen = [[C:\anima\lua\anima\fonts\SilkRemington-SBold.ttf]]
 --local filen = [[C:\anima\lua\anima\fonts\fontawesome-webfont.ttf]]
-local filen = [[C:\anima\lua\anima\fonts\verdana.ttf]]
+--local filen = [[C:\anima\lua\anima\fonts\verdana.ttf]]
 
 --fonter.mode = "polys"
 local ch1=string.byte"P"
 
---ProfileStart("3vfsi4m1")
+--ProfileStart()--"3vfsi4m1")
  local f1 = fonter.new_face(filen,{{1,255}},1024*4,5)--,{{35,35}})
 --local f1 = fonter.new_face(filen,{{ch1,ch1}},1024*4,5)
 --ProfileStop()
