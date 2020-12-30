@@ -1148,6 +1148,7 @@ function Texture(w,h,formato,pTexor,args)
 		end
 		image:Destroy()
 	end
+	tex.prog = prog
 	function tex:blit(w,h)
 		w = w or self.width
 		h = h or self.height
