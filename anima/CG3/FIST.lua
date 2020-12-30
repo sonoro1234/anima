@@ -80,14 +80,14 @@ local function remove_colinear(pt,verbose)
 			i = i + 1 
 		end
 	end
-	if #pt < 3 then pt[2]=nil;pt[1]=nil;print"zero poly--------------" end
+	--if #pt < 3 then pt[2]=nil;pt[1]=nil;print"zero poly--------------" end
 	if verbose then print("collinear removes",colin) end
 
 	return colin
 end
 
 local function remove_consec_repeated(poly,verbose)
-	if #poly==0 then return 0 end
+	if #poly < 2 then return 0 end
 	local toremove = {}
 	for i=1,#poly-1 do
 		local j = i + 1
