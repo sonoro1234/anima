@@ -1137,9 +1137,9 @@ function gui.SetImGui(GL)
 		file:close()
 	end)
 	
-	function GL:preset_load(fname)
+	function GL:preset_load(fname,doerror)
 		local func,err = loadfile(fname)
-		if not func then print(err); return end
+		if not func then print(err); if doerror then error"" end return end
 		local NMs = func()
 		--prtable("NMs",NMs)
 		for k,v in ipairs(GL.imguimodals) do
