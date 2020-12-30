@@ -190,14 +190,14 @@ local argspeli
 function GL.init()
 	
 	--textura = Texture():Load(path.this_script_path().."/canvas.png",false,true)
-	--textura = Texture():Load([[c:\luaGL\media\estanque-001.jpg]],false,true)
+	textura = GL:Texture():Load([[c:\luaGL\media\estanque-001.jpg]],false,true)
 	--textura = Texture():Load(path.this_script_path()..[[\tex03.jpg]])
 	--textura = Texture():Load(path.this_script_path()..[[\_MG_5819.png]],false,true)
 	--textura = Texture():Load([[c:\luagl\frames_anima\photofx\5909tn.tif]],false,true)
 	--textura = Texture():Load([[c:\luagl\media\noise.tif]])
-	--textura = Texture():Load("c:/luagl/media/piscina.tif",false,true)
+	--textura = GL:Texture():Load("c:/luagl/media/piscina.tif",false,true)
 	--textura = Texture():Load([[G:\VICTOR\pelis\7thDoor\frames3\frames/frame1500.tif]])
-	textura = Texture():Load([[G:\VICTOR\pelis\pelipino\master1080\arbolenflordos\frame-0001.tif]])
+	--textura = Texture():Load([[G:\VICTOR\pelis\pelipino\master1080\arbolenflordos\frame-0001.tif]])
 	--textura = Texture():Load[[c:/luagl/media\frame-0001.tif]]
 	--textura = Texture():Load[[G:\VICTOR\pelis\hadas\master1080\leslie_giro1\frame-0001.tif]]
 	--textura = Texture():Load[[c:/luagl/media\amsterdam.jpg]]

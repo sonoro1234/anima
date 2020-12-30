@@ -239,7 +239,7 @@ end
 
 GL = GLcanvas{fps=250,RENDERINI=0,RENDEREND=208,H=700,aspect = 1.5}
 function GL.init()
-	textura2 = Texture():Load([[C:\luaGL\animacion\resonator6\resonator-038.jpg]])
+	textura2 = GL:Texture():Load([[C:\luaGL\media\fandema1.tif]])
 	theplug = ES.make(GL)
 end
 function GL.draw(t,w,h)

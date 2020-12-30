@@ -213,7 +213,7 @@ ext = make(GL)
 function GL.init()
 
 	--textura = Texture():Load[[C:\luajitbin2.0.2-copia\animacion\resonator6\resonator-038.jpg]]
-	textura = Texture():Load[[G:\VICTOR\pelis\hadas\master1080\leslie_giro1\frame-0001.tif]]
+	textura = GL:Texture():Load[[C:\LuaGL\pelis\hadas\master1080\leslie_giro1\frame-0001.tif]]
 	--texblur = textura:
 end
 

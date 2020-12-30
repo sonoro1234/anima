@@ -583,7 +583,7 @@ local function ColorKmeans(GL,K)
 end
 
 --[=[
-GL = GLcanvas{fps=25,H=700,aspect = 1.5,DEBUG=true,fbo_nearest=false,SDL=false}
+GL = GLcanvas{fps=25,H=700,aspect = 1.5,DEBUG=true,fbo_nearest=true,SDL=false}
 
 local textura
 local ColorK = ColorKmeans(GL,5)
@@ -596,10 +596,12 @@ local NM = GL:Dialog("test",{
 local Dbox = GL:DialogBox()
 Dbox:add_dialog(NM)
 Dbox:add_dialog(ColorK.NM)
-
+local fileName = [[C:\LuaGL\frames_anima\edges_detection\flowers2.png]]
+--local fileName = [[C:\LuaGL\frames_anima\edges_detection\bici.png]]
 function GL.init()
 	--GLSL.default_version = "#version 330\n"
-	textura = GL:Texture():Load([[C:\luaGL\frames_timeline2\media\fiestaafrica.tif]],srgb)
+	--textura = GL:Texture():Load([[C:\luaGL\frames_timeline2\media\fiestaafrica.tif]],srgb)
+	textura = GL:Texture():Load(fileName,srgb)
 	--textura = GL:Texture():Load(path.this_script_path()..[[\Lab_ab.tif]]--[[\lab1.tif]])
 	--textura = GL:Texture():Load([[D:\VICTOR\pelis\loopmar\master1080\loop1\frame-0001.tif]],srgb)
 	--textura = GL:Texture():Load[[D:\VICTOR\pelis\mixolidian\animacion\mixxxx\frame-0029.tif]]

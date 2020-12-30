@@ -372,6 +372,7 @@ fileName = [[C:\luaGL\frames_anima\im_test\Cosmos_original.jpg]]
 --fileName = path.this_script_path()..[[\imagenes\unnamed0.jpg]]
 --fileName=[[C:\luagl\animacion\resonator6\resonator-038.jpg]]
 --fileName = [[C:\LuaGL\frames_anima\flood_fill\dummy.png]]
+fileName = [[C:\LuaGL\frames_anima\edges_detection\flowers2.png]]
 local texture
 local FF,mixer,fbo
 function GL.init()
