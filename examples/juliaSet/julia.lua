@@ -43,6 +43,7 @@ file:close()
 
 local prog, vao
 function GL:init()
+	GLSL.default_version = "#version 330\n"
 	prog = GLSL:new():compile(vertsh, fragsh)
 	vao = VAO({vPos={-1.0,-1.0,1.0,-1.0,1.0, 1.0,-1.0, 1.0 }},prog)
 end
