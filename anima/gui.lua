@@ -444,11 +444,11 @@ function gui.ImGui_Transport(GL)
 			--ig.SetNextWindowPos(ig.ImVec2(0, ig.GetIO().DisplaySize.y - height));
 			ig.SetNextWindowSize(ig.ImVec2(ig.GetIO().DisplaySize.x,0))--height));
 		end
-		ig.PushStyleVarFloat(imgui.ImGuiStyleVar_Alpha,0.0001)
+		ig.PushStyleVar_Float(imgui.ImGuiStyleVar_Alpha,0.0001)
 		
 		if ig.Begin("Transport",nil,imgui.ImGuiWindowFlags_NoTitleBar + imgui.ImGuiWindowFlags_NoResize) then
 
-			ig.PushStyleVarFloat(imgui.ImGuiStyleVar_Alpha,HoverAction())
+			ig.PushStyleVar_Float(imgui.ImGuiStyleVar_Alpha,HoverAction())
 			
 			if ig.Button(play_but_text) then 
 				transport.play()
@@ -468,14 +468,14 @@ function gui.ImGui_Transport(GL)
 			ig.SameLine()
 			
 			if ig.Button("save") then  save_image_browser.open() end
-				ig.PushStyleVarFloat(imgui.ImGuiStyleVar_Alpha,1)
+				ig.PushStyleVar_Float(imgui.ImGuiStyleVar_Alpha,1)
 				save_image_browser.draw()
 				ig.PopStyleVar(1)
 			ig.SameLine()
 			
 			if GL.opentoolbox then ig.OpenPopup"toolbox";GL.opentoolbox=false end
 			if ig.Button("tools") then ig.OpenPopup("toolbox") end
-				ig.PushStyleVarFloat(imgui.ImGuiStyleVar_Alpha,1)
+				ig.PushStyleVar_Float(imgui.ImGuiStyleVar_Alpha,1)
 				ToolBox(GL):draw()
 				ig.PopStyleVar(1)
 			ig.SameLine()
