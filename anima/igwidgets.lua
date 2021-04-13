@@ -87,13 +87,13 @@ function W.SingleValueEdit()
 			self._numberFormat = format;
 			
 			local iog = ig.GetIO();
-            local id = ig.GetIDStr("jog"..tostring(self));
+            local id = ig.GetID("jog"..tostring(self));
             if (id == self._activeJogDialId) then
 
                 if self._state == JogDialStates.Dialing then
-                        ig.PushStyleColorU32(ig.lib.ImGuiCol_Button, ig.U32(0,0,0,1));
-                        ig.PushStyleColorU32(ig.lib.ImGuiCol_ButtonHovered, ig.U32(0,0,0,1));
-                        ig.PushStyleColorU32(ig.lib.ImGuiCol_ButtonActive, ig.U32(0,0,0,1));
+                        ig.PushStyleColor(ig.lib.ImGuiCol_Button, ig.U32(0,0,0,1));
+                        ig.PushStyleColor(ig.lib.ImGuiCol_ButtonHovered, ig.U32(0,0,0,1));
+                        ig.PushStyleColor(ig.lib.ImGuiCol_ButtonActive, ig.U32(0,0,0,1));
                         self:DrawButtonWithDynamicLabel(self:FormatValueForButton(self._editValue), size);
                         ig.PopStyleColor(3);
 
