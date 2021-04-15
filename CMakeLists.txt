@@ -17,7 +17,7 @@ endif()
 set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 ]]
 ######################################
-
+option(LUAJIT_WINDOW_ONLY "Build only LuaJIT-Window" OFF)
 option(ANIMA_BUILD_LUAJIT "Build LuaJIT" ON)
 option(ANIMA_BUILD_IM "Build im" ON)
 option(ANIMA_BUILD_GLFW "Build LuaJIT-GLFW" ON)
@@ -66,9 +66,9 @@ endfunction()
 
 
 #im modules
-if(ANIMA_BUILD_IM)
+if(ANIMA_BUILD_IM AND NOT LUAJIT_WINDOW_ONLY)
 add_subdirectory(mirror-im)
-endif(ANIMA_BUILD_IM)
+endif(ANIMA_BUILD_IM AND NOT LUAJIT_WINDOW_ONLY)
 
 #luajit project
 if(ANIMA_BUILD_LUAJIT)
@@ -107,7 +107,7 @@ if(ANIMA_BUILD_IMGUI)
 	endif(NOT ANIMA_BUILD_GLFW AND NOT ANIMA_BUILD_SDL)
 	set(IMPL_OPENGL2 ON CACHE INTERNAL "imgui for opengl2")
 	set(IMPL_OPENGL3 ON CACHE INTERNAL "imgui with opengl3")
-	set(IMPL_EXTRAS ON)
+	set(IMPL_EXTRAS ON CACHE INTERNAL "imgui extras")
 	add_subdirectory(LuaJIT-ImGui)
 endif(ANIMA_BUILD_IMGUI)
 
@@ -119,7 +119,9 @@ endif(ANIMA_BUILD_RTAUDIO)
 
 add_subdirectory(luajit-async)
 
+if(NOT LUAJIT_WINDOW_ONLY)
 add_subdirectory(LuaJIT-par)
+endif(NOT LUAJIT_WINDOW_ONLY)
 
 if(WIN32)
 	if(MSVC)
@@ -131,13 +133,18 @@ if(WIN32)
 endif()
 set(LUA_INCLUDE_DIR ${CMAKE_BINARY_DIR}/LuaJIT/luajit-2.1/project_luajit/src)
 
+if(NOT LUAJIT_WINDOW_ONLY)
 add_subdirectory(luanoise)
 add_subdirectory(LuaJIT-IPOL)
+endif(NOT LUAJIT_WINDOW_ONLY)
 #########install
 
+if(NOT LUAJIT_WINDOW_ONLY)
 install(DIRECTORY anima DESTINATION ${LUAJIT_BIN}/lua)
-install(FILES luafilesystem/lfs_ffi.lua luafilesystem/lfs.lua DESTINATION ${LUAJIT_BIN}/lua)
 install(DIRECTORY examples DESTINATION ${LUAJIT_BIN})
+endif(NOT LUAJIT_WINDOW_ONLY)
+
+install(FILES luafilesystem/lfs_ffi.lua luafilesystem/lfs.lua DESTINATION ${LUAJIT_BIN}/lua)
 install(DIRECTORY LuaJIT-ImGui/examples DESTINATION ${LUAJIT_BIN}/examples/LuaJIT-ImGui)
 install(DIRECTORY LuaJIT-rtaudio/samples DESTINATION ${LUAJIT_BIN}/examples/LuaJIT-rtaudio)
 install(DIRECTORY LuaJIT-SDL2/test DESTINATION ${LUAJIT_BIN}/examples/LuaJIT-SDL2)
