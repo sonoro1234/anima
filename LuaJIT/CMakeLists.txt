@@ -13,8 +13,8 @@ set(ljsrc ${ljpre}/project_luajit/src)
 if(UNIX)
     ExternalProject_Add(project_luajit
       PREFIX ${ljpre}
-      SOURCE_DIR ${CMAKE_SOURCE_DIR}/LuaJIT/LuaJIT
-	  CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/LuaJIT/LuaJIT ${ljdir}
+      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT
+	  CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT ${ljdir}
       BINARY_DIR ${ljdir}
       BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} CCOPT="-DLUAJIT_ENABLE_LUA52COMPAT"
       INSTALL_COMMAND ""
@@ -24,8 +24,8 @@ else(UNIX)
   if(MSVC)
     ExternalProject_Add(project_luajit
       PREFIX ${ljpre}
-	  SOURCE_DIR ${CMAKE_SOURCE_DIR}/LuaJIT/LuaJIT
-	  CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/LuaJIT/LuaJIT ${ljdir}
+	  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT
+	  CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT ${ljdir}
       BINARY_DIR ${ljsrc}
       BUILD_COMMAND ${ljsrc}/msvcbuild.bat #dont know how to set DLUAJIT_ENABLE_LUA52COMPAT
       INSTALL_COMMAND ""
@@ -34,8 +34,8 @@ else(UNIX)
   else(MSVC) #mingw
       ExternalProject_Add(project_luajit
       PREFIX ${ljpre}
-	  SOURCE_DIR ${CMAKE_SOURCE_DIR}/LuaJIT/LuaJIT
-	  CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/LuaJIT/LuaJIT ${ljdir}
+	  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT
+	  CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT ${ljdir}
       BINARY_DIR ${ljsrc}
       BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} CCOPT="-DLUAJIT_ENABLE_LUA52COMPAT"
       INSTALL_COMMAND ""
