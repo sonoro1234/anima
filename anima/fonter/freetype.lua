@@ -247,7 +247,7 @@ end
 function face.glyph_name(face, glyph_index, buffer, buffer_max)
 	buffer = buffer or ffi.new('uint8_t[?]', buffer_max or 64)
 	local ret = C.FT_Get_Glyph_Name(face, glyph_index, buffer, buffer_max)
-	return ret ~= 0 and ffi.string(buffer) or nil
+	return ret == 0 and ffi.string(buffer) or nil
 end
 
 function face.postscript_name(face)

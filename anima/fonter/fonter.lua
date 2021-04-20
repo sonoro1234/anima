@@ -43,6 +43,8 @@ local function face_char_outline_to_polyset(face,fosize,ch,polyset,steps)
 	local invsize = 1/(fosize)
 	face:load_char(ch, ft.C.FT_LOAD_NO_BITMAP)
 	local glyph = face.glyph
+	local glyph_index = face:char_index(ch )--glyph.glyph_index
+	print(ch,glyph_index,face:glyph_name(glyph_index,nil,64))
 	local outline = glyph.outline
 	--print("outline: contours",outline.n_contours,",points:", outline.n_points)
 	--for i=0,outline.n_points-1 do
@@ -309,6 +311,8 @@ function M.new_face(filename,ranges,size,steps)
 	local T = {ranges=ranges or {{32,127}},size=size or 4096,steps=steps or 5}
 	T.face = M.library:face(filename)
 	T.has_kerning = bit.band(T.face.face_flags,ft.C.FT_FACE_FLAG_KERNING)
+	T.has_glyph_names = bit.band(T.face.face_flags,ft.C.FT_FACE_FLAG_GLYPH_NAMES)
+	print("T.has_glyph_names",T.has_glyph_names)
 	function T.GetStrPolys(self,str,fosize) return M.GetStrPolys(self.face,str,fosize) end
 	
 	T.chars = {}
