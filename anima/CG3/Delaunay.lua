@@ -22,10 +22,10 @@ local function InCircle2(e,points)
 end
 
 local function InCircle(e,points)
-	local a1 = points[e.edge[1]].xy --TODO xy is just in case points are xyz
-	local b1 = points[e.edge[2]].xy
-	local c1 = points[e[1]].xy
-	local d = points[e[2]].xy
+	local a1 = points[e.edge[1]]:xy() --TODO xy is just in case points are xyz
+	local b1 = points[e.edge[2]]:xy()
+	local c1 = points[e[1]]:xy()
+	local d = points[e[2]]:xy()
 	local sign = rightturn_2(a1,b1,c1)
 	--sign = ((sign > 0) and 1) or ((sign < 0) and -1) or 0
 	local a,b,c = a1-d, b1-d, c1-d
