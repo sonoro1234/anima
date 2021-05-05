@@ -4,7 +4,7 @@
 -- click doit on resynth
 
 require"anima"
-local GL = GLcanvas{H=700 ,aspect=1,vsync=true,use_log=true}
+local GL = GLcanvas{H=700 ,aspect=1,vsync=true,use_log=false}
 GL.use_presets = true
 
 local vert_sh = [[
