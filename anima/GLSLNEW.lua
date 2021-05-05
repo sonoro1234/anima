@@ -575,7 +575,7 @@ function initFBO(wFBO,hFBO,args)
 		return old_framebuffer[0]
    end
    --read to CPU memory
-   function thefbo:get_pixels(format,type,whichbuf,buffer)
+   function thefbo:get_pixels(format,type,whichbuf,buffer, offX,offY, W, H)
 		whichbuf = whichbuf or 0
 		local types = {[glc.GL_FLOAT] = "float[?]", [glc.GL_UNSIGNED_SHORT]="short[?]"}
 		local formats = {[glc.GL_RED]=1,[glc.GL_RGB]=3,[glc.GL_RGBA]=4}
@@ -590,12 +590,17 @@ function initFBO(wFBO,hFBO,args)
 		local bufferHeight = ffi.new("GLint[1]")
 		--glext.glGetRenderbufferParameteriv(glc.GL_RENDERBUFFER, glc.GL_RENDERBUFFER_WIDTH, bufferWidth);
 		--glext.glGetRenderbufferParameteriv(glc.GL_RENDERBUFFER, glc.GL_RENDERBUFFER_HEIGHT, bufferHeight);
-		local w,h = wFBO,hFBO --bufferWidth[0],bufferHeight[0]
+		local iniX,iniY,w,h
+		if offX then
+			iniX,iniY,w,h = offX,offY,W,H
+		else
+			iniX,iniY,w,h = 0,0,wFBO,hFBO --bufferWidth[0],bufferHeight[0]
+		end
 	
 		local pixelsUserData = buffer or ffi.new(allocstr,w*h*ncomponents)
 		--assert(ffi.sizeof(pixelsUserData)==
 		gl.glPixelStorei(glc.GL_PACK_ALIGNMENT, 1)
-		gl.glReadPixels(0,0, w, h, format, type, pixelsUserData)
+		gl.glReadPixels(iniX,iniY, w, h, format, type, pixelsUserData)
 
 		glext.glBindFramebuffer(glc.GL_READ_FRAMEBUFFER, oldfbo);
 		return pixelsUserData,w,h
