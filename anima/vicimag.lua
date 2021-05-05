@@ -108,6 +108,14 @@ function M.load(filename)
 	return pData,width[0],height[0],bitplanes[0]
 end
 
+function M.tex2pd(tex, planes)
+	planes = planes or glc.GL_RGB
+	local formats = {[glc.GL_RED]=1,[glc.GL_RGB]=3,[glc.GL_RGBA]=4}
+	local data = tex:get_pixels(glc.GL_FLOAT,planes)
+	return M.pixel_data(data, tex.width, tex.height,formats[planes])
+end
+
+
 function M.pixel_data(data,w,h,p)
 	data = data or ffi.new("float[?]",w*h*p)
 	local pdat = {data=data,w=w,h=h,p=p,npix=w*h}
@@ -147,7 +155,7 @@ function M.pixel_data(data,w,h,p)
 		end
 	end
 	--returns i1,j1 indexes as relative increments respect i,j and pix with max increment==r
-	--respects image borders
+	--respects image borders, 
 	local function it2(state)
 		--print(state,self)
 			if state.dx == state.maxdx then
@@ -160,6 +168,7 @@ function M.pixel_data(data,w,h,p)
 			return state.dx, state.dy, state.self:pixR(state.i+state.dx,state.j+state.dy)
 			--return state.dx, state.dy, state.self.data + (state.i + state.dx + (state.j+state.dy)*w)*p
 		end
+	--From (i-r,j-r) to (i+r,j+r)
 	function pdat:square_it2(i,j,r)
 		local state = {
 			i = i,
@@ -168,6 +177,36 @@ function M.pixel_data(data,w,h,p)
 			maxdx = min(self.w - i - 1, r),
 			mindy = max(-j,-r),
 			maxdy = min(self.h - j - 1, r),
+		}
+		state.dx = state.mindx - 1
+		state.dy = state.mindy
+		state.self = self
+		return it2,state,self
+	end
+	--From (i,j) to (i+r-1,j+r-1)
+	function pdat:square_itUL(i,j,r)
+		local state = {
+			i = i,
+			j = j,
+			mindx = 0,
+			maxdx = min(self.w - i - 1, r-1),
+			mindy = 0,
+			maxdy = min(self.h - j - 1, r-1),
+		}
+		state.dx = state.mindx - 1
+		state.dy = state.mindy
+		state.self = self
+		return it2,state,self
+	end
+	--From (i,j) to (i+r1-1,j+r2-1)
+	function pdat:rectangle_itUL(i,j,r1,r2)
+		local state = {
+			i = i,
+			j = j,
+			mindx = 0,
+			maxdx = min(self.w - i - 1, r1-1),
+			mindy = 0,
+			maxdy = min(self.h - j - 1, r2-1),
 		}
 		state.dx = state.mindx - 1
 		state.dy = state.mindy
@@ -222,6 +261,11 @@ function M.pixel_data(data,w,h,p)
 		return pixel
 	end
 	local zero = ffi.new("float[?]",p)
+	pdat.zero = zero
+	function pdat:pixCheck(x,y)
+		if x<0 or x>=w or y<0 or y>=h then error"bad index" end
+		return data + (x+ y*w)*p 
+	end
 	function pdat:pix(x,y)
 		if x<0 or x>=w or y<0 or y>=h then return zero end
 		return data + (x+ y*w)*p 
@@ -232,6 +276,12 @@ function M.pixel_data(data,w,h,p)
 	end
 	function pdat:lpix(n)
 		return data + n*p
+	end
+	local floor = math.floor
+	function pdat:lpixTOij(np)
+		local row = floor(np/w)
+		local col = np - row * w
+		return col, row
 	end
 	--pdat.pix = pdat.get_pix
 	function pdat:set_pixel(pixel,x,y)
@@ -251,12 +301,12 @@ function M.pixel_data(data,w,h,p)
 	function pdat:save(filename)
 		M.save(filename,self.data,w,h,p)
 	end
-	function pdat:mirror()
+	function pdat:same_dims()
 		local pData = ffi.new("float[?]",w*h*p)
 		return M.pixel_data(pData,w,h,p)
 	end
 	function pdat:flipV()
-		local pdf = self:mirror()
+		local pdf = self:same_dims()
 		print("flipV",w,h,p)
 		for y = 0,h-1 do
 			for x = 0,w-1 do
