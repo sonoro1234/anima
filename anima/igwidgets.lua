@@ -120,7 +120,7 @@ function W.SingleValueEdit()
 							ig.SetKeyboardFocusHere();
 							self:SetState(JogDialStates.TextInput);
 						end
-                        ig.PushStyleColorU32(ig.lib.ImGuiCol_Text, IsNaN(self._editValue)
+                        ig.PushStyleColor(ig.lib.ImGuiCol_Text, IsNaN(self._editValue)
                                                                 and ig.U32(1,0,0,1)
                                                                 or ig.U32(1,1,1,1));
                         ig.SetNextItemWidth(size.x);
