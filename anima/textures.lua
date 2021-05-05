@@ -1119,7 +1119,7 @@ function Texture(w,h,formato,pTexor,args)
 	tex_Lanczosprog[ctx] = Lanczosprog
 	local Boxreduceprog = tex_Boxreduceprog[ctx] or make_tex_Boxreduceprog()
 	tex_Boxreduceprog[ctx] = Boxreduceprog
-	
+
 	function tex:get_pixels(type,format)
 		type = type or glc.GL_UNSIGNED_BYTE
 		format = format or glc.GL_RGBA
@@ -1161,11 +1161,11 @@ function Texture(w,h,formato,pTexor,args)
 	end
 	function tex:drawpos(x,y,w,h)
 		self:Bind(0)
-		prog:drawpos(x,y,w,h)
+		prog:drawpos(x,y,w or self.width,h or self.height)
 	end
 	function tex:drawposSRGB(x,y,w,h)
 		self:Bind(0)
-		progSRGB:drawpos(x,y,w,h)
+		progSRGB:drawpos(x,y,w or self.width,h or self.height)
 	end
 	function tex:draw(t,w,h)
 		ut.Clear()
