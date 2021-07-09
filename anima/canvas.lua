@@ -1043,9 +1043,11 @@ function GLcanvas(GL)
 ---[[		
 		
 		if GL.DORENDER then
-			if GL.RENDERINI <= tbeg and GL.RENDEREND >= tbeg then
+			if GL.RENDERINI <= tbeg and GL.RENDEREND > tbeg then
 				GL.movie:SaveFrame(GL,tbeg)
 				GetGLError("RENDER")
+			else
+				GL:quit()
 			end
 		end
 		
