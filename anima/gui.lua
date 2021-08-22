@@ -932,7 +932,7 @@ function gui.FontIcons(GL,source,ranges,size)
 		fnt_cfg.OversampleH = 1
 		FAicons.font = FAicons.atlas:AddFontFromFileTTF(source, size, fnt_cfg,ranges)
 		assert(FAicons.font~=nil,"could not load font!!!")
-		self.font:SetFallbackChar(self.ranges[0])
+		--self.font:SetFallbackChar(self.ranges[0])
 	end
 	function FAicons:Button(cp,ID)
 		--local glyph = self.font:FindGlyphNoFallback(cp + self.ranges[0])
