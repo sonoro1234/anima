@@ -482,7 +482,7 @@ function gui.ImGui_Transport(GL)
 			
 			ig.PushItemWidth(-1)
 			--print("slider", GL.globaltime[0], 0, tonumber(GL.timeprovider.totdur), "%.3f", 1.0)
-			if ig.SliderFloat("", GL.globaltime, 0, tonumber(GL.timeprovider.totdur), "%.3f") then
+			if ig.SliderFloat("##timeslider", GL.globaltime, 0, tonumber(GL.timeprovider.totdur), "%.3f") then
 				GL.timeprovider:set_time(GL.globaltime[0])
 			end
 			ig.PopItemWidth()
