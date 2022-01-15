@@ -3,18 +3,20 @@ require"anima"
 local vert_shad = [[
 in vec3 Position;
 in vec2 texcoords;
+out vec2 texCoord;
 void main()
 {
-	gl_TexCoord[0] = vec4(texcoords,0,1);
+	texCoord = texcoords;
 	gl_Position = vec4(Position,1);
 }
 ]]
 
 local frag_shad = [[
 
+in vec2 texCoord;
 void main(){
-	loadtextures(gl_TexCoord[0].st);
-	gl_FragColor = process(gl_TexCoord[0].st);
+	loadtextures(texCoord);
+	gl_FragColor = process(texCoord);
 }
 
 ]]
