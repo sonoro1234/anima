@@ -690,6 +690,7 @@ function GLcanvas(GL)
 	GL.gl_version = GL.gl_version or {3,3} --{1,0}
 	GL.v3_2plus = (GL.gl_version[1]>3 or (GL.gl_version[1]==3 and GL.gl_version[2] >=2))
 	GL.v3_0plus = GL.gl_version[1]>=3
+	GLSL.default_version = "#version 130\n"
 	if (GL.profile == "CORE" and GL.v3_2plus) then
 		GL.restricted = true
 		GLSL.default_version = "#version 140\n"
