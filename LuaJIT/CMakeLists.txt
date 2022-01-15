@@ -32,12 +32,17 @@ else(UNIX)
     )
     set (ljname lua51.lib)
   else(MSVC) #mingw
+      set(DEBFLAGS "")
+      if(CMAKE_BUILD_TYPE MATCHES Debug)
+		message(STATUS "luajit debug build")
+		set(DEBFLAGS " CCDEBUG= -g ")
+	  endif()
       ExternalProject_Add(project_luajit
       PREFIX ${ljpre}
 	  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT
 	  CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT ${ljdir}
       BINARY_DIR ${ljsrc}
-      BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} CCOPT="-DLUAJIT_ENABLE_LUA52COMPAT"
+      BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} CCOPT="-DLUAJIT_ENABLE_LUA52COMPAT" ${DEBFLAGS}
       INSTALL_COMMAND ""
     )
   endif(MSVC)
