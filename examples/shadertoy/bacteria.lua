@@ -128,13 +128,13 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
     }
 	
     col = d < EPS ? shade(ro, rd, t) : col;
-/* //crash on windows with ATI
+ //crash on windows with ATI
     for (int i = 0; i < 4; ++i) {
         if (stack[i] < 0.0) break;
         d = map(ro + stack[i]*rd);
         col = mix(shade(ro, rd, stack[i]), col, clamp(d/(pix*stack[i]), 0.0, 1.0));
     }
- */ 
+ 
 
     col = smoothstep(0., .7, col);
     col = pow(col, vec3(1.0/2.2));
