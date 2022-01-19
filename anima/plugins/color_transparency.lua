@@ -29,10 +29,13 @@ void main()
 	vec4 color = texture2D(tex0,gl_TexCoord[0].st);
 	float norm = distance(color.rgb,tcolor);
 	float a = smoothstep(maxdist-stepd,maxdist,norm);
-	if(mode == 1)
-		a = clamp(0.0,1.0,norm/maxdist);
+	if(mode == 1){
+		a = clamp(norm/maxdist,0.0,1.0);
+	}
 	if(invert)
 		a = 1.0 - a;
+	
+	//gl_FragColor = vec4(vec3(a),1.0);
 	//gl_FragColor = color*a; //vec4(color.rgb*a,a);
 	gl_FragColor = vec4(color.rgb,color.a*a);	
 }
@@ -74,7 +77,7 @@ void main()
 	float norm = LabDistance(color.rgb,tcolor);
 	float a = smoothstep(maxdist-stepd,maxdist,norm);
 	if(mode == 1)
-		a = clamp(0.0,1.0,norm/maxdist);
+		a = clamp(norm/maxdist,0.0,1.0);
 	if(invert)
 		a = 1.0 - a;
 	gl_FragColor = color*a; //vec4(color.rgb*a,a); 
@@ -120,7 +123,7 @@ end},
 	local fbo, programfx, progrgb,proglab
 	local lapse,oldtime,lapsesum = 0,0,0
 	function LM:init()
-		fbo = GL:initFBO()
+		fbo = GL:initFBO()--{no_depth=true})
 		proglab = GLSL:new():compile(vert_shad,frag_shad_Lab)
 
 		progrgb = GLSL:new():compile(vert_shad,frag_shad)
@@ -205,6 +208,7 @@ end
 --[=[
 require"anima"
 GL = GLcanvas{H=1080,viewH=700,aspect=1.5}
+--GLSL.default_version = "#version 120\n"
 trans = make(GL)
 local textura
 function GL.init()
@@ -214,9 +218,10 @@ function GL.init()
 end
 
 function GL.draw(t,w,h)
-
+gl.glEnable(glc.GL_BLEND);
+gl.glBlendFunc(glc.GL_SRC_ALPHA, glc.GL_ONE_MINUS_SRC_ALPHA);
 	trans:draw(t,w,h,{clip={textura}})
-
+gl.glDisable(glc.GL_BLEND);
 end
 
 GL:start()
