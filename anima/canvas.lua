@@ -984,7 +984,9 @@ function GLcanvas(GL)
 		return self.globaltime[0] --or 0
 	end
 	
+	local lasttimefps
 	local function actionSDL(self)
+		if not lasttimefps then lasttimefps = sdl.getTicks() end
 		local GL = self
 		--print("action",self)
 		GetGLError"action ini"
@@ -1000,9 +1002,11 @@ function GLcanvas(GL)
 ---[[		
 		
 		if GL.DORENDER then
-			if GL.RENDERINI <= tbeg and GL.RENDEREND >= tbeg then
+			if GL.RENDERINI <= tbeg and GL.RENDEREND > tbeg then
 				GL.movie:SaveFrame(GL,tbeg)
 				GetGLError("RENDER")
+			else
+				GL:quit()
 			end
 		end
 		
@@ -1027,8 +1031,17 @@ function GLcanvas(GL)
 --]]		
 		sdl.gL_SwapWindow(self.window);
 		
+		if not GL.DORENDER then
+		while (sdl.getTicks() < lasttimefps + 1000.0/GL.fps) do
+        -- TODO: Put the thread to sleep, yield, or simply do nothing
+		end
+		lasttimefps = lasttimefps + 1000.0/GL.fps;
+		end
 	end
+	
+	
 	local function actionGLFW(self)
+		if not lasttimefps then lasttimefps = glfw.glfwGetTime() end
 		local GL = self
 		--print("action",self)
 		GetGLError"action ini"
@@ -1073,6 +1086,12 @@ function GLcanvas(GL)
 --]]		
 		self.window:swapBuffers()
 		
+		if not GL.DORENDER then
+		while (glfw.glfwGetTime() < lasttimefps + 1.0/GL.fps) do
+        -- TODO: Put the thread to sleep, yield, or simply do nothing
+		end
+		lasttimefps = lasttimefps + 1.0/GL.fps;
+		end
 	end
 	local function startSDL(self) 
 
