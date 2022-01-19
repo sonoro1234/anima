@@ -110,7 +110,8 @@ function M.make(GL,args)
 		mixindex = (mixindex + 1)%2
 		mixfbos[mixindex]:UseTexture(1,0)
 		
-		local alpha = NM.alpha
+		local alphaT = NM.alpha
+		local alpha = math.pow(alphaT,25/GL.fps)
 		if NM.reset then
 			alpha = 0
 			NM.vars.reset[0] = false
@@ -153,7 +154,8 @@ function M.make(GL,args)
 		mixindex = (mixindex + 1)%2
 		mixfbos[mixindex]:UseTexture(1,0)
 		
-		local alpha = NM.alpha
+		local alphaT = NM.alpha
+		local alpha = math.pow(alphaT,25/GL.fps)
 		if NM.reset then
 			alpha = 0
 			NM.vars.reset[0] = false
