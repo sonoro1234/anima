@@ -34,7 +34,9 @@ uniform float morph_fac;
 in vec2 texc;
 
 uniform mat4 MM = mat4(1);
-
+uniform mat4 TextureMatrix;
+out vec4 TexCoord;
+uniform mat4 MVP;
 void main()
 {
 	
@@ -46,8 +48,8 @@ void main()
 
 	vec4 point = MM * vec4(position,1.0);	
 
-	gl_TexCoord[0] = gl_TextureMatrix[0] * vec4(texc.x*2,texc.y*2,0,1);
-	gl_Position = gl_ModelViewProjectionMatrix * point;
+	TexCoord = TextureMatrix * vec4(texc.x*2,texc.y*2,0,1);
+	gl_Position = MVP * point;
 
 }
 
@@ -58,9 +60,10 @@ void main()
 local frag_sh = [[
 #version 330
 uniform sampler2D tex;
+in vec4 TexCoord;
 void main()
 { 
-	gl_FragColor = texture2D(tex,gl_TexCoord[0].st);
+	gl_FragColor = texture2D(tex,TexCoord.st);
 }
 ]]
 local function make(GL,name)
@@ -133,8 +136,10 @@ function SK:draw(t,w,h,args)
 	
 	self.program.unif.morph_fac:set{NM.morph_fac}
 
-	args.camera:Set()
+	--args.camera:Set()
+	self.program.unif.MVP:set(args.camera:MVP().gl)
 
+--[[
 	gl.glMatrixMode(glc.GL_TEXTURE);
 	gl.glLoadIdentity();
 	gl.glTranslated(-0.5,-0.5, 0);
@@ -143,7 +148,16 @@ function SK:draw(t,w,h,args)
 	--gl.glScaled(mix(NM.texscale,NM.texscale2,NM.morph_fac),1,1)
 	gl.glScaled(mix(NM.texscale,1,NM.morph_fac),mix(NM.texscale2,1,1-NM.morph_fac),1)
 	gl.glTranslated(-1,-1, 0);
-
+--]]
+---[[
+	local m1 = mat.translate(-0.5,-0.5, 0)
+	local m2 = mat.translate(1,1, 0)
+	local m3 = mat.scale(mix(NM.texscale,1,NM.morph_fac),mix(NM.texscale2,1,1-NM.morph_fac),1)
+	local m4 = mat.translate(-1,-1, 0)
+	local TM = m1*m2*m3*m4
+	self.program.unif.TextureMatrix:set(TM.gl)
+--]]
+	
 	ut.Clear()
 	self.vao1:draw_elm()
 	

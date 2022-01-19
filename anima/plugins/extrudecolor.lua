@@ -16,7 +16,8 @@ void main()
 	vec3 normal = gl_Normal;
 	
 	float lum = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722)) - 0.5;
-	gl_Vertex.xyz += normal*lum*extfac;
+	vec4 Vertex = gl_Vertex;
+	Vertex.xyz += normal*lum*extfac;
 	/*
 	if(extfac > 0.0){
 		gl_Vertex.xyz += normal*lum*extfac;
@@ -24,7 +25,7 @@ void main()
 		gl_Vertex.xyz += normal*(lum-1.0)*extfac;
 	}	
 	*/
-	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
+	gl_Position = gl_ModelViewProjectionMatrix * Vertex;
 }
 
 ]]
@@ -135,10 +136,7 @@ end
 GL = GLcanvas{H=1080,viewH=700,aspect=1.5}
 ext = M.make(GL)
 function GL.init()
-
-	--textura = Texture():Load[[C:\luajitbin2.0.2-copia\animacion\resonator6\resonator-038.jpg]]
-	textura = Texture():Load[[G:\VICTOR\pelis\hadas\master1080\leslie_giro1\frame-0001.tif]]
-	--texblur = textura:
+	textura = GL:Texture():Load[[c:\luagl\pelis\hadas\master1080\leslie_giro1\frame-0001.tif]]
 end
 
 function GL.draw(t,w,h)
