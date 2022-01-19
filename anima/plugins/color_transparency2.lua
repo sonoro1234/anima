@@ -30,7 +30,7 @@ void main()
 	float norm = distance(color.rgb,tcolor);
 	float a = smoothstep(maxdist-stepd,maxdist,norm);
 	if(mode == 1)
-		a = clamp(0.0,1.0,norm/maxdist);
+		a = clamp(norm/maxdist,0.0,1.0);
 	if(invert)
 		a = 1.0 - a;
 	gl_FragColor = color*a; //vec4(color.rgb*a,a);
@@ -72,7 +72,7 @@ void main()
 	float norm = LabDistance(color.rgb,tcolor);
 	float a = smoothstep(maxdist-stepd,maxdist,norm);
 	if(mode == 1)
-		a = clamp(0.0,1.0,norm/maxdist);
+		a = clamp(norm/maxdist,0.0,1.0);
 	if(invert)
 		a = 1.0 - a;
 	gl_FragColor = color*a; //vec4(color.rgb*a,a); 
@@ -102,7 +102,7 @@ void main()
 	float norm = HSVDistance(color.rgb,tcolor);
 	float a = smoothstep(maxdist-stepd,maxdist,norm);
 	if(mode == 1)
-		a = clamp(0.0,1.0,norm/maxdist);
+		a = clamp(norm/maxdist,0.0,1.0);
 	if(invert)
 		a = 1.0 - a;
 	gl_FragColor = color*a; //vec4(color.rgb*a,a); 
