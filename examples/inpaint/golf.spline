@@ -1,0 +1,43 @@
+local params = {}
+params["divs"] = {}
+params["divs"][1] = ffi.new('int[1]',4)
+params["divs"][2] = ffi.new('int[1]',1)
+params["VP"] = {}
+params["VP"][1] = 481
+params["VP"][2] = 321
+params["dial"] = {}
+params["dial"]["curr_spline"] = 1
+params["dial"]["set_last"] = false
+params["dial"]["points"] = 1
+params["alpha"] = {}
+params["alpha"][1] = ffi.new('float[1]',0.5)
+params["alpha"][2] = ffi.new('float[1]',0.5)
+params["numsplines"] = 1
+params["sccoors"] = {}
+params["sccoors"][1] = {}
+params["sccoors"][1][1] = mat.vec2(177.28285714286,219.95717344754)
+params["sccoors"][1][2] = mat.vec2(147.04857142857,259.13704496788)
+params["sccoors"][1][3] = mat.vec2(109.94285714286,230.26766595289)
+params["sccoors"][1][4] = mat.vec2(109.25571428571,215.8329764454)
+params["sccoors"][1][5] = mat.vec2(72.837142857143,160.84368308351)
+params["sccoors"][1][6] = mat.vec2(84.518571428571,145.72162740899)
+params["sccoors"][1][7] = mat.vec2(98.948571428571,156.03211991435)
+params["sccoors"][1][8] = mat.vec2(94.825714285714,167.71734475375)
+params["sccoors"][1][9] = mat.vec2(118.18857142857,197.96145610278)
+params["sccoors"][1][10] = mat.vec2(129.18285714286,156.71948608137)
+params["sccoors"][1][11] = mat.vec2(126.43428571429,135.41113490364)
+params["sccoors"][1][12] = mat.vec2(131.93142857143,106.54175588865)
+params["sccoors"][1][13] = mat.vec2(105.13285714286,69.423982869379)
+params["sccoors"][1][14] = mat.vec2(101.69714285714,48.802997858672)
+params["sccoors"][1][15] = mat.vec2(116.12714285714,32.993576017131)
+params["sccoors"][1][16] = mat.vec2(148.42285714286,64.612419700214)
+params["sccoors"][1][17] = mat.vec2(151.17142857143,30.244111349036)
+params["sccoors"][1][18] = mat.vec2(184.84142857143,34.368308351178)
+params["sccoors"][1][19] = mat.vec2(180.03142857143,57.051391862955)
+params["sccoors"][1][20] = mat.vec2(182.78,138.16059957173)
+params["sccoors"][1][21] = mat.vec2(179.34428571429,153.28265524625)
+params["sccoors"][1][22] = mat.vec2(176.59571428571,175.27837259101)
+params["sccoors"][1][23] = mat.vec2(168.35,197.96145610278)
+
+
+return params
