@@ -1277,7 +1277,7 @@ function gui.SetImGui(GL)
 		ig.PopStyleVar(2);
 		
 		local dockspace_id = ig.GetIDStr("anima MyDockSpace");
-		local dockspace_flags = bit.bor(ig.lib.ImGuiDockNodeFlags_NoDockingInCentralNode, ig.lib.ImGuiDockNodeFlags_AutoHideTabBar, ig.lib.ImGuiDockNodeFlags_PassthruCentralNode, ig.lib.ImGuiDockNodeFlags_NoTabBar, ig.lib.ImGuiDockNodeFlags_HiddenTabBar) --ImGuiDockNodeFlags_NoSplit
+		local dockspace_flags = bit.bor(ig.lib.ImGuiDockNodeFlags_NoDockingInCentralNode, ig.lib.ImGuiDockNodeFlags_AutoHideTabBar, ig.lib.ImGuiDockNodeFlags_PassthruCentralNode) --ImGuiDockNodeFlags_NoSplit
 		ig.DockSpace(dockspace_id, ig.ImVec2(0.0, 0.0), dockspace_flags);
 		ig.End()
 	end
@@ -1286,7 +1286,7 @@ function gui.SetImGui(GL)
 		if not GL.has_imgui_viewport then return end
 		if (bit.band(ig.GetIO().ConfigFlags , imgui.ImGuiConfigFlags_DockingEnable)==0) then return end
 		
-		local dockspace_flags = bit.bor(ig.lib.ImGuiDockNodeFlags_NoDockingInCentralNode, ig.lib.ImGuiDockNodeFlags_AutoHideTabBar, ig.lib.ImGuiDockNodeFlags_PassthruCentralNode, ig.lib.ImGuiDockNodeFlags_NoTabBar, ig.lib.ImGuiDockNodeFlags_HiddenTabBar) --ImGuiDockNodeFlags_NoSplit
+		local dockspace_flags = bit.bor(ig.lib.ImGuiDockNodeFlags_NoDockingInCentralNode, ig.lib.ImGuiDockNodeFlags_AutoHideTabBar, ig.lib.ImGuiDockNodeFlags_PassthruCentralNode) --ImGuiDockNodeFlags_NoSplit
 		ig.DockSpaceOverViewport(nil, dockspace_flags);
 	end
 	
