@@ -56,6 +56,10 @@ local function mkdir(P)
 	end
 	local inisep = rr:match("^"..sep) or ""
 	local current = inisep..dirs[1]
+	if nil == lfs.attributes(current) then
+		local suc,err = lfs.mkdir(current)
+		if not suc then error("mkdir:"..current .. " " ..err) end
+	end
 	for i=2,#dirs do
 		current = current .. sep .. dirs[i]
 		if nil == lfs.attributes(current) then
