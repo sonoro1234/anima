@@ -1544,3 +1544,90 @@ function LoadCompressedImage(path)
    return pData, info[0],info[1],info[2],info[3];
    -- Free pData when done...
 end
+
+function CreateVolume( width,  height,  depth,  numComponents,GL)
+	assert(GL,"Use GL:CreateVolume")
+    local fboHandle = ffi.new("GLuint[1]")
+    glext.glGenFramebuffers(1, fboHandle);
+    glext.glBindFramebuffer(glc.GL_FRAMEBUFFER, fboHandle[0]);
+
+    local textureHandle = ffi.new("GLuint[1]")
+    gl.glGenTextures(1, textureHandle);
+    gl.glBindTexture(glc.GL_TEXTURE_3D, textureHandle[0]);
+	local modewrap = glc.GL_MIRRORED_REPEAT --glc.GL_CLAMP_TO_BORDER
+    gl.glTexParameteri(glc.GL_TEXTURE_3D, glc.GL_TEXTURE_WRAP_S, modewrap);
+    gl.glTexParameteri(glc.GL_TEXTURE_3D, glc.GL_TEXTURE_WRAP_T, modewrap);
+    gl.glTexParameteri(glc.GL_TEXTURE_3D, glc.GL_TEXTURE_WRAP_R, modewrap);
+    gl.glTexParameteri(glc.GL_TEXTURE_3D, glc.GL_TEXTURE_MIN_FILTER, glc.GL_LINEAR);
+    gl.glTexParameteri(glc.GL_TEXTURE_3D, glc.GL_TEXTURE_MAG_FILTER, glc.GL_LINEAR);
+	
+	--local int_formats = {glc.GL_R16F, glc.GL_RG16F, glc.GL_RGB16F,glc.GL_RGBA16F}
+	local int_formats = {glc.GL_R32F, glc.GL_RG32F, glc.GL_RGB32F,glc.GL_RGBA32F}
+	local ext_formats = {glc.GL_RED, glc.GL_RG, glc.GL_RGB, glc.GL_RGBA}
+	--local typeval = glc.GL_HALF_FLOAT
+	local typeval = glc.GL_FLOAT
+	glext.glTexImage3D(glc.GL_TEXTURE_3D, 0, int_formats[numComponents], width, height, depth, 0, ext_formats[numComponents],typeval, ffi.cast("void *",0));
+   
+
+    GetGLError"Unable to create volume texture"
+
+    local colorbuffer = ffi.new("GLuint[1]")
+    glext.glGenRenderbuffers(1, colorbuffer);
+    glext.glBindRenderbuffer(glc.GL_RENDERBUFFER, colorbuffer[0]);
+    glext.glFramebufferTexture(glc.GL_FRAMEBUFFER, glc.GL_COLOR_ATTACHMENT0, textureHandle[0], 0);
+	GetGLError"Unable to attach color buffer"
+
+	
+	if (glc.GL_FRAMEBUFFER_COMPLETE ~= glext.glCheckFramebufferStatus(glc.GL_DRAW_FRAMEBUFFER)) then
+		print("initFBO error",wFBO,hFBO)
+		error()
+	end
+    local thefbo = { fbo=fboHandle, textureHandle=textureHandle, GL=GL };
+	thefbo.GL:addTexture(thefbo.textureHandle[0],"from VolumeFBO "..textureHandle[0].." "..tostring(thefbo))
+
+    gl.glClearColor(0, 0, 0, 0);
+    gl.glClear(glc.GL_COLOR_BUFFER_BIT);
+    glext.glBindFramebuffer(glc.GL_FRAMEBUFFER, 0);
+	thefbo.width = width;
+	thefbo.height = height;
+	thefbo.depth = depth;
+	function thefbo:Bind(val)
+		local old_framebuffer = ffi.new("GLuint[1]",0)
+		gl.glGetIntegerv(glc.GL_DRAW_FRAMEBUFFER_BINDING, old_framebuffer)
+		glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, val or self.fbo[0]);
+		self.old_framebuffer = old_framebuffer[0]
+		return old_framebuffer[0]
+   end
+	function thefbo:UnBind(fbo)
+		--assert(self.old_framebuffer,"there is not oldframebuffer")
+		fbo = fbo or self.old_framebuffer
+		glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, fbo);
+		self.old_framebuffer = nil
+	end
+	function thefbo:gen_mipmap()
+		if not GL.restricted then gl.glEnable( glc.GL_TEXTURE_3D ); end
+		gl.glBindTexture(glc.GL_TEXTURE_3D, self.textureHandle[0])
+		gl.glTexParameteri(glc.GL_TEXTURE_3D,glc.GL_TEXTURE_MAG_FILTER,glc.GL_LINEAR)
+		gl.glTexParameteri(glc.GL_TEXTURE_3D,glc.GL_TEXTURE_MIN_FILTER,glc.GL_LINEAR_MIPMAP_LINEAR)
+		glext.glGenerateMipmap(glc.GL_TEXTURE_3D)
+	end
+	function thefbo:UseTexture(i)
+		i = i or 0
+		glext.glActiveTexture(glc.GL_TEXTURE0 + i);
+		if not GL.restricted then gl.glEnable( glc.GL_TEXTURE_3D ); end
+		gl.glBindTexture(glc.GL_TEXTURE_3D, self.textureHandle[0])
+	end
+	function thefbo:viewport()
+		gl.glViewport(0,0,self.width,self.height)
+	end
+	function thefbo:delete()
+		glext.glDeleteFramebuffers(1, self.fbo);
+		glext.glDeleteRenderbuffers(1,colorbuffer)
+		gl.glDeleteTextures(1, self.textureHandle);
+		self.GL:removeTexture(self.textureHandle[0])
+		--avoid _gc after manual delete
+		getmetatable(self.gcproxy).__gc = nil
+	end
+	set_table__gc(thefbo,function(t) t:delete() end)
+    return thefbo;
+end

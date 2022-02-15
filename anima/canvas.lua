@@ -1482,6 +1482,9 @@ function GLcanvas(GL)
 	function GL:Texture1D(w,formato,data,format,type)
 		return Texture1D(w,formato,data,format,type,{GL=self})
 	end
+	function GL:CreateVolume(w,h,d,ncomp)
+		return CreateVolume(w,h,d,ncomp,GL)
+	end
 	function GL:make_slab()
 		return MakeSlab(self.W,self.H,nil,self)
 	end
