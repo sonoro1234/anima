@@ -802,7 +802,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 				PR.Makers[maker]:external_control(true)
 				PR.Makers[maker].NM:draw()
 			end
-			ig.End()
+			ig.EndChild()
 		end
 		--ig.NextColumn()
 		--ig.Columns(1)

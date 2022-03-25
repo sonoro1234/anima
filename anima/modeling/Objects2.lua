@@ -752,7 +752,7 @@ local function scene2(objects)
 end
 
 local GL = GLcanvas{H=800,aspect=1,use_log=false}
-
+GLSL.default_version = "#version 140\n"
 local camera = Camera(GL,{gizmo=true,type="tps"})
 --camera.NM.vars.pos:set{0,0,19}
 local objects,msaa

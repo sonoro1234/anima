@@ -208,6 +208,8 @@ function GLSL:printProgramInfoLog()
 		local infoLog = ffi.new("char[?]",infologLength[0])
         glext.glGetProgramInfoLog(obj, infologLength[0], charsWritten, infoLog);
 		print(string.format("%s\n",ffi.string(infoLog)));
+		printSource(self.vert)
+		printSource(self.frag)
        -- return true
     end
 	assert(lstatus[0] == glc.GL_TRUE,"GLSL program link failure")
@@ -353,6 +355,8 @@ function GLSL:compile(vert,frag,geom,tfvar)
 	local source = debug.getinfo(2,'Sl')
 	print(source.source,source.linedefined,source.currentline)
 	self.source = source
+	self.vert = vert
+	self.frag = frag
 	--self.program = setShaders(vert, frag)
 	self:setShaders(vert, frag,geom,tfvar)
 	self:getunif()
@@ -637,16 +641,8 @@ function initFBO(wFBO,hFBO,args)
 		local types = {[glc.GL_FLOAT] = "float[?]", [glc.GL_UNSIGNED_SHORT]="short[?]",[glc.GL_UNSIGNED_BYTE]="unsigned char[?]"}
 		local formats = {[glc.GL_RED]=1,[glc.GL_RGB]=3,[glc.GL_RGBA]=4}
 		local ncomponents = formats[format]		
-		local allocstr = types[type]
-
-		local oldfbo = self:BindRead()
-		--
-		gl.glReadBuffer(glc.GL_COLOR_ATTACHMENT0 + whichbuf); 
+		local allocstr = types[type] 
 		
-		local bufferWidth = ffi.new("GLint[1]")
-		local bufferHeight = ffi.new("GLint[1]")
-		--glext.glGetRenderbufferParameteriv(glc.GL_RENDERBUFFER, glc.GL_RENDERBUFFER_WIDTH, bufferWidth);
-		--glext.glGetRenderbufferParameteriv(glc.GL_RENDERBUFFER, glc.GL_RENDERBUFFER_HEIGHT, bufferHeight);
 		local iniX,iniY,w,h
 		if offX then
 			iniX,iniY,w,h = offX,offY,W,H
@@ -655,12 +651,18 @@ function initFBO(wFBO,hFBO,args)
 		end
 	
 		local pixelsUserData = buffer or ffi.new(allocstr,w*h*ncomponents)
-		--assert(ffi.sizeof(pixelsUserData)==
+		--------------------------- alternative in gl 4_5
+		-- local tex = self:tex(whichbuf)
+		-- glext.glGetTextureSubImage(tex.tex,0,iniX,iniY,0,w,h,1,format,type,ffi.sizeof(pixelsUserData),pixelsUserData)
+		------------------------------
+		local oldfbo = self:BindRead()
+		gl.glReadBuffer(glc.GL_COLOR_ATTACHMENT0 + whichbuf);
 		gl.glPixelStorei(glc.GL_PACK_ALIGNMENT, 1)
 		gl.glReadPixels(iniX,iniY, w, h, format, type, pixelsUserData)
-
 		glext.glBindFramebuffer(glc.GL_READ_FRAMEBUFFER, oldfbo);
+		
 		return pixelsUserData,w,h
+
    end
 	function thefbo:Dump(framebuffer)
 		framebuffer = framebuffer and (type(framebuffer)=="table" and framebuffer.fb[0] or framebuffer) or self.old_framebuffer

@@ -686,7 +686,7 @@ local function make_cyl(pos, scl,eje)
 end
 
 local GL = GLcanvas{H=800,aspect=1,use_log=false}
-
+GLSL.default_version = "#version 140\n"
 local camera = Camera(GL,"tps")
 camera.NM.vars.dist[0] = 12
 local objects
