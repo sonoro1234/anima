@@ -542,10 +542,11 @@ local function make_tex_prog()
 	local frag_shad = [[
 	uniform sampler2D tex0;
 	in vec2 texcoordf;
+	out vec4 FragColor;
 	void main()
 	{
 
-		gl_FragColor = texture(tex0,texcoordf);
+		FragColor = texture(tex0,texcoordf);
 	}
 	]]
 	
