@@ -591,14 +591,19 @@ function M.sin2d(a,b)
 end
 function M.vec2vao(t,n)
 	--print("vec2vao",t,n,t[1])
-	n = n or (ffi.istype(vec3,t[1]) and 3) or (ffi.istype(vec2,t[1]) and 2) 
-	or error("vec2vao wants vec2 or vec3 but is receiving "..tostring(ffi.typeof(t[1])))
+	n = n or (ffi.istype(vec3,t[1]) and 3) or (ffi.istype(vec2,t[1]) and 2) or (ffi.istype(vec4,t[1]) and 4) 
+	or error("vec2vao wants vec2 or vec3 or vec4 but is receiving "..tostring(ffi.typeof(t[1])))
 
 	local lp = ffi.new("float[?]",#t*n)
 	if n == 3 then
 		for i=0,#t-1 do
 			local v = t[i+1]
 			lp[i*3],lp[i*3+1],lp[i*3+2] = v.x,v.y,v.z
+		end
+	elseif n==4 then
+		for i=0,#t-1 do
+			local v = t[i+1]
+			lp[i*3],lp[i*3+1],lp[i*3+2],lp[i*3+3] = v.x,v.y,v.z,v.w
 		end
 	elseif n==2 then
 		for i=0,#t-1 do
