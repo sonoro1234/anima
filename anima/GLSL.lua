@@ -255,9 +255,9 @@ local function CheckVersion(code)
 	end
 	return code
 end
-function GLSL:setShaders(vert,frag,geom,tfvar) 
+function GLSL:setShaders(vert,frag,geom,tfvar,comp) 
 	local p = self.program
-	local v,f,g
+	local v,f,g,c
 	if vert then
 		vert = CheckVersion(vert)
 		v = glext.glCreateShader(glc.GL_VERTEX_SHADER);
@@ -282,12 +282,21 @@ function GLSL:setShaders(vert,frag,geom,tfvar)
 		glext.glCompileShader(g);
 		if printShaderInfoLog(g) then printSource(geom) end
 	end
+	if comp then
+		comp = CheckVersion(comp)
+		c = glext.glCreateShader(glc.GL_COMPUTE_SHADER);
+		local compp = ffi.new("const char*[1]",{comp})
+		glext.glShaderSource(c, 1, compp,NULL);
+		glext.glCompileShader(c);
+		if printShaderInfoLog(c) then printSource(comp) end
+	end
 	
 	
 	--local p = glext.glCreateProgram();
 	if vert then glext.glAttachShader(p,v); end
 	if frag then glext.glAttachShader(p,f); end
 	if geom then glext.glAttachShader(p,g); end
+	if comp then glext.glAttachShader(p,c); end
 	
 	--tfvar is table of transform feedback varyings names
 	if tfvar then
@@ -307,6 +316,7 @@ function GLSL:setShaders(vert,frag,geom,tfvar)
 	if vert then glext.glDeleteShader(v) end
 	if frag then glext.glDeleteShader(f) end
 	if geom then glext.glDeleteShader(g) end
+	if comp then glext.glDeleteShader(c) end
 	
 	glext.glUseProgram(p);
 	return p
@@ -351,14 +361,21 @@ function GLSL:TFVinfo()
 	return self
 end
 function GLSL:compile(vert,frag,geom,tfvar)
+	local comp
+	if type(vert)=="table" then
+		frag = vert.frag
+		geom = vert.geom
+		tfvar = vert.tfvar
+		comp = vert.comp
+		vert = vert.vert
+	end
 	print"---------------Compile------------------"
 	local source = debug.getinfo(2,'Sl')
 	print(source.source,source.linedefined,source.currentline)
 	self.source = source
 	self.vert = vert
 	self.frag = frag
-	--self.program = setShaders(vert, frag)
-	self:setShaders(vert, frag,geom,tfvar)
+	self:setShaders(vert, frag,geom,tfvar,comp)
 	self:getunif()
 	return self
 end
@@ -382,6 +399,11 @@ function GLSL:getunif()
 		--print(i,ffi.string(name),size[0],uniform_types[tipo[0]].name)
 		local typename = uniform_types[tipo[0]] and uniform_types[tipo[0]].name or "UNKNOWN_TYPE"
 		print(i,loc,string.format("%".. bufsize[0] .."s",namel),size[0],tipo[0],typename)
+		if loc >= 0 and tipo[0] == glc.GL_IMAGE_BUFFER then
+		local val = ffi.new("GLint[1]")
+		glext.glGetUniformiv(self.program,loc,val)
+		print("binding",val[0])
+		end
 		assert(uniform_types[tipo[0]],"tipo desconocido")
 	end
 	--get attribs
@@ -874,7 +896,67 @@ function Query()
 	end
 	return Query
 end
---------------
+--------------different version of VBO
+function VBOk(kind)
+	kind = kind or glc.GL_ARRAY_BUFFER
+	local tVbo = {isVBO=true}
+	tVbo.vbo = ffi.new("GLuint[1]",1)
+	glext.glGenBuffers(1, tVbo.vbo);
+	tVbo.handle = tVbo.vbo[0]
+	function tVbo:Bind(kind2)
+		kind2 = kind2 or kind
+		glext.glBindBuffer(kind2, self.vbo[0]);
+	end
+	function tVbo:BufferData(values,usage,size)
+		usage = usage or glc.GL_DYNAMIC_DRAW
+		self:Bind(kind)
+		self.b_size = size or ffi.sizeof(values)
+		glext.glBufferData(kind,self.b_size,values, usage);
+	end
+	function tVbo:MapW(func,off,size,flags)
+		off = off or 0
+		size = size or self.b_size
+		flags = flags or bit.bor(glc.GL_MAP_WRITE_BIT, glc.GL_MAP_INVALIDATE_BUFFER_BIT)
+		local ptr = glext.glMapBufferRange(kind,off,size,flags);
+		func(ptr)
+		glext.glUnmapBuffer(kind);
+	end
+	function tVbo:delete()
+		glext.glDeleteBuffers(1,tVbo.vbo)
+	end
+	local btex
+	local tbo_unit
+	local tbo_type
+	local tbo = {Bind= function(self,unit)
+					unit = unit or 0
+					tbo_unit = unit
+					glext.glActiveTexture(glc.GL_TEXTURE0 + unit);
+					gl.glBindTexture(glc.GL_TEXTURE_BUFFER, btex[0]);
+				end,
+				BindI= function(self,unit,mode)
+					unit = unit or 0
+					tbo_unit = unit
+					mode = mode or glc.GL_READ_WRITE
+					glext.glBindImageTexture(unit, btex[0], 0, glc.GL_FALSE, 0, mode, tbo_type)
+				end,
+				UnBind = function(self) 
+					glext.glActiveTexture(glc.GL_TEXTURE0 + tbo_unit);
+					gl.glBindTexture(glc.GL_TEXTURE_BUFFER, 0);
+				end}
+	function tVbo:buffer_texture(type)
+		type = type or glc.GL_RGB32F
+		tbo_type = type
+		if not btex then --initialize
+			btex = ffi.new("GLuint[1]")
+			gl.glGenTextures(1, btex);
+			gl.glBindTexture(glc.GL_TEXTURE_BUFFER, btex[0]);
+			glext.glTexBuffer(glc.GL_TEXTURE_BUFFER, type, self.vbo[0])
+			gl.glBindTexture(glc.GL_TEXTURE_BUFFER, 0);
+		end
+		return tbo
+	end
+	return tVbo
+end
 function VBO()
 	local tVbo = {isVBO=true}
 	tVbo.vbo = ffi.new("GLuint[1]",1)
@@ -883,10 +965,11 @@ function VBO()
 	function tVbo:Bind(type)
 		glext.glBindBuffer(type, self.vbo[0]);
 	end
-	function tVbo:BufferData(values,kind)
+	function tVbo:BufferData(values,kind,usage,size)
 		kind = kind or glc.GL_ARRAY_BUFFER
+		usage = usage or glc.GL_DYNAMIC_DRAW
 		self:Bind(kind)
-		glext.glBufferData(kind,ffi.sizeof(values),values, glc.GL_DYNAMIC_DRAW);
+		glext.glBufferData(kind,size or ffi.sizeof(values),values, usage);
 	end
 	function tVbo:delete()
 		glext.glDeleteBuffers(1,tVbo.vbo)
@@ -894,13 +977,19 @@ function VBO()
 	local btex
 	local tbo_unit
 	local tbo_type
-	local tbo = {Bind= function(self,unit,mode)
+	local tbo = {Bind= function(self,unit)
 					unit = unit or 0
 					tbo_unit = unit
 					glext.glActiveTexture(glc.GL_TEXTURE0 + unit);
 					gl.glBindTexture(glc.GL_TEXTURE_BUFFER, btex[0]);
-					--mode = mode or glc.GL_READ_WRITE
-					--glext.glBindImageTexture(unit, btex[0], 0, glc.GL_FALSE, 0, mode, tbo_type)				
+					-- mode = mode or glc.GL_READ_WRITE
+					-- glext.glBindImageTexture(unit, btex[0], 0, glc.GL_FALSE, 0, mode, tbo_type)				
+				end,
+				BindI= function(self,unit,mode)
+					unit = unit or 0
+					tbo_unit = unit
+					mode = mode or glc.GL_READ_WRITE
+					glext.glBindImageTexture(unit, btex[0], 0, glc.GL_FALSE, 0, mode, tbo_type)				
 				end,
 				UnBind = function(self) 
 					glext.glActiveTexture(glc.GL_TEXTURE0 + tbo_unit);
@@ -929,8 +1018,8 @@ function VAO(t,program,indices,tsize,isize)
 	for k,v in pairs(t) do
 		if type(v)=="table" then
 			if v.isVBO then
-				attribs[#attribs + 1]  = {name = k,vbo=v}
-			elseif ffi.istype(mat.vec3,v[1]) or ffi.istype(mat.vec2,v[1]) then
+				attribs[#attribs + 1]  = {name = k,vbo=v}--,b_size=v.b_size}
+			elseif ffi.istype(mat.vec4,v[1]) or ffi.istype(mat.vec3,v[1]) or ffi.istype(mat.vec2,v[1]) then
 				local lp = mat.vec2vao(v)
 				attribs[#attribs + 1] = {name = k, ffivalues=lp, b_size = ffi.sizeof(lp)}
 			else
