@@ -913,6 +913,10 @@ function VBOk(kind)
 		self.b_size = size or ffi.sizeof(values)
 		glext.glBufferData(kind,self.b_size,values, usage);
 	end
+	function tVbo:BindBufferBase(bind)
+		--kind = GL_ATOMIC_COUNTER_BUFFER, GL_TRANSFORM_FEEDBACK_BUFFER, GL_UNIFORM_BUFFER or GL_SHADER_STORAGE_BUFFER.
+		glext.glBindBufferBase(kind, bind, tVbo.vbo[0]);
+	end
 	function tVbo:MapW(func,off,size,flags)
 		off = off or 0
 		size = size or self.b_size
