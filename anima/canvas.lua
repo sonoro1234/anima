@@ -644,7 +644,10 @@ local function GuiInitGLFW(GL)
 	window:setCursorPosCallback(cursor_pos_callback)
 	window:setMouseButtonCallback( mouse_button_callbak);
     window:setScrollCallback(GL.Impl.ScrollCallback) -- imgui.ImGui_ImplGlfwGL3_ScrollCallback);
-	window:setSizeCallback(GL.OnResize);
+	window:setSizeCallback(GL.OnResize2);
+	window:setPosCallback(function() GL:action() end) --avoid draw blocking on move
+	--window:setFocusCallback(function() print"focus-----------------------";GL:action() end)
+	--window:setRefreshCallback(function() print"refresh-----------------------------------------";GL:action() end)
 	window:setCharCallback(GL.Impl.CharCallback) --imgui.ImGui_ImplGlfwGL3_CharCallback);
 	window:setKeyCallback(key_callback);
 	print"Imgui inited"
@@ -1093,7 +1096,7 @@ function GLcanvas(GL)
 		lasttimefps = lasttimefps + 1.0/GL.fps;
 		end
 	end
-	local function startSDL(self) 
+	local function startSDL(self,postf) 
 
 		self:doinit()
 		
@@ -1132,7 +1135,8 @@ function GLcanvas(GL)
 			self:action()
 			
 		end
-
+		
+		if postf then postf() end
 		if GL.use_log then print = GL.luaprint end
 		if not GL.not_imgui then self.Impl:destroy() end
 		
@@ -1143,7 +1147,7 @@ function GLcanvas(GL)
 		--imgui.igShutdown();
 		--lj_glfw.terminate()
 	end
-	local function startGLFW(self) 
+	local function startGLFW(self, postf) 
 
 		self:doinit()
 		
@@ -1163,7 +1167,7 @@ function GLcanvas(GL)
 		window:setCharCallback(nil);
 		window:setKeyCallback(nil);
 		--]]
-		
+		if postf then postf() end
 		if GL.use_log then print = GL.luaprint end
 		if not GL.not_imgui then self.Impl:destroy() end
 		
@@ -1207,10 +1211,14 @@ function GLcanvas(GL)
 		print(unpack(sizes))
 		--glfw.glfwGetFramebufferSize(win,int_buffer,int_buffer+1)
 		--print(int_buffer[0],int_buffer[1])
-
+	end
+	local function OnResize2(win,width, height)
+		OnResize(win,width, height)
+		GL:action()
 	end
 	
 	GL.OnResize = OnResize
+	GL.OnResize2 = OnResize2
 	--for converting from window coordinates to GL.fbo coordinates
 	function GL:ScreenToViewport(X,Y)
 		local x,y,w,h = unpack(self.stencil_sizes)
