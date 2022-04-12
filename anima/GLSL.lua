@@ -208,8 +208,8 @@ function GLSL:printProgramInfoLog()
 		local infoLog = ffi.new("char[?]",infologLength[0])
         glext.glGetProgramInfoLog(obj, infologLength[0], charsWritten, infoLog);
 		print(string.format("%s\n",ffi.string(infoLog)));
-		printSource(self.vert)
-		printSource(self.frag)
+		printSource(self.vert or "")
+		printSource(self.frag or "")
        -- return true
     end
 	assert(lstatus[0] == glc.GL_TRUE,"GLSL program link failure")
@@ -376,6 +376,15 @@ function GLSL:compile(vert,frag,geom,tfvar)
 	self.vert = vert
 	self.frag = frag
 	self:setShaders(vert, frag,geom,tfvar,comp)
+	if comp then
+		local wgs = ffi.new("GLint[3]")
+		glext.glGetProgramiv(self.program, glc.GL_COMPUTE_WORK_GROUP_SIZE, wgs)
+		print("GL_COMPUTE_WORK_GROUP_SIZE", wgs[0],wgs[1],wgs[2])
+		glext.glGetIntegeri_v(glc.GL_MAX_COMPUTE_WORK_GROUP_SIZE,0, wgs)
+		glext.glGetIntegeri_v(glc.GL_MAX_COMPUTE_WORK_GROUP_SIZE,1, wgs+1)
+		glext.glGetIntegeri_v(glc.GL_MAX_COMPUTE_WORK_GROUP_SIZE,2, wgs+2)
+		print("GL_MAX_COMPUTE_WORK_GROUP_SIZE", wgs[0],wgs[1],wgs[2])
+	end
 	self:getunif()
 	return self
 end
@@ -925,6 +934,14 @@ function VBOk(kind)
 		func(ptr)
 		glext.glUnmapBuffer(kind);
 	end
+	function tVbo:MapR(func,off,size,flags)
+		off = off or 0
+		size = size or self.b_size
+		flags = flags or glc.GL_MAP_READ_BIT --,bit.bor(glc.GL_MAP_READ_BIT, glc.GL_MAP_INVALIDATE_BUFFER_BIT)
+		local ptr = glext.glMapBufferRange(kind,off,size,flags);
+		func(ptr)
+		glext.glUnmapBuffer(kind);
+	end
 	function tVbo:delete()
 		glext.glDeleteBuffers(1,tVbo.vbo)
 	end
@@ -1275,6 +1292,7 @@ end
 function image2D(w,h,type,data)
 	type = type or "GL_RGBA"
 	local type32f = type.."32F"
+	if type=="GL_RED" then type32f = "GL_R32F" end
 	local tex = ffi.new("GLuint[1]")
 	gl.glGenTextures(1, tex);
 	assert(tex[0]>0)
