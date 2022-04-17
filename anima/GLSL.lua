@@ -375,15 +375,24 @@ function GLSL:compile(vert,frag,geom,tfvar)
 	self.source = source
 	self.vert = vert
 	self.frag = frag
+	if comp then
+		local wgs = ffi.new("GLint[3]")
+		glext.glGetIntegeri_v(glc.GL_MAX_COMPUTE_WORK_GROUP_SIZE,0, wgs)
+		glext.glGetIntegeri_v(glc.GL_MAX_COMPUTE_WORK_GROUP_SIZE,1, wgs+1)
+		glext.glGetIntegeri_v(glc.GL_MAX_COMPUTE_WORK_GROUP_SIZE,2, wgs+2)
+		print("GL_MAX_COMPUTE_WORK_GROUP_SIZE", wgs[0],wgs[1],wgs[2])
+		glext.glGetIntegeri_v(glc.GL_MAX_COMPUTE_WORK_GROUP_COUNT,0, wgs)
+		glext.glGetIntegeri_v(glc.GL_MAX_COMPUTE_WORK_GROUP_COUNT,1, wgs+1)
+		glext.glGetIntegeri_v(glc.GL_MAX_COMPUTE_WORK_GROUP_COUNT,2, wgs+2)
+		print("GL_MAX_COMPUTE_WORK_GROUP_COUNT", wgs[0],wgs[1],wgs[2])
+		gl.glGetIntegerv(glc.GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS,wgs)
+		print("GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS", wgs[0])
+	end
 	self:setShaders(vert, frag,geom,tfvar,comp)
 	if comp then
 		local wgs = ffi.new("GLint[3]")
 		glext.glGetProgramiv(self.program, glc.GL_COMPUTE_WORK_GROUP_SIZE, wgs)
 		print("GL_COMPUTE_WORK_GROUP_SIZE", wgs[0],wgs[1],wgs[2])
-		glext.glGetIntegeri_v(glc.GL_MAX_COMPUTE_WORK_GROUP_SIZE,0, wgs)
-		glext.glGetIntegeri_v(glc.GL_MAX_COMPUTE_WORK_GROUP_SIZE,1, wgs+1)
-		glext.glGetIntegeri_v(glc.GL_MAX_COMPUTE_WORK_GROUP_SIZE,2, wgs+2)
-		print("GL_MAX_COMPUTE_WORK_GROUP_SIZE", wgs[0],wgs[1],wgs[2])
 	end
 	self:getunif()
 	return self
@@ -1312,6 +1321,11 @@ function image2D(w,h,type,data)
 		mode = mode or glc.GL_READ_WRITE
 		unit = unit or 0
 		glext.glBindImageTexture(unit, self.tex, 0, glc.GL_FALSE, 0, mode,glc[type32f]);
+	end
+	function im:BindT(unit)
+		glext.glActiveTexture(glc.GL_TEXTURE0 + unit);
+		--if not self.GL.restricted then gl.glEnable( glc.GL_TEXTURE_2D ); end
+		gl.glBindTexture(glc.GL_TEXTURE_2D, self.tex)
 	end
 	return im
 end
