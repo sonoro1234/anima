@@ -51,11 +51,15 @@ end
 local function mkdir(P)
 	local dirs = {}
 	local rr = normpath(P)
+
 	for w in rr:gmatch("([^"..sep.."]+)") do
 		dirs[#dirs + 1] = w
 	end
 	local inisep = rr:match("^"..sep) or ""
 	local current = inisep..dirs[1]
+	if dirs[1]:match":" then -- disc letter on windows
+		current = current .. sep
+	end
 	if nil == lfs.attributes(current) then
 		local suc,err = lfs.mkdir(current)
 		if not suc then error("mkdir:"..current .. " " ..err) end
