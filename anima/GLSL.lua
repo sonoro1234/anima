@@ -37,6 +37,7 @@ local t =
 	GL_SAMPLER_BUFFER = {1,'glUniform1iv'},
 	GL_IMAGE_2D = {1,'glUniform1iv'},
 	GL_IMAGE_BUFFER = {1,'glUniform1iv'},
+	GL_IMAGE_2D_ARRAY = {1,'glUniform1iv'}
 }
 
 local function set_table__gc(t, func)
