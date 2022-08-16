@@ -209,8 +209,12 @@ function GLSL:printProgramInfoLog()
 		local infoLog = ffi.new("char[?]",infologLength[0])
         glext.glGetProgramInfoLog(obj, infologLength[0], charsWritten, infoLog);
 		print(string.format("%s\n",ffi.string(infoLog)));
+		print"--vert"
 		printSource(self.vert or "")
+		print"--frag"
 		printSource(self.frag or "")
+		print"--geom"
+		printSource(self.geom or "")
        -- return true
     end
 	assert(lstatus[0] == glc.GL_TRUE,"GLSL program link failure")
@@ -376,6 +380,7 @@ function GLSL:compile(vert,frag,geom,tfvar)
 	self.source = source
 	self.vert = vert
 	self.frag = frag
+	self.geom = geom
 	if comp then
 		local wgs = ffi.new("GLint[3]")
 		glext.glGetIntegeri_v(glc.GL_MAX_COMPUTE_WORK_GROUP_SIZE,0, wgs)
