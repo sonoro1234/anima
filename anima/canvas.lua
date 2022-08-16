@@ -1306,7 +1306,7 @@ function GLcanvas(GL)
 		function self:checkcontext() return sdl.gL_GetCurrentContext()==self.gl_context end
 		OnResize(self.window,self:getWindowSize()) --it is not called fist time
 		sdl.gL_MakeCurrent(window, gl_context);
-		if self.vsync then sdl.gL_SetSwapInterval(1) end
+		if self.vsync then sdl.gL_SetSwapInterval(type(self.vsync)=="number" and self.vsync or 1) end
 		doinitCOMMON(self)
 	end
 	local function doinitGLFW(self)
@@ -1371,7 +1371,7 @@ function GLcanvas(GL)
 		OnResize(self.window,self:getWindowSize()) --it is not called fist time
 		self.window:makeContextCurrent()
 		
-		if self.vsync then lj_glfw.swapInterval(1) end
+		if self.vsync then lj_glfw.swapInterval(type(self.vsync)=="number" and self.vsync or 1) end
 		GetGLError"doinit ini"
 		
 
