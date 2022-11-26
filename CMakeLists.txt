@@ -81,6 +81,7 @@ set(REAL_HAVE_GETTIMEOFDAY HAVE_GETTIMEOFDAY)
 #message("LuaJIT-libsndfile HAVE_GETTIMEOFDAY " ${HAVE_GETTIMEOFDAY})
 endif(ANIMA_BUILD_SNDFILE)
 
+add_subdirectory(LuaJIT-GL)
 
 #include(ExternalProject)
 if(ANIMA_BUILD_GLFW)
