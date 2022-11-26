@@ -4,6 +4,9 @@
 [submodule "LuaJIT-GLFW"]
 	path = LuaJIT-GLFW
 	url = https://github.com/sonoro1234/LuaJIT-GLFW
+[submodule "LuaJIT-GL"]
+	path = LuaJIT-GL
+	url = https://github.com/sonoro1234/LuaJIT-GL
 [submodule "LuaJIT-SDL2"]
 	path = LuaJIT-SDL2
 	url = https://github.com/sonoro1234/LuaJIT-SDL2
