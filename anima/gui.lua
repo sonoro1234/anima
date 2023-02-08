@@ -939,9 +939,7 @@ function gui.FontIcons(GL,source,ranges,size)
 		--if glyph==nil then print("bad codepoint",cp);return false end
 		local glyph = self.font:FindGlyph(cp + self.ranges[0])
 		ID = ID or tostring(cp)
-		ig.PushID(ID)
-		local ret = ig.ImageButton(self.atlas.TexID,ig.ImVec2(self.size,self.size),ig.ImVec2(glyph.U0,glyph.V0),ig.ImVec2(glyph.U1,glyph.V1),  -1, ig.ImVec4(0,0,0,0), ig.ImVec4(1,1,1,1));
-		ig.PopID()
+		local ret = ig.ImageButton(ID,self.atlas.TexID, ig.ImVec2(self.size,self.size), ig.ImVec2(glyph.U0,glyph.V0), ig.ImVec2(glyph.U1,glyph.V1), ig.ImVec4(0,0,0,0), ig.ImVec4(1,1,1,1));
 		return ret
 	end
 	
