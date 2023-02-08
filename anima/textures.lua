@@ -943,6 +943,23 @@ function Texture(w,h,formato,pTexor,args)
 		self.internal_format,self.formato,self.datatype = int_formats[intbitplanes], formats[bitplanes], type
 		return tex
 	end
+	function tex:set_pixel(x,y,pData,bitplanes)
+		bitplanes = bitplanes or 3
+		--intbitplanes = intbitplanes or bitplanes
+		local formats = { glc.GL_RED, glc.GL_RG, glc.GL_RGB, glc.GL_RGBA}
+		local int_formats = { glc.GL_R32F, glc.GL_RG32F, glc.GL_RGB32F, glc.GL_RGBA32F}
+		local types = {[glc.GL_FLOAT] = "float[?]", [glc.GL_UNSIGNED_SHORT]="unsigned short[?]",[glc.GL_UNSIGNED_BYTE]="unsigned char[?]"}
+		local type
+		for k,v in pairs(types) do
+			if ffi.istype(v,pData) then type=k;break end
+		end
+		--print("set_data type",swapped_glc[type])
+		assert(type)
+		self:Bind()
+		gl.glTexSubImage2D(glc.GL_TEXTURE_2D,0,x, y, 1,1, formats[bitplanes], type, pData)
+		--self.internal_format,self.formato,self.datatype = int_formats[intbitplanes], formats[bitplanes], type
+		return tex
+	end
 	function tex:Load(filename,srgb,mipmaps)
 		srgb = srgb or (self.GL and self.GL.SRGB)
 		mipmaps = mipmaps or (self.GL and self.GL.mipmaps)
