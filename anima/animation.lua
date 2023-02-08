@@ -241,6 +241,7 @@ function AnimPlotter(anim,ini,endp,step)
 	local xs2, ys2 = ffi.new("float[?]",nsegments,xs2t),ffi.new("float[?]",nsegments,ys2t)
 	return function()
 		--if ig.CollapsingHeader(tostring(anim)) then
+		if ig.Begin"AnimPlotter" then
 			if (ig.ImPlot_BeginPlot("AnimPlot "..tostring(anim), ig.ImVec2(-1,-1))) then
 				ig.ImPlot_PlotLine("tim1", xs1, ys1, steps);
 				ig.lib.ImPlot_PushStyleVar_Int(ig.lib.ImPlotStyleVar_Marker, ig.lib.ImPlotMarker_Circle);
@@ -248,6 +249,8 @@ function AnimPlotter(anim,ini,endp,step)
 				ig.ImPlot_PopStyleVar();
 				ig.ImPlot_EndPlot();
 			end
+		end
+		ig.End()
 		--end
 	end
 end
