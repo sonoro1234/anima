@@ -582,6 +582,7 @@ local function GuiInit(GL)
 	if GL.SDL then GuiInitSDL(GL)
 	else GuiInitGLFW(GL)
 	end
+	ig.ImPlot_CreateContext()
 end
 --------------------------------------------------------------------------------------------
 function GLcanvas(GL)
