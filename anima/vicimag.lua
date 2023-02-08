@@ -321,11 +321,11 @@ function M.pixel_data(data,w,h,p)
 		self.data = dat
 		data = dat
 	end
-	function pdat:totex(GL)
+	function pdat:totex(GL,tex)
 		local pData,width,height,bitplanes = self.data,w,h,p
 		local formats = { glc.GL_RED, glc.GL_RG, glc.GL_RGB, glc.GL_RGBA}
 		local int_formats = { glc.GL_R32F, glc.GL_RG32F, glc.GL_RGB32F, glc.GL_RGBA32F}
-		local tex = GL:Texture(width,height)
+		local tex = tex or GL:Texture(width,height)
 	
 		gl.glBindTexture(glc.GL_TEXTURE_2D, tex.tex)
 		gl.glTexImage2D(glc.GL_TEXTURE_2D,0, int_formats[bitplanes], width,height, 0, formats[bitplanes], glc.GL_FLOAT, pData)
