@@ -1,6 +1,6 @@
 PROJECT(LuaJIT)
 #to allow install from subdirectory
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.17)
 
 include(ExternalProject)
 
@@ -14,7 +14,7 @@ if(UNIX)
     ExternalProject_Add(project_luajit
       PREFIX ${ljpre}
       SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT
-	  CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT ${ljdir}
+	  CONFIGURE_COMMAND "" #${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT ${ljdir}
       BINARY_DIR ${ljdir}
       BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} CCOPT="-DLUAJIT_ENABLE_LUA52COMPAT"
       INSTALL_COMMAND ""
@@ -25,7 +25,7 @@ else(UNIX)
     ExternalProject_Add(project_luajit
       PREFIX ${ljpre}
 	  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT
-	  CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT ${ljdir}
+	  CONFIGURE_COMMAND "" #${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT ${ljdir}
       BINARY_DIR ${ljsrc}
       BUILD_COMMAND ${ljsrc}/msvcbuild.bat #dont know how to set DLUAJIT_ENABLE_LUA52COMPAT
       INSTALL_COMMAND ""
@@ -37,19 +37,27 @@ else(UNIX)
 		message(STATUS "luajit debug build")
 		set(DEBFLAGS " CCDEBUG= -g ")
 	  endif()
+
       ExternalProject_Add(project_luajit
       PREFIX ${ljpre}
 	  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT
-	  CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT ${ljdir}
+	  CONFIGURE_COMMAND "" #${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT ${ljdir}
       BINARY_DIR ${ljsrc}
       BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} CCOPT="-DLUAJIT_ENABLE_LUA52COMPAT" ${DEBFLAGS}
       INSTALL_COMMAND ""
     )
+		
   endif(MSVC)
     set (ljdllname lua51.dll)
 endif(UNIX)
 
-
+#generate .relver
+execute_process(COMMAND git archive -o archivo.tar HEAD WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT)
+#move sources to binary and extract
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT/archivo.tar ${ljdir})
+execute_process(COMMAND ${CMAKE_COMMAND} -E tar x archivo.tar WORKING_DIRECTORY ${ljdir})
+#delete archivo.tar
+execute_process(COMMAND ${CMAKE_COMMAND} -E rm archivo.tar WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT)
 #########install
 
 if(UNIX)
