@@ -757,7 +757,7 @@ function gui.Dialog(name,vars,func, invisible)
 					end
 				end
 			elseif v[3] == guitypes.valint then
-				if ig.SliderInt(v[1], pointers[v[1]], v[4].min, v[4].max, "%.0f") then
+				if ig.SliderInt(v[1], pointers[v[1]], v[4].min, v[4].max, "%d") then
 					self.dirty = true
 					namevar = v[1]
 					if v[5] then v[5](pointers[v[1]][0],self) end
