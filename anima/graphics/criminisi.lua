@@ -457,6 +457,13 @@ local function do_criminisi()
 		iterscount = iterscount + 1
 		coroutine.yield()
 	end
+	--clear alfa
+	canvas_fbo:Bind()
+	gl.glClearColor(0,0,0,1)
+	gl.glColorMask(glc.GL_FALSE, glc.GL_FALSE,glc.GL_FALSE,glc.GL_TRUE)
+	ut.Clear()
+	canvas_fbo:UnBind()
+	gl.glColorMask(glc.GL_TRUE, glc.GL_TRUE,glc.GL_TRUE,glc.GL_TRUE)
 	M.doing = false
 	tex:inc_signature()
 	--ProfileStop()
