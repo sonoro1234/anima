@@ -549,8 +549,20 @@ local function make_tex_prog()
 		FragColor = texture(tex0,texcoordf);
 	}
 	]]
+	local frag_alpha_shad = [[
+	uniform sampler2D tex0;
+	in vec2 texcoordf;
+	out vec4 FragColor;
+	void main()
+	{
+
+		vec4 color = texture(tex0,texcoordf);
+		FragColor = vec4(color.a);
+	}
+	]]
 	
 		self.program = GLSL:new():compile(vert_shad,frag_shad)
+		self.program_alpha = GLSL:new():compile(vert_shad,frag_alpha_shad)
 		--prtable(mesh)
 		local m = mesh.quad(-1,-1,1,1)
 		self.vao = VAO({Position=m.points,texcoord=m.texcoords},self.program,m.indexes)
@@ -571,6 +583,15 @@ local function make_tex_prog()
 		if not self.inited then self:init() end
 		self.program:use()
 		self.program.unif.tex0:set{0}
+		gl.glViewport(x,y,w,h)
+		self.vao:draw_elm()
+		glext.glUseProgram(0)
+	end
+	function P3:drawpos_alpha(x,y,w,h)
+		--print("P3:drawpos",x,y,w,h)
+		if not self.inited then self:init() end
+		self.program_alpha:use()
+		self.program_alpha.unif.tex0:set{0}
 		gl.glViewport(x,y,w,h)
 		self.vao:draw_elm()
 		glext.glUseProgram(0)
@@ -960,6 +981,10 @@ function Texture(w,h,formato,pTexor,args)
 		--self.internal_format,self.formato,self.datatype = int_formats[intbitplanes], formats[bitplanes], type
 		return tex
 	end
+	function tex:Info()
+		print(self.filename, string.format("%dx%d pix.",self.width,self.height),self.internal_format,self.formato,self.datatype)
+		return self
+	end
 	function tex:Load(filename,srgb,mipmaps)
 		srgb = srgb or (self.GL and self.GL.SRGB)
 		mipmaps = mipmaps or (self.GL and self.GL.mipmaps)
@@ -1180,6 +1205,10 @@ function Texture(w,h,formato,pTexor,args)
 	function tex:drawpos(x,y,w,h)
 		self:Bind(0)
 		prog:drawpos(x,y,w or self.width,h or self.height)
+	end
+	function tex:drawpos_alpha(x,y,w,h)
+		self:Bind(0)
+		prog:drawpos_alpha(x,y,w or self.width,h or self.height)
 	end
 	function tex:drawposSRGB(x,y,w,h)
 		self:Bind(0)

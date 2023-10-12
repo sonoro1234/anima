@@ -871,7 +871,7 @@ function GLcanvas(GL)
 		return timebegin
 	end
 	
-	function GL:FBODrawPrivate()
+	function GL:FBODrawPrivate(alfa_alone)
 		local x,y,w,h = unpack(self.stencil_sizes)
 		local tex = self.fbo:GetTexture()
 		tex:Bind()
@@ -882,7 +882,11 @@ function GLcanvas(GL)
 		else
 			--tex:gen_mipmap()
 		end
-		tex:drawpos(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
+		if alfa_alone then
+			tex:drawpos_alpha(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
+		else
+			tex:drawpos(x+self.offX,y+self.offY,w*self.scale,h*self.scale)
+		end
 	end
 	function GL:FBODraw()
 		local GL = self
@@ -891,13 +895,17 @@ function GLcanvas(GL)
 			gl.glClearColor(0.1,0.1,0.1,1)
 			ut.Clear()
 			gl.glClearColor(0,0,0,1)
+			local colm = GL.colormasks
+			local alpha_alone = colm.alpha[0]
+			if not alpha_alone then gl.glColorMask(colm.red[0], colm.green[0], colm.blue[0], glc.GL_TRUE) end
 			if GL.SRGB then
 				gl.glEnable(glc.GL_FRAMEBUFFER_SRGB)
-				self:FBODrawPrivate()
+				self:FBODrawPrivate(alpha_alone)
 				gl.glDisable(glc.GL_FRAMEBUFFER_SRGB)
 			else
-				self:FBODrawPrivate()	
-			end		
+				self:FBODrawPrivate(alpha_alone)	
+			end	
+			gl.glColorMask(glc.GL_TRUE, glc.GL_TRUE,glc.GL_TRUE,glc.GL_TRUE)
 		end
 		GetGLError("fbo_dump")
 		--mouse pick
@@ -1195,6 +1203,10 @@ function GLcanvas(GL)
 		--require"anima.GLSL"
 		-----------------------------------------------------------------------------------
 		--print_glinfo(self)
+		self.colormasks = {red = ffi.new("bool[1]",true),
+							green = ffi.new("bool[1]",true),
+							blue = ffi.new("bool[1]",true),
+							alpha = ffi.new("bool[1]",false)}
 		if self.profile == "COMPAT" then
 
 			GetGLError"doinit 2"

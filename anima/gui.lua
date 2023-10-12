@@ -370,6 +370,12 @@ function ToolBox(GL)
 				ig.GetIO().ConfigFlags =  bit.band(ig.GetIO().ConfigFlags, bit.bnot(ig.lib.ImGuiConfigFlags_NoMouseCursorChange))
 				imgui.igCloseCurrentPopup() 
 			end
+
+			ig.Checkbox("red",GL.colormasks.red)
+			ig.Checkbox("green",GL.colormasks.green)
+			ig.Checkbox("blue",GL.colormasks.blue)
+			ig.Checkbox("alpha",GL.colormasks.alpha)
+
 			ig.EndPopup()
 		end
 	end
