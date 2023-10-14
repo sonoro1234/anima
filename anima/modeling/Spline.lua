@@ -2,12 +2,24 @@
 require"anima"
 local vec2 = mat.vec2
 local CG = require"anima.CG3"
+----------------------shaders for making masks from spline
+local vert_sh = [[
+	in vec2 position;
+	void main(){
+		gl_Position = vec4(position,-1,1);
+	}]]
+
+local frag_sh = [[
+	uniform vec4 color = vec4(1);
+	void main(){
+		gl_FragColor = color;
+	}]]
 
 local function mod(a,b)
 	return ((a-1)%b)+1
 end
 
-
+local maskprog 
 
 local function Editor(GL,updatefunc,args)
 	args = args or {}
@@ -231,6 +243,53 @@ local function Editor(GL,updatefunc,args)
 	M.NM = NM
 	NM.plugin = M
 	
+	function M:init()
+		if not maskprog then
+			maskprog = GLSL:new():compile(vert_sh,frag_sh)
+		end
+	end
+	
+	function M:spline2mask(fbo, front_color, ii)
+		ii = ii or NM.curr_spline
+		
+		local points = self.ps[ii]
+		if not points then print"No Spline:select spline" return end
+		local points,indexes = CG.EarClipSimple2(points)
+		local ndc = {}
+		for i=1,#points do
+			ndc[i] =  points[i]*2/mat.vec2(GL.W,GL.H) - mat.vec2(1,1)
+		end
+		
+		local vaoT = VAO({position=ndc},maskprog,indexes)
+		maskprog:use()
+		maskprog.unif.color:set(front_color)
+		fbo:Bind()
+		gl.glDisable(glc.GL_DEPTH_TEST)
+		fbo:viewport()
+		vaoT:draw_elm()
+		fbo:UnBind()
+	end
+	
+	local function box2d(points)
+		local floor = math.floor
+	
+		local function round(x)
+			return floor(x+0.5)
+		end
+		local minx,maxx,miny,maxy = math.huge,-math.huge,math.huge,-math.huge
+		for i,p in ipairs(points) do
+			minx = p.x < minx and p.x or minx
+			maxx = p.x > maxx and p.x or maxx
+			miny = p.y < miny and p.y or miny
+			maxy = p.y > maxy and p.y or maxy
+		end
+		return {vec2(round(minx),round(miny)),vec2(round(maxx),round(maxy))}
+	end
+	
+	function M:box2d(ii)
+		ii = ii or NM.curr_spline
+		return box2d(self.ps[ii])
+	end
 	
 	function M:newspline(pts)
 		numsplines=numsplines+1;
@@ -246,11 +305,17 @@ local function Editor(GL,updatefunc,args)
 		return numsplines
 	end
 	
-	function M:newhole()
+	function M:newhole(pts)
 		if NM.curr_spline==0 then return end
 		self.sccoors[NM.curr_spline].holes = self.sccoors[NM.curr_spline].holes or {}
 		table.insert(self.sccoors[NM.curr_spline].holes,{})
 		curr_hole[0] = #self.sccoors[NM.curr_spline].holes
+		if pts then
+			local hole = self.sccoors[NM.curr_spline].holes[curr_hole[0]]
+			for i,p in ipairs(pts) do
+				hole[i] = p
+			end
+		end
 	end
 	
 	function M:set_current(i)
@@ -424,6 +489,7 @@ local function Editor(GL,updatefunc,args)
 	end
 	M.draw = function() end --dummy value for plugin
 	--M:clearshape()
+	GL:add_plugin(M,"spliner")
 	return M
 end
 

@@ -4,6 +4,8 @@
 --updateCanvasGPU
 -- get subimage
 ----------------------
+-- Usage: pick point in flood_fill module from area to be inpainted and then do_it on criminisi module
+
 require"anima"
 local GL = GLcanvas{H=700 ,aspect=1,profile="CORE",vsync=false,fbo_nearest=false,fps=300}
 
@@ -20,7 +22,6 @@ function GL.init()
 	GL:set_WH(tex.width,tex.height)
 	
 	crimi = require"anima.graphics.criminisi"(GL, tex)
-	crimi:init()
 
 	FF = require"anima.plugins.flood_fill"(GL)
 	FF.NM.vars.show_image[0] = false

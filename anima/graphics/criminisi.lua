@@ -180,7 +180,7 @@ local function Criminisi(GL,tex,make_mask1)
 	local NM
 	local spline
 	local canvas,canvas_fbo
-	local maskfbo, conf_fbo
+	local maskfbo_t, conf_fbo
 	local SBox , CBox
 
 
@@ -198,7 +198,7 @@ local function find_contour()
 	contour_prog:use()
 	contour_prog.unif.tex0:set{0}
 	contour_prog.unif.channelselector:set{0,0,1}
-	maskfbo:tex():Bind()
+	maskfbo_t:tex():Bind()
 	contour_fbo:Bind()
 	contour_fbo:viewport()
 	ut.Clear()
@@ -239,7 +239,7 @@ local function searchDistancesGPU(i,j)
 	progdist.unif.canvasSample:set{2}
 	tex:Bind(2)
 	progdist.unif.mask:set{1}
-	maskfbo:tex():Bind(1)
+	maskfbo_t:tex():Bind(1)
 	progdist.unif.i:set{i}
 	progdist.unif.j:set{j}
 	progdist.unif.win_halfsize:set{math.floor(NM.win_halfsize)}
@@ -298,7 +298,7 @@ local function calcPriorityGPU()
 	U.isophote:set{1}
 	isophote_fbo:tex():Bind(1)
 	U.mask:set{2}
-	maskfbo:tex():Bind(2)
+	maskfbo_t:tex():Bind(2)
 	U.confidence:set{3}
 	conf_fbo:tex():Bind(3)
 	U.win_halfsize:set{win_halfsize}
@@ -365,7 +365,7 @@ local function UpdateCanvasGPU(P1,P2)
 	prupdcanvas.unif.canvas:set{0}
 	tex:Bind()
 	prupdcanvas.unif.mask:set{1}
-	maskfbo:tex():Bind(1)
+	maskfbo_t:tex():Bind(1)
 	prupdcanvas.unif.ior:set{-id+ior} --ior-id}
 	prupdcanvas.unif.jor:set{-jd+jor}--320-jor} --jor-jd}
 	prupdcanvas.unif.center:set{id,jd}
@@ -380,7 +380,7 @@ local function UpdateCanvasGPU(P1,P2)
 	
 	prupdconfi:use()
 	prupdconfi.unif.mask:set{0}
-	maskfbo:tex():Bind(0)
+	maskfbo_t:tex():Bind(0)
 	prupdconfi.unif.confi:set{confi}
 	conf_fbo:Bind()
 	gl.glViewport(id-win_halfsize,jd-win_halfsize,winsize,winsize)
@@ -391,13 +391,13 @@ local function UpdateCanvasGPU(P1,P2)
 	glext.glBlendEquation(glc.GL_MAX)
 	prupdmask:use()
 	prupdmask.unif.color:set{0,0,1}
-	maskfbo:Bind()
+	maskfbo_t:Bind()
 	gl.glViewport(id-win_halfsize,jd-win_halfsize,winsize,winsize)
 	gl.glDisable(glc.GL_DEPTH_TEST)
 	--gl.glClearColor(1,1,1,1)
 	--ut.Clear()
 	maskquad:draw_elm()
-	maskfbo:UnBind()
+	maskfbo_t:UnBind()
 	gl.glDisable(glc.GL_BLEND)
 end
 ---------------------------
@@ -423,13 +423,17 @@ local function box2d(fbo,ch,doprint)
 end
 
 local function make_mask_default()
-	local SBox = box2d(maskfbo,1) 
-	local CBox = box2d(maskfbo,0) 
+	local SBox = box2d(M.maskfbo,1) 
+	local CBox = box2d(M.maskfbo,0) 
 	print("CBox",CBox[1], CBox[2])
 	print("SBox",SBox[1], SBox[2])
 	return CBox, SBox
 end
-
+local function copyfbos()
+	maskfbo_t:Bind()
+	M.maskfbo:tex():draw()
+	maskfbo_t:UnBind()
+end
 -----------------------------
 local initconfprog	
 local function do_criminisi()
@@ -439,7 +443,9 @@ local function do_criminisi()
 	--ProfileStart("3vfsm1")
 	local make_mask = make_mask1 and make_mask1 or make_mask_default
 	CBox, SBox = make_mask()
-	initconfprog:process_fbo(conf_fbo,{maskfbo:tex()})
+	copyfbos()
+	
+	initconfprog:process_fbo(conf_fbo,{maskfbo_t:tex()})
 	canvas_fbo:Bind()
 	tex:drawcenter()
 	canvas_fbo:UnBind()
@@ -465,15 +471,15 @@ local function do_criminisi()
 	canvas_fbo:UnBind()
 	gl.glColorMask(glc.GL_TRUE, glc.GL_TRUE,glc.GL_TRUE,glc.GL_TRUE)
 	M.doing = false
-	tex:inc_signature()
 	--ProfileStop()
 	print("done in -----------------",secs_now()-init_t)
 	print("iters",iterscount)
 end
 
 function M:init()
-	maskfbo = GL:initFBO({no_depth=true})
-	M.maskfbo = maskfbo
+	M.maskfbo = GL:initFBO({no_depth=true})
+	maskfbo_t = GL:initFBO({no_depth=true})
+	M.maskfbo_t = maskfbo_t
 	conf_fbo = GL:initFBO({no_depth=true})
 	M.conf_fbo = conf_fbo
 	initconfprog = require"anima.plugins.texture_processor"(GL,1)
@@ -508,7 +514,7 @@ function M.draw(t,w,h)
 	elseif NM.mostrar == 1 then
 		canvas_fbo:tex():drawcenter()
 	elseif NM.mostrar == 2 then
-		maskfbo:tex():drawcenter()
+		maskfbo_t:tex():drawcenter()
 	elseif NM.mostrar == 3 then
 		contour_fbo:tex():drawcenter()
 	elseif NM.mostrar == 4 then
@@ -523,7 +529,7 @@ function M.draw(t,w,h)
 		if not ok then print(err); print(debug.traceback(M.make_mask_co)) end
 	end
 end
-
+	GL:add_plugin(M,"criminisi")
 	return M
 end --Criminisi
 
