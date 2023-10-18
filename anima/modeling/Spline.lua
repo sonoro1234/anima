@@ -254,19 +254,22 @@ local function Editor(GL,updatefunc,args)
 		
 		local points = self.ps[ii]
 		if not points then print"No Spline:select spline" return end
-		local points,indexes = CG.EarClipSimple2(points)
+		local points,indexes = CG.EarClipSimple2(points, true)
 		local ndc = {}
 		for i=1,#points do
-			ndc[i] =  points[i]*2/mat.vec2(GL.W,GL.H) - mat.vec2(1,1)
+			ndc[i] =  (points[i] + mat.vec2(0.5,0.5))*2/mat.vec2(GL.W,GL.H) - mat.vec2(1,1)
 		end
 		
 		local vaoT = VAO({position=ndc},maskprog,indexes)
 		maskprog:use()
 		maskprog.unif.color:set(front_color)
 		fbo:Bind()
+		ut.ClearDepth()
 		gl.glDisable(glc.GL_DEPTH_TEST)
 		fbo:viewport()
 		vaoT:draw_elm()
+		vaoT:draw(glc.GL_LINE_LOOP)
+		vaoT:draw(glc.GL_POINTS)
 		fbo:UnBind()
 	end
 	
