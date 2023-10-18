@@ -350,7 +350,6 @@ function ToolBox(GL)
 			--if ig.Button("hand") then 
 			if icons:Button(icons.cursorcps.hand) then
 				GL.tool = "hand";
-				--glfw.glfwSetCursor(GL.window, GL.cursors.hand);
 				GL:SetCursor(GL.cursors.hand)
 				ig.GetIO().ConfigFlags =  bit.bor(ig.GetIO().ConfigFlags, ig.lib.ImGuiConfigFlags_NoMouseCursorChange)
 				imgui.igCloseCurrentPopup()				
@@ -358,14 +357,12 @@ function ToolBox(GL)
 			--if ig.Button("glass") then 
 			if icons:Button(icons.cursorcps.glass_p) then
 				GL.tool = "glass";
-				--glfw.glfwSetCursor(GL.window, GL.cursors.glass_p);
 				GL:SetCursor(GL.cursors.glass_p)
 				ig.GetIO().ConfigFlags =  bit.bor(ig.GetIO().ConfigFlags, ig.lib.ImGuiConfigFlags_NoMouseCursorChange)
 				imgui.igCloseCurrentPopup() 
 			end
 			if ig.Button("std") then 
 				GL.tool = nil;
-				--glfw.glfwSetCursor(GL.window, nil);
 				GL:SetCursor(nil)
 				ig.GetIO().ConfigFlags =  bit.band(ig.GetIO().ConfigFlags, bit.bnot(ig.lib.ImGuiConfigFlags_NoMouseCursorChange))
 				imgui.igCloseCurrentPopup() 
@@ -927,7 +924,7 @@ function gui.FontIcons(GL,source,ranges,size)
 	local fontpath = path.chain(path.animapath(),"fonts","fontawesome-webfont.ttf")
 	source = source or fontpath
 	--ranges = ranges or ffi.new("ImWchar[3]",{0xf000,0xf2e0,0})
-	ranges = ranges or ffi.new("ImWchar[3]",{0xf000,0xf0a7,0})
+	ranges = ranges or ffi.new("ImWchar[3]",{0xf000,0xf1fb,0})
 	size = size or 16
 	local FAicons = {source=source,size=size,ranges=ranges}
 	
@@ -951,7 +948,7 @@ function gui.FontIcons(GL,source,ranges,size)
 	
 	function FAicons:GetCursors(cps)
 		
-		cps = cps or {hand=166,glass=2,glass_p=14,glass_m=16}
+		cps = cps or {hand=166,glass=2,glass_p=14,glass_m=16,pickcolor=0x01FB}--0x01FB}
 		self.cursorcps = cps
 		
 		-- local img = ffi.new("unsigned char[?]",self.atlas.TexWidth * self.atlas.TexHeight * 4)
@@ -971,8 +968,8 @@ function gui.FontIcons(GL,source,ranges,size)
 		local cursors = {}
 		
 		for k,cp in pairs(cps) do
-			local glyph = self.font:FindGlyph(cp + self.ranges[0])
-			assert(glyph~=nil,"no glyph!!")
+			local glyph = self.font:FindGlyphNoFallback(cp + self.ranges[0])
+			assert(glyph~=nil,"no glyph!! "..(cp + self.ranges[0]))
 			local basex = math.floor(glyph.U0*self.atlas.TexWidth)
 			local basey = math.floor(glyph.V0*self.atlas.TexHeight)
 			local width = math.floor((glyph.U1-glyph.U0)*self.atlas.TexWidth)

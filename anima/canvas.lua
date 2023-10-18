@@ -480,15 +480,15 @@ local function GuiInitGLFW(GL)
 		elseif GL.tool == "glass" then
 			if key == glfwc.GLFW_KEY_LEFT_ALT  then
 				if  action == glfwc.GLFW_PRESS then
-					glfw.glfwSetCursor(GL.window, GL.cursors.glass_m);
+					GL:SetCursor( GL.cursors.glass_m);
 				elseif action == glfwc.GLFW_RELEASE then
-					glfw.glfwSetCursor(GL.window, GL.cursors.glass_p);
+					GL:SetCursor( GL.cursors.glass_p);
 				end 
 			elseif key == glfwc.GLFW_KEY_LEFT_CONTROL then
 				if action == glfwc.GLFW_PRESS then
-					glfw.glfwSetCursor(GL.window, GL.cursors.glass);
+					GL:SetCursor(GL.cursors.glass);
 				elseif action == glfwc.GLFW_RELEASE then
-					glfw.glfwSetCursor(GL.window, GL.cursors.glass_p);
+					GL:SetCursor(GL.cursors.glass_p);
 				end
 			end
 		end
@@ -544,7 +544,7 @@ local function GuiInitGLFW(GL)
 				elseif mods == glfwc.GLFW_MOD_CONTROL then
 					GL:GlassInit()
 				else
-					glfw.glfwSetCursor(GL.window, GL.cursors.glass_p);
+					GL:SetCursor(GL.cursors.glass_p);
 					GL:GlassOffsets(X,Y,2)
 				end
 			end
@@ -1266,6 +1266,8 @@ function GLcanvas(GL)
 		
 		if not self.not_imgui then self:set_initial_curr_notmodal() end
 		
+		function self:LockCursor() ig.GetIO().ConfigFlags =  bit.bor(ig.GetIO().ConfigFlags, ig.lib.ImGuiConfigFlags_NoMouseCursorChange) end
+		function self:UnLockCursor() ig.GetIO().ConfigFlags =  bit.band(ig.GetIO().ConfigFlags, bit.bnot(ig.lib.ImGuiConfigFlags_NoMouseCursorChange)) end
 		
 		GetGLError("INIT")
 	
