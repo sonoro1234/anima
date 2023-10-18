@@ -1296,8 +1296,9 @@ function Texture(w,h,formato,pTexor,args)
 		resfbo:delete(true) --keep texture
 		return tex
 	end
-	function tex:resample_fac(f)
-		return self:resample(math.floor(self.width*f+0.5),math.floor(self.height*f+0.5))
+	function tex:resample_fac(fac, fun)
+		fun = fun or self.resample
+		return fun(self, math.floor(self.width*fac+0.5),math.floor(self.height*fac+0.5))
 	end
 	function tex:lanczos(w,h)
 		local resfbo = self.GL:initFBO({no_depth=true},w,h)
@@ -1318,6 +1319,30 @@ function Texture(w,h,formato,pTexor,args)
 		local tex = resfbo:tex()
 		resfbo:delete(true) --keep texture
 		return tex
+	end
+	function tex:colors_table()
+		local vicim = require"anima.vicimag"
+		local blob = require"anima.graphics.blob"
+		local colors = {}
+		local counts = {}
+		local data = self:get_pixels(glc.GL_FLOAT,glc.GL_RGB)
+		local pd = vicim.pixel_data(data,tex.width,tex.height,3)
+	
+		for i,j,pix in pd:iterator() do
+			local found = false
+			for i,c in ipairs(colors) do
+				if blob.compare_color(pix,c) then
+					found = true
+					counts[i] = counts[i] + 1
+					break
+				end
+			end
+			if not found then
+				colors[#colors+1] = ffi.new("float[3]",{pix[0],pix[1],pix[2]})
+				counts[#counts+1] = 1
+			end
+		end
+		return colors, counts
 	end
 	function tex:inc_signature()
 		self.instance = self.instance + 1
