@@ -79,7 +79,7 @@ void main()
 	vec4 col = texelFetch(tex, ivec2(position.xy+0.0),0);
 	centerind = col.a;
 	//gl_Position = vec4((centerind/(K-1.0) - 0.5)*2.0,0,0.0,1.0);
-	gl_Position = vec4(2.0*(col.a+0.4)/K - 1.0, 0.0, 0.0,1.0);
+	gl_Position = vec4(2.0*(col.a+0.5)/K - 1.0, 0.0, 0.0,1.0);
 	center = vec4(col.rgb,1.0);
 }
 
@@ -160,6 +160,7 @@ void main()
 require"anima"
 local plugin = require"anima.plugins.plugin"
 local function ColorKmeans(GL,K)
+	K = K or 100
 	local M = {}
 	local NM=GL:Dialog("ColorKmeans",{
 {"K",K,guitypes.valint,{min=1,max=100}},--function(val) M:setK(val) end},
@@ -188,8 +189,22 @@ local function ColorKmeans(GL,K)
 		end
 		fbo:tex():set_data(data,3,4)
 	end
+	--set center from color_table
+	local function setcenters(fbo, centers)
+		local K = #centers
+		local data = ffi.new("float[?]",NM.K*3)
+		for i=1,K do
+			local j = i-1
+			data[3*j] = centers[i][0]
+			data[3*j+1] = centers[i][1]
+			data[3*j+2] = centers[i][2]
+			--print("initcenters",j,data[j*3],data[j*3+1],data[j*3+2])
+		end
+		fbo:tex():set_data(data,3,4)
+	end
 	local function initCentersKmeanpp(fbo,tex)
-
+	
+		local centers = {}
 		local npix = tex.width*tex.height
 		local datat = tex:get_pixels(glc.GL_FLOAT,glc.GL_RGB)
 		--print("initCenters",ffi.sizeof(datat)/(ffi.sizeof"float"*3),npix)
@@ -202,7 +217,6 @@ local function ColorKmeans(GL,K)
 		end
 		
 		local K = 1
-		local centers = {}
 		-- take one center c1, chosen uniformly at random from 'data'
 		local i = math.random(0, npix-1)
 		centers[K] = {datat[i*3], datat[i*3+1], datat[i*3+2]}
@@ -254,7 +268,7 @@ local function ColorKmeans(GL,K)
 				if centers[i][1]==centers[K][1] and 
 				centers[i][2]==centers[K][2] and 
 				centers[i][1]==centers[K][1] then
-					print("repeated centroid ------------------------------------------",i)
+					--print("repeated centroid ------------------------------------------",i,K,NM.K)
 					repeated = true
 					K = K -1
 					break
@@ -263,6 +277,7 @@ local function ColorKmeans(GL,K)
 			until not repeated
 
 		end
+		--print"setcenters from random init"
 		local data = ffi.new("float[?]",NM.K*3)
 		for i=1,K do
 			local j = i-1
@@ -278,13 +293,13 @@ local function ColorKmeans(GL,K)
 		local zplane = 0
 		local Pos = ffi.new("float[?]",w*h*3)
 		local ind = 0
-			for i=0,w-1,1 do
+		for i=0,w-1,1 do
 			for j=0,h-1,1 do
 			Pos[ind] = i
 			Pos[ind+1] = j
 			Pos[ind+2] = zplane
 			ind = ind + 3
-		end
+			end
 		end
 		return VAO({position=Pos},prog)
 	end
@@ -383,9 +398,41 @@ local function ColorKmeans(GL,K)
 		end
 		return centers
 	end
-	function M:kmeans()
-		print"kmeans--------------------------------------------"
+	local function printtex(tex)
+		local vicim = require"anima.vicimag"
+		local npix = tex.width*tex.height
+		local data = tex:get_pixels(glc.GL_FLOAT,glc.GL_RGBA)
+		local pd = vicim.pixel_data(data,tex.width,tex.height,4)
+	
+		for i,j,pix in pd:iterator() do
+			print(i,j,pix[0],pix[1],pix[2],pix[3])
+		end
+	end
+	local function print_colors_table(colors_table)
+		for i=1,#colors_table do
+			local pix = colors_table[i]
+			print(i,pix[0],pix[1],pix[2])
+		end
+	end
+	local function checknan(tex)
+		local vicim = require"anima.vicimag"
+		local npix = tex.width*tex.height
+		local data = tex:get_pixels(glc.GL_FLOAT,glc.GL_RGBA)
+		local pd = vicim.pixel_data(data,tex.width,tex.height,4)
+	
+		for i,j,pix in pd:iterator() do
+			if pix[0] ~= pix[0] or pix[1] ~= pix[1] or pix[2] ~= pix[2] then
+				return true,i,j
+			end
+		end
+		return false
+	end
+	function M:kmeans(colors_table)
+		--print"kmeans--------------------------------------------"
+		--print_colors_table(colors_table)
+		
 		local texr = self.texr
+		--print_colors_table(texr:colors_table())
 		gl.glDisable(glc.GL_BLEND)
 		if NM.Lab then
 			texr = self:tolab(texr)
@@ -399,8 +446,24 @@ local function ColorKmeans(GL,K)
 			-- initCentersKmeanpp(centersfbo,texr)
 		-- end
 		
-		initCentersKmeanpp(centersfbo,texr)
+		if NM.K == #colors_table then 
+			centers = colors_table
+			setcenters(centersfbo,centers)
+			if NM.Lab then
+				local centerslab = self:tolab(centersfbo:tex())
+				centersfbo:Bind()
+				centerslab:draw()
+				centersfbo:UnBind()
+			end
+		else
+			initCentersKmeanpp(centersfbo,texr)
+		end
 		
+		
+		--print("checknan texr",checknan(texr))
+		--print("checknan cnetersfbo tex",checknan(centersfbo:tex()))
+		--print"centersfbo:tex"
+		--printtex(centersfbo:tex())
 		local updated = false
 		local oldloss = math.huge
 		fbo1:Bind()
@@ -426,7 +489,9 @@ local function ColorKmeans(GL,K)
 			programfindcenters.vaos[1]:draw_elm()
 			fbo1:UnBind()
 			
+			--print"check 2"
 			--prtable(check(fbo1:tex()))
+			--print("checknan fbo1 tex",checknan(fbo1:tex()))
 			
 			programupdatecenters:use()
 			local U = programupdatecenters.unif
@@ -450,15 +515,18 @@ local function ColorKmeans(GL,K)
 			
 			centersfbo:UnBind()
 			
+			--print("checknan centersfbo:tex",checknan(centersfbo:tex()))
+			
 			local data = centersfbo:tex():get_pixels(glc.GL_FLOAT,glc.GL_RGBA)
 			local sum = 0
 			local posterror = false
 			for i=0,NM.K-1 do
 				local pix = data + i*4
-				if(pix[3]==0) then posterror=true end
-				pix[0] = pix[0]/pix[3]
-				pix[1] = pix[1]/pix[3]
-				pix[2] = pix[2]/pix[3]
+				local den = pix[3]
+				if(pix[3]==0) then posterror=true;  den = 1 end
+				pix[0] = pix[0]/den
+				pix[1] = pix[1]/den
+				pix[2] = pix[2]/den
 				sum = sum +pix[3]
 				--print(i,pix[0],pix[1],pix[2],pix[3])
 			end
@@ -560,13 +628,22 @@ local function ColorKmeans(GL,K)
 		end
 	end
 	local oldtexsignature
+	local algo = require"anima.algorithm.algorithm"
 	function M:process(texture)
+		
 		if not oldtexsignature or oldtexsignature~=texture:get_signature() then
 			oldtexsignature=texture:get_signature()
-			local texr = texture:resample_fac(0.1)
+			local texr = texture:resample_fac(0.1, texture.resample_nearest)
+			--limit maxim K to number of colors
+			M.colors_table, M.colors_count = texr:colors_table()
+			NM.vars.K[0] = math.min(NM.K, #M.colors_table)
+			NM.defs.K.args.max = NM.K
+			print("colors",#M.colors_table)
+			algo.quicksort_mirror(M.colors_count, M.colors_table, 1, #M.colors_count, function(a,b) return a>b end)
+			--prtable(M.colors_count)
 			self:set_texture(texr)
 		end
-		self:kmeans()
+		self:kmeans(M.colors_table)
 		self.texx = self:apply()
 		self.centerstex = self:getcenters()
 		self.texturax = self:find_apply(texture)
@@ -586,7 +663,7 @@ end
 GL = GLcanvas{fps=25,H=700,aspect = 1.5,DEBUG=true,fbo_nearest=true,SDL=false}
 
 local textura
-local ColorK = ColorKmeans(GL,5)
+local ColorK = ColorKmeans(GL)
 
 local NM = GL:Dialog("test",{
 {"orig",false,guitypes.toggle},
@@ -598,6 +675,10 @@ Dbox:add_dialog(NM)
 Dbox:add_dialog(ColorK.NM)
 local fileName = [[C:\LuaGL\frames_anima\edges_detection\flowers2.png]]
 --local fileName = [[C:\LuaGL\frames_anima\edges_detection\bici.png]]
+local fileName = [[C:\LuaGL\frames_anima\vectorize\dummy_color.tif]]
+--local fileName = [[C:\LuaGL\frames_anima\vectorize\dummy.png]]
+--local fileName = [[C:\anima\examples\vectorize\letraO.png]]
+--local fileName = [[C:\LuaGL\media\gradient.tif]]
 function GL.init()
 	--GLSL.default_version = "#version 330\n"
 	--textura = GL:Texture():Load([[C:\luaGL\frames_timeline2\media\fiestaafrica.tif]],srgb)
@@ -631,7 +712,11 @@ function GL.draw(tim,w,h)
 		elseif NM.show==2 then
 			ColorK.texturax:drawcenter(w,h)
 		else
+			ColorK.texx:Bind()
+			ColorK.texx:mag_filter(glc.GL_NEAREST)
+			ColorK.texx:min_filter(glc.GL_NEAREST)
 			ColorK.texx:drawcenter(w,h)
+			--ColorK.texr:drawcenter(w,h)
 		end
 	end
 
