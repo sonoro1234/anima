@@ -150,6 +150,7 @@ install(DIRECTORY LuaJIT-ImGui/examples DESTINATION ${LUAJIT_BIN}/examples/LuaJI
 install(DIRECTORY LuaJIT-rtaudio/samples DESTINATION ${LUAJIT_BIN}/examples/LuaJIT-rtaudio)
 install(DIRECTORY LuaJIT-SDL2/test DESTINATION ${LUAJIT_BIN}/examples/LuaJIT-SDL2)
 install(DIRECTORY luajit-async/tests DESTINATION ${LUAJIT_BIN}/examples/luajit-async)
+install(DIRECTORY luajit-libsndfile/test DESTINATION ${LUAJIT_BIN}/examples/luajit-libsndfile)
 #####linux luajit launcher
 if(UNIX)
 install(FILES anima_launcher 
