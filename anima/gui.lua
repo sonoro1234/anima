@@ -1278,7 +1278,7 @@ function gui.SetImGui(GL)
 		ig.PopStyleVar(2);
 		
 		local dockspace_id = ig.GetIDStr("anima MyDockSpace");
-		local dockspace_flags = bit.bor(ig.lib.ImGuiDockNodeFlags_NoDockingInCentralNode, ig.lib.ImGuiDockNodeFlags_AutoHideTabBar, ig.lib.ImGuiDockNodeFlags_PassthruCentralNode) --ImGuiDockNodeFlags_NoSplit
+		local dockspace_flags = bit.bor(ig.lib.ImGuiDockNodeFlags_NoDockingOverCentralNode, ig.lib.ImGuiDockNodeFlags_AutoHideTabBar, ig.lib.ImGuiDockNodeFlags_PassthruCentralNode) --ImGuiDockNodeFlags_NoSplit
 		ig.DockSpace(dockspace_id, ig.ImVec2(0.0, 0.0), dockspace_flags);
 		ig.End()
 	end
