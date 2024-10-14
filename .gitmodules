@@ -32,3 +32,6 @@
 [submodule "par"]
 	path = LuaJIT-par/par
 	url = https://github.com/sonoro1234/par
+[submodule "LuaJIT-SDL3"]
+	path = LuaJIT-SDL3
+	url = https://github.com/sonoro1234/LuaJIT-SDL3.git
