@@ -35,3 +35,6 @@
 [submodule "LuaJIT-SDL3"]
 	path = LuaJIT-SDL3
 	url = https://github.com/sonoro1234/LuaJIT-SDL3.git
+[submodule "LuaJIT-freetype"]
+	path = LuaJIT-freetype
+	url = https://github.com/sonoro1234/LuaJIT-freetype.git
