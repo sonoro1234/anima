@@ -78,7 +78,7 @@ local function Editor(GL,updatefunc,args)
 		--points in curr_spline
 		for i,v in ipairs(M.sccoors[NM.curr_spline]) do
 			local scpoint = ViewportToScreen(v.x,v.y)
-			local color = i==1 and ig.U32(1,1,0,1) or ig.U32(1,0,0,1)
+			local color = i==1 and ig.U32(1,1,0,1) or ig.U32(1,0,0,0.5)
 			dl:AddCircleFilled(scpoint, 4, color)
 		end
 		if curr_hole[0]>0 then
@@ -90,13 +90,13 @@ local function Editor(GL,updatefunc,args)
 		end
 		--polylines
 		for i=1,numsplines do
-			local color = i == NM.curr_spline and ig.U32(0.5,1,0,1) or ig.U32(0.25,0.5,0,1)
+			local color = i == NM.curr_spline and ig.U32(0.75,1,0,1) or ig.U32(0.75,1,0,0.2) --(0.25,0.5,0,0.5)
 			local pointsI = ffi.new("ImVec2[?]",#M.ps[i])
 			for j,p in ipairs(M.ps[i]) do
 				local scpoint = ViewportToScreen(p.x,p.y)
 				pointsI[j-1] = scpoint
 			end
-			dl:AddPolyline(pointsI,#M.ps[i],color,true, 1)
+			dl:AddPolyline(pointsI,#M.ps[i],color,ig.lib.ImDrawFlags_Closed, 1)
 			if M.ps[i].holes then
 				for j,hole in ipairs(M.ps[i].holes) do
 					local pointsI = ffi.new("ImVec2[?]",#hole)
@@ -303,6 +303,7 @@ local function Editor(GL,updatefunc,args)
 			for i,p in ipairs(pts) do
 				self.sccoors[NM.curr_spline][i] = p
 			end
+			M:calc_spline()
 		end
 		--M:process_all()
 		return numsplines
@@ -499,7 +500,7 @@ end
 --[=[
 local GL = GLcanvas{H=500,aspect=1,DEBUG=true}
 local function update(n) print("update spline",n) end
-local edit = Editor(GL,update,{region=false})--,doblend=true})
+local edit = Editor(GL,update,{region=true})--,doblend=true})
 local plugin = require"anima.plugins.plugin"
 edit.fb = plugin.serializer(edit)
 function GL.imgui()

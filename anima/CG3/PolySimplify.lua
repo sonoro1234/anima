@@ -690,10 +690,105 @@ end
 local function mod(a,b)
 	return ((a-1)%b)+1
 end
+
 --return a polygon with positive outward offset dis
 --square bool if square instead of round terminations
 --minlen defaults 10 for viewport coordinates
 function CG.PolygonPad(pol,dis,square,minlen)
+
+	local CW = CG.signed_area(pol)
+	local facCW = (CW > 0) and 1 or -1
+	--print("PolygonPad CW",CW,facCW)
+	local CHK = require"anima.CG3.check_poly"
+	--if dis <= 0 then return pol end
+	if square==nil then square=false end
+	minlen = minlen or 10
+	
+	local floor,atan2,cos,sin = math.floor, math.atan2, math.cos, math.sin
+	local insert, remove = table.insert, table.remove
+	local pix2 = math.pi*2
+	local vec2 = mat.vec2
+	
+	--first displace edges outwards
+	local pol2 = {}
+	local signs = {}
+	for i=1,#pol do
+		signs[i] = CG.Sign(pol[mod(i-1,#pol)],pol[i],pol[mod(i+1,#pol)])
+		local edge = (pol[mod(i+1,#pol)]-pol[i]):normalize()
+		local nor = facCW*vec2(edge.y,-edge.x) 
+		pol2[#pol2+1] = dis*nor+pol[i]
+		pol2[#pol2+1] = dis*nor+pol[mod(i+1,#pol)]
+	end
+	
+	
+	local pol3 = pol2
+	--make round on convex vertices
+	if not square then
+		pol3 = {}
+		for i=1,#pol do
+			local a,b = mod(2*i-2,#pol2),2*i-1
+			if facCW * signs[i] > 0 then 
+				local center = pol[i]
+				local p1,p2 = pol2[a],pol2[b]
+				local dir1 = (p1 - center):normalize()
+				local dir2 = (p2 - center):normalize()
+				local iniang = atan2(dir1.y, dir1.x)
+				local endang = atan2(dir2.y, dir2.x)
+
+				local chgang = (endang - iniang)
+				if facCW > 0 then
+					chgang = chgang < 0 and pix2+chgang or chgang
+				else
+					chgang = chgang > 0 and -pix2+chgang or chgang
+				end
+				local leng = dis*(chgang)*facCW
+
+				local trozos = floor(leng/minlen)
+				local incang = chgang/trozos
+				
+				pol3[#pol3+1] = p1
+				for t = 1, trozos-1 do
+					local om = iniang + incang*t
+					pol3[#pol3+1] = center + dis*vec2(cos(om),sin(om))
+				end
+				pol3[#pol3+1] = p2
+			else
+				pol3[#pol3+1] = pol2[a]
+				pol3[#pol3+1] = pol2[b]
+			end
+		end
+	end
+	--self intersection repair
+	--do return pol2 end
+	--now repair
+	local poly = {} --= pol3
+	for i=1,#pol3 do poly[i] = pol3[i] end
+	--do return poly,poly end
+	local polys = CHK.check_repair_self_crossings(poly)
+	if #polys > 1 then
+		local CW 
+		local maxi,maxval = -math.huge, -math.huge
+		for i=1,#polys do 
+			local CW = facCW*CG.signed_area(polys[i]) 
+			if CW > maxval then
+				maxval = CW
+				maxi = i
+			end
+		end
+		poly = polys[maxi]
+	else
+		poly = polys[1]
+	end
+	
+	return poly,pol3
+	--return pol3
+end
+
+--return a polygon with positive outward offset dis
+--square bool if square instead of round terminations
+--minlen defaults 10 for viewport coordinates
+--poly must be CCW
+function CG.PolygonPadBAK(pol,dis,square,minlen)
 	
 	if dis <= 0 then return pol end
 	if square==nil then square=false end

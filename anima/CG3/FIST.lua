@@ -89,21 +89,39 @@ end
 local function remove_consec_repeated(poly,verbose)
 	if #poly < 2 then return 0 end
 	local toremove = {}
-	for i=1,#poly-1 do
+	local i = 1
+	while i < #poly do
 		local j = i + 1
+		--print("comp",i,j)
 		while poly[i]==poly[j] do
+			--print("to remove",j)
 			toremove[#toremove+1] = j 
 			j = j + 1
-			if j == #poly then j = 1 end
-			if j == i then break end
+			if j > #poly then break end
+			--print("comp",i,j)
 		end
+		i = j
 	end
-	if poly[#poly]==poly[1] then toremove[#toremove+1] = #poly end
 	for i=#toremove,1,-1 do 
 		if verbose then print("check_repeated deletes",toremove[i]); end
-		table.remove(poly,toremove[i]) end
+		table.remove(poly,toremove[i]) 
+	end
+	if poly[#poly]==poly[1] then 
+		toremove[#toremove+1] = #poly
+		if verbose then print("check_repeated deletes",#poly); end
+		poly[#poly] = nil
+	end
+	
 	return #toremove
 end
+-- local poly = {}
+-- poly[1] = mat.vec2(1,2)
+-- poly[2] = mat.vec2(1,2)
+-- poly[3] = mat.vec2(1,2)
+-- poly[4] = mat.vec2(1,5)
+-- poly[5] = mat.vec2(1,2)
+-- remove_consec_repeated(poly,true)
+-- prtable(poly)
 
 function CG.degenerate_poly_repair(poly,verbose)
 	local remr = 0

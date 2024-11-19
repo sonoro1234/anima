@@ -9,11 +9,19 @@ local Sign = CG.Sign
 local IsPointInTri = CG.IsPointInTri
 local Angle = CG.Angle
 
+--Triangulation by Ear Clipping
+--David Eberly
 local function InsertHoles2(poly)
+	if not poly.holes then
+		return poly
+	end
 	holes = poly.holes
 	--first fusion holes with poly
 	--find hole with max X point
+	local nproc = 0
 	while #holes>0 do
+		--if nproc == 2 then return poly end
+		nproc = nproc + 1
 		--print("#holes",#holes)
 		local maxx = -math.huge
 		local maxhole, maxholevert
@@ -29,7 +37,7 @@ local function InsertHoles2(poly)
 		end
 		--find segment maxholevert-outer not intersecting outer
 		local Mp = holes[maxhole][maxholevert]
-		local I = Mp + mat.vec3(math.huge, 0,0)
+		local I = Mp + mat.vec2(math.huge,0) --mat.vec3(math.huge, 0,0)
 		local edge
 		for i=1,#poly do
 			local a,b = poly[i],poly[mod(i+1,#poly)]
@@ -37,9 +45,12 @@ local function InsertHoles2(poly)
 			if a.x > I.x and b.x > I.x then goto CONTINUE end
 			if (a.y <= Mp.y and Mp.y <= b.y) or (b.y <= Mp.y and Mp.y <= a.y) then
 				local Ite = CG.intersectSegmentX(a,b,Mp)
+				--local Ite2 = CG.IntersecPoint2(a,b,Mp,Mp+mat.vec2(1,0))
+				--if Ite ~= Ite2 then print("bad Ite",Ite,Ite2); error"bad Ite" end
 				if Ite.x < I.x then
 					edge = i
 					I = Ite
+					--print(nproc,"Ite",Ite,"edge",i,"Mp",Mp)
 				end
 			end
 			::CONTINUE::
@@ -47,7 +58,7 @@ local function InsertHoles2(poly)
 
 		assert(edge)
 
-		--if I is edge or edge+1 this is visible point
+		--if I is a or a+1 this is visible point
 		local VV,isendpoint
 		local a,b = poly[edge],poly[mod(edge+1,#poly)]
 		if I==a then
@@ -61,21 +72,21 @@ local function InsertHoles2(poly)
 		else
 			VV = edge
 		end
-		
+		--print("VV",VV,"isendpoint",isendpoint)
 		if not isendpoint then
 			local P = poly[VV]
 			--print("Rayintersec",a,b,Mp,P)
-			--check all reflex (not convex) poly vertex are outside triangle MIP
+			--check all reflex (not convex) poly vertex are outside triangle MpIP
 			local mintan = math.huge
 			local Ri
 			for i=1,#poly do
 				local a,b,c = poly[mod(i-1,#poly)],poly[i],poly[mod(i+1,#poly)]
-				--if IsConvex(a,b,c) then
-				if CG.Sign(a,b,c) > 0 then
+				if CG.Sign(a,b,c) < 0 then --is reflex
 					if M.IsPointInTri(b,Mp,I,P) then
 						--keep angle
 						local MR = b-Mp
 						local tan = math.abs(math.atan2(MR.y,MR.x))
+						--print("Reflex point",i,b,tan)
 						if tan < mintan then
 							Ri = i
 							mintan = tan
@@ -148,7 +159,7 @@ local function EarClipSimple(poly,CW)
 		local initind = #ind
 		
 		local hasC = check_crossings_ind(poly,ind)
-		if hasC then badcross=true;break; end
+		if hasC then badcross=true;print("badcross",#ind);break; end
 		
 		for i,v in ipairs(ind) do
 			--is convex?
@@ -180,7 +191,7 @@ local function EarClipSimple(poly,CW)
 			end
 		end
 		if (initind == #ind) then
-			--print("failed to find ear, no convex is",not_convex,#ind) 
+			print("EarClipSimple failed to find ear, no convex is",not_convex,#ind) 
 			local repaired = false
 			--find consecutive repeated
 			for i=1,#ind do
@@ -188,7 +199,7 @@ local function EarClipSimple(poly,CW)
 				if poly[ind[i]]==poly[ind[j]] then 
 					table.remove(ind,i)
 					repaired = true
-					--print("consecutive repeat repaired",ind[i])
+					print("consecutive repeat repaired",ind[i])
 					break
 				end
 			end
@@ -196,7 +207,8 @@ local function EarClipSimple(poly,CW)
 			if not repaired then
 			for i=1,#ind do
 				local a,b,c = poly[ind[mod(i-1,#ind)]],poly[ind[i]],poly[ind[mod(i+1,#ind)]]
-				local ang,conv,s,cose = CG.Sign(a,b,c)
+				--local ang,conv,s,cose = CG.Sign(a,b,c)
+				local s = CG.Sign(a,b,c)
 				if (s==0) then
 					local angle,conv,s,cose = Angle(a,b,c)
 					if not angle==0 then
@@ -217,6 +229,7 @@ local function EarClipSimple(poly,CW)
 		end
 	end
 	if badcross then
+		print"EarClipSimple badcross"
 		local restpoly = {}
 		for i,v in ipairs(ind) do restpoly[#restpoly+1] = poly[ind[i]] end
 		return tr,false,restpoly
@@ -247,7 +260,7 @@ end
 local function EarClipSimple2(poly, use_closed)
 
 	--if poly.holes then
-		poly = CG.InsertHoles(poly,true)
+		poly = CG.InsertHoles(poly,false)
 		--assert(poly.EQ)
 		--print("poly is",poly)
 		--prtable(poly.br_equal)

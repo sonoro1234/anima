@@ -12,10 +12,12 @@ local function rightturn_2det(a,b,c)
 end
 M.SignDet = rightturn_2det
 
+--right -1, left +1
 local function Sign( p1,  p2,  p3)
 	return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
 end
 M.Sign = Sign
+
 
 local acos = math.acos
 local function Angle(p1,p2,p3,CW)
@@ -83,6 +85,20 @@ function M.SegmentIntersectC(a,b,c,d)
 	end
 end
 
+--[a,b] and [c,d]
+function M.SegmentIntersectCC(a,b,c,d)
+	--print("SegmentIntersectC",a,b,c,d)
+	--local A,B,C,D,E = CG.SegmentIntersect(a,b,c,d), IsPointInSegment(c,a,b), IsPointInSegment(d,a,b),IsPointInSegment(a,c,d),IsPointInSegment(b,c,d)
+	local A,B,C,D,E = M.SegmentIntersect(a,b,c,d), M.IsPointInSegment(c,a,b),M.IsPointInSegment(d,a,b),M.IsPointInSegment(a,c,d), M.IsPointInSegment(b,c,d)
+	
+	if A or B or C or D or E then 
+		return true 
+	else 
+		return false 
+	end
+end
+
+
 local function QuadSigns(a,b,c,d)
 	local sc,sd = Sign(a,b,c),Sign(a,b,d)
 	local sa,sb = Sign(c,d,a),Sign(c,d,b)
@@ -97,7 +113,10 @@ local function SegmentBeginIntersect(a,b,c,d)
 end
 M.SegmentBeginIntersect = SegmentBeginIntersect
 
-
+-- local a = mat.vec2(0,0)
+-- local b = mat.vec2(0,1)
+-- local c = mat.vec2(0,0)
+-- local d = mat.vec2(0,1)
 -- returns the point where a SegmentIntersect happens
 local function IntersecPoint(a,b,c,d)
 	local den = (a.x - b.x)*(c.y - d.y) - (a.y - b.y)*(c.x - d.x)
@@ -108,6 +127,7 @@ local function IntersecPoint(a,b,c,d)
 	local Y = cab*(c.y - d.y)-(a.y - b.y)*ccd
 	return mat.vec2(X/den,Y/den), true
 end
+--print(IntersecPoint(a,b,c,d))
 M.IntersecPoint = IntersecPoint
 
 --returns point, true is not paralled, and t should be 0<=t>=1 for being inside segment
@@ -261,18 +281,26 @@ end
 M.IsPointInPoly = IsPointInPolyCn
 M.IsPointInPolyWn = IsPointInPolyWn
 
+function M.IntersecPoint2(a,b,c,d)
+	local den = (a.x - b.x)*(c.y - d.y) - (a.y - b.y)*(c.x - d.x)
+	if den==0 then return 0,false end
+	local num = (a.x - c.x)*(c.y - d.y) - (a.y - c.y)*(c.x - d.x)
+	local t = num/den
+	
+	return a + t*(b - a), true, t
+end
 --triangulation of polygon as a table of vertices
 --EarClip helpers
 --find intersection of c+(1,0) with a-b
-local function intersectSegmentX(p0, p1, c)
+local function intersectSegmentX(a, b, c)
 	local y = c.y
-    if p0.y == p1.y then return mat.vec2(p0.x,y) end 
-    if p0.y < p1.y then
-      local t = (y - p0.y) / (p1.y - p0.y)
-      return mat.vec2(p0.x + t * (p1.x - p0.x),y)
+    if a.y == b.y then return mat.vec2(a.x,y) end 
+    if a.y < b.y then
+      local t = (y - a.y) / (b.y - a.y)
+      return mat.vec2(a.x + t * (b.x - a.x),y)
     else
-      local t = (y - p1.y) / (p0.y - p1.y)
-      return mat.vec2(p1.x + t * (p0.x - p1.x),y)
+      local t = (y - b.y) / (a.y - b.y)
+      return mat.vec2(b.x + t * (a.x - b.x),y)
 	end
 end
 M.intersectSegmentX = intersectSegmentX
@@ -317,6 +345,16 @@ function M.check_simple(poly,verbose,verb2)
 	return check_crossings(poly,verbose),check_point_repetition(poly,verb2)
 end
 
+function M.box2d(points)
+	local minx,maxx,miny,maxy = math.huge,-math.huge,math.huge,-math.huge
+	for i,p in ipairs(points) do
+		minx = p.x < minx and p.x or minx
+		maxx = p.x > maxx and p.x or maxx
+		miny = p.y < miny and p.y or miny
+		maxy = p.y > maxy and p.y or maxy
+	end
+	return {mat.vec2(minx,miny),mat.vec2(maxx,maxy)}
+end
 
 --lexicografic sort
 function M.lexicografic_compare(a,b) 
