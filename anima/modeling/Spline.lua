@@ -96,7 +96,11 @@ local function Editor(GL,updatefunc,args)
 				local scpoint = ViewportToScreen(p.x,p.y)
 				pointsI[j-1] = scpoint
 			end
-			dl:AddPolyline(pointsI,#M.ps[i],color,ig.lib.ImDrawFlags_Closed, 1)
+			if NM.drawregion then
+				dl:AddConcavePolyFilled(pointsI,#M.ps[i],color)
+			else
+				dl:AddPolyline(pointsI,#M.ps[i],color,ig.lib.ImDrawFlags_Closed, 1)
+			end
 			if M.ps[i].holes then
 				for j,hole in ipairs(M.ps[i].holes) do
 					local pointsI = ffi.new("ImVec2[?]",#hole)

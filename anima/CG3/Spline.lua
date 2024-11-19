@@ -66,10 +66,10 @@ local function Spline(points,alpha,amountOfPoints,closed,minlen)
 		end
 		divs = floor((points[#points]-points[#points-1]):norm()/minlen)
 		divs = max(1,min(divs, amountOfPoints))
-		CatmulRom(points[#points-2],points[#points-1],points[#points],points[1],ps,alpha,amountOfPoints)
+		CatmulRom(points[#points-2],points[#points-1],points[#points],points[1],ps,alpha,divs)
 		divs = floor((points[#points]-points[1]):norm()/minlen)
 		divs = max(1,min(divs, amountOfPoints))
-		CatmulRom(points[#points-1],points[#points],points[1],points[2],ps,alpha,amountOfPoints,true)
+		CatmulRom(points[#points-1],points[#points],points[1],points[2],ps,alpha,divs,true)
 		
 		ps[#ps] = nil --delete repeated
 	else
