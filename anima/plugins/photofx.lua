@@ -149,7 +149,7 @@ function M.photofx(GL,args)
 		for i=1,3 do
 			local dopop = false
 			if i == curr_curve then
-				imgui.igPushStyleColor(imgui.ImGuiCol_Button, ig.ImVec4(1,0,0,1)); dopop = true
+				ig.PushStyleColor(imgui.ImGuiCol_Button, ig.ImVec4(1,0,0,1)); dopop = true
 			end
 			if ig.SmallButton(curve_labels[i].."##tab") then curr_curve = i end
 			if dopop then imgui.igPopStyleColor(1); end

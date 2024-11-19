@@ -214,7 +214,7 @@ local function Editor(GL,updatefunc,args)
 		vaopoints[ii]:set_buffer("position",lp,(#self.eyepoints[ii])*2)
 		if self:numpoints()>2 then
 			--self.ps[ii] = Spline(self.eyepoints[ii],NM.alpha,NM.divs,NM.closed)
-			self.ps[ii] = CG.Spline(self.eyepoints[ii],NM.alpha,NM.divs,true)
+			self.ps[ii] = CG.Spline(self.eyepoints[ii],NM.alpha,NM.divs,true,0.001)
 			local lps = mat.vec2vao(self.ps[ii])
 			vaoS[ii]:set_buffer("position",lps,(#self.ps[ii])*2)
 
@@ -314,10 +314,10 @@ local function Editor(GL,updatefunc,args)
 end
 
 --[=[
-local GL = GLcanvas{H=500,aspect=1,DEBUG=true}
+local GL = GLcanvas{H=900,aspect=1,DEBUG=true}
 --local camara = newCamera(GL,"ident")
 local function update(n) print("update spline",n) end
-local edit = Editor(GL,update,{region=false})--,doblend=true})
+local edit = Editor(GL,update,{region=true})--,doblend=true})
 local plugin = require"anima.plugins.plugin"
 edit.fb = plugin.serializer(edit)
 --GL.use_presets = true
