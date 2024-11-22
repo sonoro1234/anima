@@ -6,7 +6,7 @@ local GL = GLcanvas{H=600,aspect=1,profile="CORE"}
 local Ldir =  {3,3,3}
 local Quat = ffi.new("quat",{0,0,0,1})
 local matOrientation = mat.identity3()
-local position = ffi.new("G3Dvec3")
+local position = ffi.new("vec3")
 
 local NM = GL:Dialog("juliaS",{
 {"quatPt",{-0.65, 0.4, 0.25, 0.05},guitypes.drag,{min=-1,max=1}},
@@ -20,7 +20,7 @@ local NM = GL:Dialog("juliaS",{
 {"useShadow",true,guitypes.toggle},
 {"useAO",true,guitypes.toggle},
 },function() 
-	local vL = ffi.new("G3Dvec3",{-Ldir[1],-Ldir[2],-Ldir[3]})
+	local vL = ffi.new("vec3",{-Ldir[1],-Ldir[2],-Ldir[3]})
 	if ig.gizmo3D("###guizmoL",vL,150,imgui.modeDirection) then
 		Ldir = {-vL.x,-vL.y,-vL.z}
 	end
