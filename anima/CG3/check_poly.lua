@@ -43,11 +43,13 @@ local function check2poly_repetition(poly1,poly2)
 		for j=1,#poly2 do
 		local pt2 = poly2[j]
 			if pt==pt2 then 
-				print("repeated point",i,j)
-				error"2poly repetition"
+				print("check2poly_repetition repeated point",i,j)
+				--error"2poly repetition"
+				return true
 			end
 		end
 	end
+	return false
 end
 
 local function check_point_repetition(poly)
@@ -55,9 +57,11 @@ local function check_point_repetition(poly)
 	check_self_consec_repetition(poly)
 	if poly.holes then
 	for nh,hole in ipairs(poly.holes) do
-		check2poly_repetition(poly,hole)
+		local repe = check2poly_repetition(poly,hole)
+		if repe then return true end
 		for nh2=nh+1,#poly.holes do
-			check2poly_repetition(hole,poly.holes[nh2])
+			local repe = check2poly_repetition(hole,poly.holes[nh2])
+			if repe then return true end
 		end
 	end
 	end
@@ -237,8 +241,8 @@ local function check_self_crossings(poly,crossings)
 						table.insert(crossings,{a,poly,ai,poly,ci})
 						--table.insert(crossings,{c,poly,ai,poly,ci})
 					end
-					print("bad crossing",pt,ai,bi,ci,di)
-					print(a,b,c,d)
+					--print("bad crossing",pt,ai,bi,ci,di)
+					--print(a,b,c,d)
 				end
 			end
 		end
@@ -248,29 +252,40 @@ end
 ----------------------------------
 --receives poly and 1 cross and returns 2 polys in a polyset
 local function  split_on_cross(poly, cr)
+	local printD = function() end
 	local typ = ffi.typeof(poly[1]) --could be vec3 or vec2
 	local pt, a, c = typ(cr[1]), cr[3], cr[5]
 	local b, d = mod(a + 1, #poly), mod(c + 1, #poly)
 	local P1, P2 = {poly[a], pt}, {poly[c], pt}
+	--print("split_on_cross------------",#poly, a,b,c,d,pt)
+	--print("split_on_cross------------",#poly, poly[a], poly[b], poly[c], poly[d])
+	--if #poly == 417 then prtable(poly) end
+	
 
 	local i = d
-	if P1[1] == P1[2] then print("out1 pt",P1[2]);P1[2] = nil; end
+	if P1[1] == P1[2] then printD("split on cross out1 pt",P1[2]);table.remove(P1) end--P1[2] = nil; end
 	while(i ~= a) do
 		table.insert(P1, poly[i])
 		i = mod(i+1,#poly)
 	end
-	
+	if #P1> 2 and P1[2] == P1[3] then printD("split on cross out1 d==pt",P1[2]);table.remove(P1,2); end
+
 	local i = b
-	if P2[1] == P2[2] then print("out2 pt",P2[2]);P2[2] = nil; end
+	if P2[1] == P2[2] then printD("split on cross out2 pt",P2[2]);table.remove(P2) end --P2[2] = nil; end
 	while(i ~= c) do
 		table.insert(P2, poly[i])
 		i = mod(i+1,#poly)
 	end
+	if #P2>2 and P2[2] == P2[3] then printD("split on cross out2 b=pt",P2[2]);table.remove(P2,2) ; end
+	--print("returns",#P1,#P2)
 	return {P1, P2}
 end
 --in poly with crossings
 --out polyset
 local function check_repair_self_crossings(poly)
+	--print("check_repair_self_crossings",#poly)
+	-- local remr,remc = CG.degenerate_poly_repair(poly,false)
+	-- print("degenerate repairs in check_repair_self_crossings",remr,remc)
 	local crossings = {}
 	for i=1,#poly do
 		local ai,bi = i,mod(i+1,#poly)
@@ -279,19 +294,22 @@ local function check_repair_self_crossings(poly)
 		for j=i+2,lim do
 			local ci,di = j,mod(j+1,#poly)
 			local c,d = poly[ci],poly[di]
+			local ok,err = pcall(CG.SegmentIntersectC,a,b,c,d)
+			if not ok then prtable(ai,bi,ci,di,poly) end
 			if CG.SegmentIntersectC(a,b,c,d) then
 				local pt,good,t = CG.IntersecPoint2(a,b,c,d)
 				if good then 
 					table.insert(crossings,{pt,poly,ai,poly,ci})
 				else
+					print("bad intersecpoint",a,b,c,d)
 					if a == c then
 						table.insert(crossings,{a,poly,ai,poly,ci})
 					else
 						table.insert(crossings,{a,poly,ai,poly,ci})
 						--table.insert(crossings,{c,poly,ai,poly,ci})
 					end
-					print("bad crossing",pt,ai,bi,ci,di)
-					print(a,b,c,d)
+					--print("bad crossing",pt,ai,bi,ci,di)
+					--print(a,b,c,d)
 				end
 				goto REPAIR
 			end
@@ -300,8 +318,9 @@ local function check_repair_self_crossings(poly)
 	::REPAIR::
 	if #crossings > 0 then
 		local BI = split_on_cross(poly,crossings[1])
-		local res1 = check_repair_self_crossings(BI[1])
-		local res2 = check_repair_self_crossings(BI[2])
+		local res1, res2 = {}, {}
+		if #BI[1] > 2 then res1 = check_repair_self_crossings(BI[1]) end
+		if #BI[2] > 2 then res2 = check_repair_self_crossings(BI[2]) end
 		for i,v in ipairs(res2) do
 			table.insert(res1, v)
 		end
@@ -313,13 +332,17 @@ M.check_repair_self_crossings = check_repair_self_crossings
 
 local function check_crossings(poly,crossings)
 	crossings = crossings or {}
-	check_self_crossings(poly,crossings)
+	local cross = check_self_crossings(poly)
+	if #cross > 0 then print("poly self crossings",#cross) end
 	if poly.holes then
 	for nh,hole in ipairs(poly.holes) do
-		check_self_crossings(hole,crossings)
-		check2poly_crossings(poly,hole,crossings)
+		local  cross = check_self_crossings(hole)
+		if #cross > 0 then print(nh,"hole self crossings",#cross) end
+		local cross = check2poly_crossings(poly,hole)
+		if #cross > 0 then print(nh,"poly-hole crossings",#cross) end
 		for nh2=nh+1,#poly.holes do
-			check2poly_crossings(hole,poly.holes[nh2],crossings)
+			local cross = check2poly_crossings(hole,poly.holes[nh2])
+			if #cross > 0 then print(nh,nh2,"hole-hole crossings",#cross) end
 		end
 	end
 	end
@@ -340,7 +363,7 @@ end
 
 local function CHECKPOLY(poly)
 	local has = check_point_repetition(poly)
-	if has then print"point repetition" end
+	if has then print"CHECKPOLY point repetition" end
 	local cross = check_crossings(poly)
 	if #cross > 0 then print("CHECKPOLY self crossings",#cross) end
 	return cross

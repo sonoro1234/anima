@@ -4,31 +4,42 @@ local fonter = require"fonter"
 
 local filen = [[C:\anima\lua\anima\fonts\ProggyTiny.ttf]]
 local filen = [[C:\anima\lua\anima\fonts\SilkRemington-SBold.ttf]]
-local filen = [[C:\anima\lua\anima\fonts\fontawesome-webfont.ttf]]
+--local filen = [[C:\anima\lua\anima\fonts\fontawesome-webfont.ttf]]
+--local filen = [[C:\anima\lua\anima\fonts\fa-solid-900.ttf]]
 --local filen = [[C:\anima\lua\anima\fonts\verdana.ttf]]
+--local filen = [[C:\anima\lua\anima\fonts\seguiemj.ttf]]
 
 --fonter.mode = "polys"
 local ch1=string.byte"D"
 --ch1=91
+
 --ProfileStart()--"3vfsi4m1")
  local f1 = fonter.new_face(filen,
 	{
+
+	--{8987,8987} --seguiemj reloj arena
+	--{63076,63076}
+	--{62904,62904}
+	--{62851,62851}
+	--{57433,57433}
+	--{9772,9772}
 	--{0,255}
 	--{61724,62000}
 	--{61724,0xFFFF}
 	--{61400,0xFFFF}
-	--{0,0xFFFF}
-	--{61726,61726}
+	{0,0xFFFF}
+	--{62524,62524}
+	--{61726,61726} --flagchecked
 	
 	--{61886,61886}
 	--{61580,61580} --lined
 	--{61442,61442}
 	--{62046,62046}
-	--{61868,61868} --calculadora
+	--{61868,61869} --calculadora
 	--{61869,61869}
 	--{62082,62082}
 	--{61821,61821} --drible
-	{61440,61440} --glass
+	--{61440,61440} --glass
 	--{61572,61572} --key primero mal se ve bien
 	--{61733,61733} --crop mal Earclip 1 y 2 sin holes
 	--{61798,61798} --youtube insert1 mejor
@@ -79,6 +90,18 @@ end
 
 local texto = ""
 local ch1 = ffi.new("int[?]",1,string.byte"D")
+local function save_polyset( filename)
+		local ch = f1.chars[ch1[0]]
+		local str = {}
+		table.insert(str,serializeTable("polyset",ch.polyset))
+		table.insert(str,"\nreturn polyset")
+		local file,err = io.open(filename,"w")
+		if not file then print(err); return end
+		file:write(table.concat(str))
+		file:close()
+end
+
+local polysaver = gui.FileBrowser(nil,{check_existence=true,filename="phfx",key="saveps",pattern="polyset",addext=true},save_polyset)
 function GL.imgui()
 	-- if ig.InputText("choose",ch1,2,ig.lib.ImGuiInputTextFlags_EnterReturnsTrue) then
 		-- print("choose",ch1[0])
@@ -87,6 +110,10 @@ function GL.imgui()
 	-- if ig.InputInt("cp",ch1) then
 		-- print("cp",ch1[0])
 	-- end
+	if ig.SmallButton("save polyset") then
+		polysaver.open()
+	end
+	polysaver.draw()
 	if ig.BeginTable("dirsizes",4, ig.lib.ImGuiTableFlags_Borders + ig.lib.ImGuiTableFlags_RowBg + ig.lib.ImGuiTableFlags_ScrollY + ig.lib.ImGuiTableFlags_Resizable) then
 		local clipper = ig.ImGuiListClipper()
 			clipper:Begin(#f1.allcps)
@@ -111,6 +138,7 @@ function GL.imgui()
 			clipper:End()
 		ig.EndTable()
 	end
+	
 end
 ---[[
 	--T.MO = mat.identity4()

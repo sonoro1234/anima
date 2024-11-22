@@ -18,6 +18,11 @@ local function Sign( p1,  p2,  p3)
 end
 M.Sign = Sign
 
+local function TArea(a,b,c)
+	return 0.5*((a.x-c.x)*(b.y-a.y)-(a.x-b.x)*(c.y-a.y))
+end
+M.TArea = TArea
+
 
 local acos = math.acos
 local function Angle(p1,p2,p3,CW)
@@ -58,7 +63,7 @@ M.SegmentIntersect = SegmentIntersect
 
 --semiclosed segment [a,b)
 function M.IsPointInSegment(pt,a,b)
-	assert(not (a==b)) 
+	assert(not (a==b),"a==b") 
 	local A = b - a
 	local B = pt - a
 	if not (A.x*B.y==A.y*B.x) then return false end
@@ -187,10 +192,6 @@ local function IsPointInTri2( pt, v1, v2, v3 )
 end
 M.IsPointInTri = IsPointInTri2
 
-local function TArea(a,b,c)
-	return 0.5*((a.x-c.x)*(b.y-a.y)-(a.x-b.x)*(c.y-a.y))
-end
-M.TArea = TArea
 
 local function signed_area(poly)
 	if #poly < 3 then return 0 end
@@ -352,6 +353,20 @@ function M.box2d(points)
 		maxx = p.x > maxx and p.x or maxx
 		miny = p.y < miny and p.y or miny
 		maxy = p.y > maxy and p.y or maxy
+	end
+	return {mat.vec2(minx,miny),mat.vec2(maxx,maxy)}
+end
+
+--without holes which must be contained
+function M.box2d_polyset(polyset)
+	local minx,maxx,miny,maxy = math.huge,-math.huge,math.huge,-math.huge
+	for k, pol in ipairs(polyset) do
+		for i,p in ipairs(pol) do
+			minx = p.x < minx and p.x or minx
+			maxx = p.x > maxx and p.x or maxx
+			miny = p.y < miny and p.y or miny
+			maxy = p.y > maxy and p.y or maxy
+		end
 	end
 	return {mat.vec2(minx,miny),mat.vec2(maxx,maxy)}
 end

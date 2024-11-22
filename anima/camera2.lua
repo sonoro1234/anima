@@ -317,8 +317,8 @@ function Camera(GL,cam_type, name,initialDist)
 		cam.CalcCamera = cam.CalcCameraLookat
 		cam.set_dir3 = function() end
 		cam.NMC = nil --imgui_lookat_cameraDialog(name,zforh,GL,true,cam)
-		cam.MV = function() return mat.identity end
-		cam.MP = function() return mat.identity end
+		cam.MV = function() return mat.identity() end
+		cam.MP = function() return mat.identity() end
 	elseif not cam_type then
 		cam.CalcCamera = cam.CalcCameraEuler
 		cam.NMC = imgui_cameraDialog(name,zforh,GL,true,cam)

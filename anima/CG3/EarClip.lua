@@ -166,12 +166,16 @@ local function EarClipSimple(poly,CW)
 			local a,b,c = ind[mod(i-1,#ind)],ind[i],ind[mod(i+1,#ind)]
 			local s = Sign(poly[a],poly[b],poly[c])*CWfac
 			if s > 0 then --convex
+				--print("test",a,b,c,s,CG.TArea(poly[a],poly[b],poly[c]))
 				local empty = true
 				--test empty
 				local jlimit = mod(i-1,#ind)
 				local j = mod(i+2,#ind)
+				--local jlimit = mod(a-1,#poly)
+				--local j = mod(a+2,#poly)
 				while j~=jlimit do
-					local intri = IsPointInTri(poly[ind[j]],poly[a],poly[b],poly[c])
+					local intri = CG.IsPointInTri(poly[ind[j]],poly[a],poly[b],poly[c])
+					--local intri = CG.IsPointInTri(poly[j],poly[a],poly[b],poly[c])
 					if intri 
 					--and Sign(poly[ind[mod(j-1,#ind)]],poly[ind[j]],poly[ind[mod(j+1,#ind)]])>0 
 					then
@@ -179,13 +183,35 @@ local function EarClipSimple(poly,CW)
 						break
 					end
 					j = mod(j+1,#ind)
+					--j = mod(j+1,#poly)
 				end
+				--[=[
+				-- test cut line
+				if empty then
+				local jlimit = mod(i-1,#ind)
+				local j = mod(i+2,#ind)
+				while j~=jlimit do 
+					local j2 = mod(j+1,#ind)
+					local d = poly[ind[j]]
+					local e = poly[ind[j2]]
+					local inter = CG.SegmentIntersect(d,e,poly[a],poly[b])
+					if inter then empty = false; break end
+					inter = CG.SegmentIntersect(d,e,poly[b],poly[c])
+					if inter then empty = false; break end
+					inter = CG.SegmentIntersect(d,e,poly[c],poly[a])
+					if inter then empty = false; break end
+					j = j2
+				end
+				end
+				--]=]
+				
 				
 				if empty then
 					table.remove(ind,i)
 					table.insert(tr,a-1)
 					table.insert(tr,b-1)
 					table.insert(tr,c-1)
+					--coroutine.yield(tr, true)
 					break
 				end
 			end
@@ -260,7 +286,7 @@ end
 local function EarClipSimple2(poly, use_closed)
 
 	--if poly.holes then
-		poly = CG.InsertHoles(poly,false)
+	poly = CG.InsertHoles(poly,false)
 		--assert(poly.EQ)
 		--print("poly is",poly)
 		--prtable(poly.br_equal)
@@ -409,18 +435,21 @@ local function EarClipSimple2(poly, use_closed)
 		for i=1,#ind do
 			if convex[i] then
 				local empty = true
+				local ai,bi,ci = ind[mod(i-1,#ind)],ind[i],ind[mod(i+1,#ind)]
 				local a,b,c = poly[mod(i-1,#ind)],poly[i],poly[mod(i+1,#ind)]
 				local jlimit = mod(i-1,#ind)
 				local j = mod(i+2,#ind)
 				while j~=jlimit do
-					--if not convex[j] and 
-					if IsPointInTri(poly[j],a,b,c) then
+					if not convex[j] and 
+					--if 
+					--CG.IsPointInTriC(poly[j],a,b,c) then
+					IsPointInTriI(j,ai,bi,ci) then
 						empty = false
 						break
 					end
-					--j = mod(j+1,#ind)
-					j = j + 1
-					if j > #ind then j = 1 end
+					j = mod(j+1,#ind)
+					-- j = j + 1
+					-- if j > #ind then j = 1 end
 				end
 				eartips[i] = empty
 			end
@@ -451,9 +480,9 @@ local function EarClipSimple2(poly, use_closed)
 						empty = false
 						break
 					end
-					--j = mod(j+1,#ind)
-					j = j + 1
-					if j > #ind then j = 1 end
+					j = mod(j+1,#ind)
+					-- j = j + 1
+					-- if j > #ind then j = 1 end
 				end
 				--local emptyCE1 = checkCE1(i) 
 				--empty = empty and checkCE1_3(i)
@@ -536,6 +565,7 @@ local function EarClipSimple2(poly, use_closed)
 			table.insert(tr,a-1)
 			table.insert(tr,b-1)
 			table.insert(tr,c-1)
+			--coroutine.yield(poly,tr,true)
 		end
 	end
 	--first bridges
@@ -653,6 +683,7 @@ local function EarClipSimple2(poly, use_closed)
 			if not repaired then break end
 		else
 			if not mineartipI then 
+				print"not mineartipI"
 				for i=1,#ind do
 					if eartips[ind[i]] then
 						print("angle",i,angles[ind[i]])
@@ -674,6 +705,7 @@ local function EarClipSimple2(poly, use_closed)
 	if #ind > 2 then
 		local restpoly = {}
 		for i,v in ipairs(ind) do restpoly[#restpoly+1] = poly[ind[i]] end
+		print("return restpoly",#restpoly)
 		return poly,tr,false,restpoly,ind
 	end	
 	--print("poly2 is",poly)
