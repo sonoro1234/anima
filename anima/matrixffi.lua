@@ -25,9 +25,9 @@ typedef struct {
 ]]
 
 ffi.cdef [[
-typedef struct vec2 { double x, y;       } vec2;
-typedef struct vec3 { double x, y, z;    } vec3;
-typedef struct vec4 { double x, y, z, w; } vec4;
+typedef struct dvec2 { double x, y;       } dvec2;
+typedef struct dvec3 { double x, y, z;    } dvec3;
+typedef struct dvec4 { double x, y, z, w; } dvec4;
 ]]
 
 local glFloatv = ffi.typeof('float[?]')
@@ -67,7 +67,7 @@ local metav2 = {
   __tostring = function(v) return '<'..v.x..','..v.y..'>' end
 }
 metav2.__index = metav2
-vec2 = ffi.metatype('vec2',metav2)
+vec2 = ffi.metatype('dvec2',metav2)
 
 local vec3
 local metav3 
@@ -128,7 +128,7 @@ metav3 =  {
 	
 }
 metav3.__index = metav3
-vec3 = ffi.metatype('vec3',metav3)
+vec3 = ffi.metatype('dvec3',metav3)
 
 local vec4
 local metav4 = {
@@ -166,13 +166,13 @@ local metav4 = {
   __tostring = function(v) return '<'..v.x..','..v.y..','..v.z..','..v.w..'>' end
 }
 metav4.__index = metav4
-vec4 = ffi.metatype('vec4', metav4)
+vec4 = ffi.metatype('dvec4', metav4)
 
 local M = {vec2 = vec2, vec3 = vec3, vec4 = vec4, vec = vec4,
-        vvec2 = ffi.typeof('vec2[?]'),
-        vvec3 = ffi.typeof('vec3[?]'),
-        vvec4 = ffi.typeof('vec4[?]'),
-        vvec  = ffi.typeof('vec4[?]')}
+        vvec2 = ffi.typeof('dvec2[?]'),
+        vvec3 = ffi.typeof('dvec3[?]'),
+        vvec4 = ffi.typeof('dvec4[?]'),
+        vvec  = ffi.typeof('dvec4[?]')}
 
 
 local mat2
