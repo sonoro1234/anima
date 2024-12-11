@@ -1048,7 +1048,6 @@ function gui.SetImGui(GL)
 	-----------------------
 	local W = require"anima.igwidgets"
 	for k,v in pairs(W) do
-		assert(not gui[k],"gui already open")
 		gui[k] = v
 	end
 	-------------------------
@@ -1098,14 +1097,14 @@ function gui.SetImGui(GL)
 	end)
 	
 	
-	local PresetSaver = gui.FileBrowser(nil,{check_existence=true,filename="preset",key="save_preset"},function(filename)
+	local PresetSaver = gui.FileBrowser(nil,{check_existence=true,pattern="preset",filename="preset",key="save_preset"},function(filename)
 		local nms = {}
 		local str = {}
 		for k,v in ipairs(GL.imguimodals) do
 			table.insert(nms,v.name)
 			--for kk,vv in pairs(v) do print(kk) end
 			if v.plugin and v.plugin.save then
-				print("svaing :save",v.name)
+				print("saving :save",v.name)
 				table.insert(str,serializeTable(v.name,v.plugin:save())) 
 			else
 				print("saving :getvalues",v.name)
@@ -1117,7 +1116,7 @@ function gui.SetImGui(GL)
 			table.insert(nms,v.name)
 			--for kk,vv in pairs(v) do print(kk) end
 			if v.plugin and v.plugin.save then
-				print("svaing :save",v.name)
+				print("saving :save",v.name)
 				table.insert(str,serializeTable(v.name,v.plugin:save())) 
 			else
 				print("saving :getvalues",v.name)
@@ -1176,7 +1175,7 @@ function gui.SetImGui(GL)
 		end
 	end
 	
-	local PresetLoader =  gui.FileBrowser(nil,{filename="preset",key="load_preset"},function(filename)
+	local PresetLoader =  gui.FileBrowser(nil,{pattern="preset",filename="preset",key="load_preset"},function(filename)
 			GL:preset_load(filename)
 	end)
 	GL.PresetLoader = PresetLoader

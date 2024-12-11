@@ -184,6 +184,7 @@ local function Editor(GL,updatefunc,args)
 				else
 					table.insert(M.sccoors[NM.curr_spline].holes[curr_hole[0]],mposvp)
 				end
+				updatefunc(M,"insert")
 				M:calc_spline()
 				if M:numpoints(ii)>2 then updatefunc(M) end
 			end
@@ -298,7 +299,7 @@ local function Editor(GL,updatefunc,args)
 		return box2d(self.ps[ii])
 	end
 	
-	function M:newspline(pts)
+	function M:newspline(pts, dontcalc)
 		numsplines=numsplines+1;
 		NM.vars.curr_spline[0]=numsplines 
 		NM.defs.curr_spline.args.max=numsplines 
@@ -307,7 +308,8 @@ local function Editor(GL,updatefunc,args)
 			for i,p in ipairs(pts) do
 				self.sccoors[NM.curr_spline][i] = p
 			end
-			M:calc_spline()
+			--dontcalc used in Spline3D before setting frame
+			if not dontcalc then M:calc_spline() end
 		end
 		--M:process_all()
 		return numsplines

@@ -180,8 +180,11 @@ local function Object(name,objtree)
 			self.orig_vao:delete()
 			self.vaomeshtfb:delete()
 		end
+		
+		
 		self.vao = mesh:vao(program)
 		self.vaomesh = self.vao:clone(progmesh) 
+
 		--TFV
 		self.orig_vao = mesh:vao(prog_twist, true)
 		self.vaomeshtfb = self.vaomesh:clone(prog_twist)
@@ -190,6 +193,7 @@ local function Object(name,objtree)
 		else
 			self.tfv1:set_vaos(self.orig_vao,self.vaomeshtfb)
 		end
+
 	end
 	
 	function O:make_localM()
@@ -385,6 +389,12 @@ local function Object(name,objtree)
 				if ig.RadioButton("edit##"..tostring(O),editor.object and editor.object==O or false) then
 					editor.object = O
 				end
+				if O.name == "root" then
+					ig.SameLine();
+					if ig.RadioButton("noedit##"..tostring(O),not editor.object) then
+						editor.object = nil
+					end
+				end
 				for ich,child in ipairs(self.childs) do
 					child:tree(editor)
 				end
@@ -395,6 +405,12 @@ local function Object(name,objtree)
 			ig.SameLine()
 			if ig.RadioButton("edit##"..tostring(O),editor.object and editor.object==O or false) then
 				editor.object = O
+			end
+			if O.name == "root" then
+				ig.SameLine();
+				if ig.RadioButton("noedit##"..tostring(O),not editor.object) then
+					editor.object = nil
+				end
 			end
 		end
 	end
@@ -446,9 +462,10 @@ local function Objects(GL,camera,args)
 	local zmoMODE = ffi.new("int[?]",1)
 	--local zmobounds = ffi.new("float[?]",6,{ -0.5, -0.5, -0.5, 0.5, 0.5, 0.5 })
 	local NMzmo = gui.Dialog("zmo",
-	{{"zmoO",false,guitypes.toggle},
-	{"zmoC",false,guitypes.toggle,nil,{sameline=true}},
-	{"grid",false,guitypes.toggle,nil,{sameline=true}}},
+	{--{"zmoO",false,guitypes.toggle},
+	--{"zmoC",false,guitypes.toggle,nil,{sameline=true}},
+	--{"grid",false,guitypes.toggle,nil,{sameline=true}}
+	},
 	function()
 		ig.RadioButton("trans", zmoOP, imgui.TRANSLATE); ig.SameLine();
 		ig.RadioButton("rot", zmoOP, imgui.ROTATE); ig.SameLine();
@@ -509,25 +526,33 @@ local function Objects(GL,camera,args)
 			ig.SliderInt("deformop",editor.object.deformop,0,1,opstr[editor.object.deformop[0]])
 		end
 		---zmo
-		ig.Separator()
-		NMzmo:draw()
-		if NMzmo.zmoC or NMzmo.zmoO then
+		
+		--if NMzmo.zmoO then --NMzmo.zmoC or
+		if editor.object then
+			ig.Separator()
+			NMzmo:draw()
 			ig.ImGuizmo_BeginFrame() 
 			MVmo = camera:MV().gl
 			MPmo = camera:MP().gl
 			ig.ImGuizmo_SetRect(unpack(GL.stencil_sizes))
-			if NMzmo.zmoC then
-				ig.ImGuizmo_SetOrthographic(camera.NM.ortho);
-				ig.ImGuizmo_ViewManipulate(MVmo,camera.NM.dist or 1,ig.ImVec2(0,0),ig.ImVec2(128,128),0x01010101)
-				if NMzmo.grid then ig.ImGuizmo_DrawGrid(MVmo,MPmo,mat.identity().gl,10) end
-				camera:setMV(mat.gl2mat4(MVmo))
-			end
-			if NMzmo.zmoO and editor.object then
+			-- if NMzmo.zmoC then
+				-- ig.ImGuizmo_SetOrthographic(camera.NM.ortho);
+				-- ig.ImGuizmo_ViewManipulate(MVmo,camera.NM.dist or 1,ig.ImVec2(0,0),ig.ImVec2(128,128),0x01010101)
+				-- if NMzmo.grid then ig.ImGuizmo_DrawGrid(MVmo,MPmo,mat.identity().gl,10) end
+				-- camera:setMV(mat.gl2mat4(MVmo))
+			-- end
+			--if NMzmo.zmoO and editor.object then
 				MOmo = editor.object:getModelM().gl
-				--ig.ImGuizmo_DrawCube(MVmo,MPmo,MOmo)
-				ig.ImGuizmo_Manipulate(MVmo,MPmo,zmoOP[0],zmoMODE[0],MOmo,nil,nil,zmoOP[0]==imgui.BOUNDS and editor.object.zmobounds or nil,nil)
-				editor.object:setModelM(mat.gl2mat4(MOmo))
-			end
+				--ig.ImGuizmo_DrawCubes(MVmo,MPmo,MOmo,1)
+				ig.ImGuizmo_PushID("zmo_obj")
+				--if 
+				ig.ImGuizmo_Manipulate(MVmo,MPmo,zmoOP[0],zmoMODE[0],MOmo,nil,nil,zmoOP[0]==imgui.BOUNDS and editor.object.zmobounds or nil,nil) --then
+					--print"Manipulate Object"
+					editor.object:setModelM(mat.gl2mat4(MOmo))
+				--end
+				--if ig.ImGuizmo_IsUsing() then print("using zmo Object") end
+				ig.ImGuizmo_PopID()
+			--end
 		end
 	end)
 	
@@ -687,11 +712,14 @@ end
 
 local GL = GLcanvas{H=800,aspect=1,use_log=false}
 GLSL.default_version = "#version 140\n"
-local camera = Camera(GL,"tps")
+local camera = Camera(GL,{type="tps",imguizmo=true})
 camera.NM.vars.dist[0] = 12
-local objects
-function GL:init()
-	objects = Objects(GL,camera)--,{doinit=true})
+local objects = Objects(GL,camera)
+local dbox = GL:DialogBox("objs")
+dbox:add_dialog(camera.NM)
+dbox:add_dialog(objects.NM)
+local function make_scene()
+	--objects = Objects(GL,camera)--,{doinit=true})
 	objects.root:set_frame(nil,vec3(0,0,-12*0))
 	local child,ich = objects.root:add_child("Xcyl")
 	child:setMesh(make_cyl(vec3(-3,0,-12*0),1,vec3(1,0,0)))
@@ -700,6 +728,10 @@ function GL:init()
 	child = child:add_child("Zcyl")
 	child:setMesh(make_cyl(vec3(0,0,-12*0),1,vec3(0,0,1)))
 	--child:setMesh(make_cyl(vec3(1.5,0,0.5),0.5)ex)
+end
+
+function GL:init()
+	make_scene()
 end
 function GL.draw(t,w,h)
 	ut.Clear()

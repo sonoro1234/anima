@@ -488,9 +488,21 @@ local function cdataSerialize(cd)
 		tab[#tab+1] = [[)]]
 		return table.concat(tab)
 	else
-		print(cd,"not serialized")
+		local ti,si = tostring(ffi.typeof(cd)):match("ctype<(float %[(%d+)%])>")
+		--print("ti",ti,tostring(ffi.typeof(cd)))
+		if ti then
+			--print(tostring(ffi.typeof(cd)):match("ctype<(float %[(%d+)%])>"))
+			local tab = {[[ffi.new("]]..ti..[[",{]]}
+			for i=0,si-1 do tab[#tab+1] = cd[i];tab[#tab+1] = "," end
+			tab[#tab] = [[})]]
+			return table.concat(tab)
+		else
+			print(cd,"not serialized")
+		end
 	end
 end
+
+
 
 function basicSerialize (o)
     if type(o) == "number" then
@@ -563,6 +575,15 @@ function serializeTable(name, value, saved)
 	
 	return table.concat(string_table)
 end
+
+-- local ff = ffi.new("float[3]")
+--local ff = ffi.new("float[?]",3)
+--loadstring(cdataSerialize(ff))()
+-- local ser = serializeTable("params",{ff})
+-- print(ser)
+-- local aa = loadstring("ffi = require'ffi';"..ser.."\nreturn params")()
+-- print(aa[1])
+
 -- use as serializeTableF(table) to get "return string"
 -- could be optimized passing string_table as argument
 function serializeTableF(value,name,saved)

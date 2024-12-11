@@ -415,6 +415,12 @@ local function Object(name,objtree)
 				if ig.RadioButton("edit##"..tostring(O),editor.object and editor.object==O or false) then
 					editor.object = O
 				end
+				if O.name == "root" then
+					ig.SameLine();
+					if ig.RadioButton("noedit##"..tostring(O),not editor.object) then
+						editor.object = nil
+					end
+				end
 				for ich,child in ipairs(self.childs) do
 					child:tree(editor)
 				end
@@ -426,6 +432,12 @@ local function Object(name,objtree)
 			if ig.RadioButton("edit##"..tostring(O),editor.object and editor.object==O or false) then
 				editor.object = O
 			end
+			if O.name == "root" then
+				ig.SameLine();
+				if ig.RadioButton("noedit##"..tostring(O),not editor.object) then
+					editor.object = nil
+				end
+			end						   
 		end
 	end
 	
@@ -476,9 +488,10 @@ local function Objects(GL,camera,args)
 	local zmoMODE = ffi.new("int[?]",1)
 	--local zmobounds = ffi.new("float[?]",6,{ -0.5, -0.5, -0.5, 0.5, 0.5, 0.5 })
 	local NMzmo = gui.Dialog("zmo",
-	{{"zmoO",false,guitypes.toggle},
-	{"zmoC",false,guitypes.toggle,nil,{sameline=true}},
-	{"grid",false,guitypes.toggle,nil,{sameline=true}}},
+	{--{"zmoO",false,guitypes.toggle},
+	--{"zmoC",false,guitypes.toggle,nil,{sameline=true}},
+	--{"grid",false,guitypes.toggle,nil,{sameline=true}}
+	},
 	function()
 		ig.RadioButton("trans", zmoOP, imgui.TRANSLATE); ig.SameLine();
 		ig.RadioButton("rot", zmoOP, imgui.ROTATE); ig.SameLine();
@@ -557,18 +570,20 @@ local function Objects(GL,camera,args)
 			MVmo = camera:MV().gl
 			MPmo = camera:MP().gl
 			ig.ImGuizmo_SetRect(unpack(GL.stencil_sizes))
-			if NMzmo.zmoC then
-				ig.ImGuizmo_SetOrthographic(camera.NM.ortho);
-				ig.ImGuizmo_ViewManipulate(MVmo,camera.NM.dist or 1,ig.ImVec2(0,0),ig.ImVec2(128,128),0x01010101)
-				if NMzmo.grid then ig.ImGuizmo_DrawGrid(MVmo,MPmo,mat.identity().gl,10) end
-				camera:setMV(mat.gl2mat4(MVmo))
-			end
-			if NMzmo.zmoO and editor.object then
+			--if NMzmo.zmoC then
+				--ig.ImGuizmo_SetOrthographic(camera.NM.ortho);
+				--ig.ImGuizmo_ViewManipulate(MVmo,camera.NM.dist or 1,ig.ImVec2(0,0),ig.ImVec2(128,128),0x01010101)
+				--if NMzmo.grid then ig.ImGuizmo_DrawGrid(MVmo,MPmo,mat.identity().gl,10) end
+				--camera:setMV(mat.gl2mat4(MVmo))
+			--end
+			--if NMzmo.zmoO and editor.object then
 				MOmo = editor.object:getModelM().gl
 				--ig.ImGuizmo_DrawCube(MVmo,MPmo,MOmo)
+				ig.ImGuizmo_PushID("zmo_obj")
 				ig.ImGuizmo_Manipulate(MVmo,MPmo,zmoOP[0],zmoMODE[0],MOmo,nil,nil,zmoOP[0]==imgui.BOUNDS and editor.object.zmobounds or nil,nil)
 				editor.object:setModelM(mat.gl2mat4(MOmo))
-			end
+				ig.ImGuizmo_PopID()  
+			--end
 		end
 	end)
 	
@@ -758,7 +773,7 @@ local camera = Camera(GL,{gizmo=true,type="tps"})
 local objects,msaa
 function GL:init()
 	objects = Objects(GL,camera)--,{doinit=true})
-	scene2(objects)
+	scene1(objects)
 	msaa = GL:initFBOMultiSample()
 end
 function GL.draw(t,w,h)

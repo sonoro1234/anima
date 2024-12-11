@@ -890,6 +890,6 @@ local poly = {vec2(0,0),vec2(0,2),vec2(2,0)}
 poly.holes = {{vec2(0.5,1),vec2(1,0.5),vec2(1.5,1.5)}}
 prtable(poly)
 
-prtable(EarClipFIST(poly))
+prtable(CG.EarClipFIST(poly))
 --]]
 --return EarClipFIST

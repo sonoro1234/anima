@@ -5,13 +5,36 @@ local vec4 = mat.vec4
 local CG = require"anima.CG3"
 
 local function Spline3D(GL, camera,updatefunc)
+	local SP3D
+	local function sp_update(sp, cmd)
+		print("SPLINE",sp,cmd)
+		if not cmd then return end
+				if false then --self.calc_framecenter then
+				local ii = SP3D.NM.curr_spline
+				print("calframecenter",ii)
+				print("center",SP3D.frames[ii].center)
+				local Zcent = (camera:MV()*vec3(0,0,0)).z
+				local cent = vec3(0,0,0)
+				for i,v in ipairs(SP3D.sccoors[ii]) do
+					local r = camera:Viewport2Eye(v)
+					cent = cent + r
+				end
+				cent = cent/#SP3D.sccoors[ii]
+				--cent = Scr2Eye(nil,self.sccoors[ii][1])
+				print(cent)
+				local fac = Zcent/cent.z
+				cent = cent*fac
+				SP3D.frames[ii].center = cent
+				print(cent)
+			end
+	end
 	------------Spline modifications for 3D
 	local HeightEditor = require"anima.modeling.HeightEditor"
-	local SP3D = require"anima.modeling.Spline"(GL,updatefunc)
+	SP3D = require"anima.modeling.Spline"(GL,sp_update)
 	
 	local doheightupdate = true
-	local function updateheights()
-		if doheightupdate then updatefunc() end
+	local function updateheights(ii)
+		if doheightupdate then updatefunc(SP3D,ii) end
 		--print"updateheights done"
 	end
 	
@@ -20,7 +43,7 @@ local function Spline3D(GL, camera,updatefunc)
 			if self.HeightEditors[spnum].mesh then
 				local Mtrinv = self.HeightEditors[spnum].Mtrinv
 				self.HeightEditors[spnum].mesh:M4(Mtrinv)
-				updateheights()
+				updateheights(spnum)
 			end
 		end
 		self.HeightEditors[spnum] = HeightEditor(GL,updateheightfunc  )
@@ -50,9 +73,12 @@ local function Spline3D(GL, camera,updatefunc)
 	end
 	
 	function SP3D:newmesh(pts)
-		local spnum = self:newspline(pts)
+		local spnum = self:newspline(pts, true) --dont calc until set_frame
 		self:create_height_editor(spnum)
 		SP3D.zoffset[spnum] = ffi.new("float[1]",0)
+		local cent = camera:MV()*vec3(0,0,0)
+		print("newmesh",cent)
+		self.frames[spnum] = {X=vec3(1,0,0),Y=vec3(0,1,0),Z=vec3(0,0,1),center=cent}
 		return spnum
 	end
 	
@@ -67,25 +93,43 @@ local function Spline3D(GL, camera,updatefunc)
 			self:deletemesh(i)
 		end
 	end
+	function SP3D:set_frameW(frame, ii)
+		local MV = camera:MV()
+		return self:set_frame(mesh.move_frame(frame, MV))
+	end
 	function SP3D:set_frame(frame,ii)
+		ii = ii or self.NM.curr_spline
 		self.frames[ii] = frame or {X=vec3(1,0,0),Y=vec3(0,1,0),Z=vec3(0,0,1),center=vec3(0,0,-1)}
 		self:calc_spline(ii)
 		--updatefunc(self)
 	end
+	function SP3D:get_frame()
+		if self.NM.curr_spline > 0 then
+			return self.frames[self.NM.curr_spline]
+		end
+	end
+	function SP3D:get_frameW()
+		local MVinv = camera:MV().inv
+		if self.NM.curr_spline > 0 then
+			return mesh.move_frame(self.frames[self.NM.curr_spline],MVinv)
+		end
+	end
 	function SP3D:calc_spline(ii)
-		--print("calc_spline1",ii,self.NM.curr_spline)
+		print("calc_spline1",ii,self.NM.curr_spline)
 		--print(debug.traceback())
 		ii = ii or self.NM.curr_spline
 		--print("calc_spline",ii,self:numpoints(ii))
-		if self:numpoints(ii)>2 then
+		if self:numpoints(ii) > 2 then
 			--project on plane
 			local prsc = {}
 			local R = self.frames[ii].Z
+			assert(R~=0, "frame Z==0")
 			local point = self.frames[ii].center + self.zoffset[ii][0]*R
 			local D = -point*R
 			if D < 0 then D = -D; R = -R end
 			local MP = camera:MP()
 			local MPinv = MP.inv
+
 			for i,v in ipairs(self.sccoors[ii]) do
 				local r = Scr2Eye(MPinv,v) --vec3(v.x,v.y,1)
 				local dotinv = -D/(R*r)
@@ -125,7 +169,9 @@ local function Spline3D(GL, camera,updatefunc)
 					end
 				end
 			end
+
 			local pspr = CG.Spline(prsc,self.alpha[ii][0],self.divs[ii][0],true,minlen)
+
 			if prsc.holes then
 				pspr.holes = {}
 				for i,hole in ipairs(prsc.holes) do
@@ -154,7 +200,7 @@ local function Spline3D(GL, camera,updatefunc)
 					end
 				end
 			end
-			doheightupdate = false
+			--doheightupdate = false
 			self.HeightEditors[ii].Mtrinv = Mtrinv
 			self.HeightEditors[ii].Mtr = Mtr
 			self.HeightEditors[ii]:set_spline(pspr)
@@ -163,6 +209,12 @@ local function Spline3D(GL, camera,updatefunc)
 	end
 	function SP3D:get_mesh(ii)
 		return self.HeightEditors[ii].mesh, self.frames[ii]
+	end
+	function SP3D:get_meshW(ii)
+		local MVinv = camera:MV().inv
+		local mm,fr = self:get_mesh(ii)
+		print(mm,fr, "is mesh")
+		return mm and mm:clone():M4(MVinv) or nil, mesh.move_frame(fr, MVinv)
 	end
 	function SP3D:resetmesh(ii,frame,pts)
 		self.NM.vars.curr_spline[0]=ii
@@ -214,12 +266,12 @@ local function Spline3D(GL, camera,updatefunc)
 end
 
 --[=[
-local GL = GLcanvas{H=500,aspect=1,DEBUG=true}
+local GL = GLcanvas{H=1000,aspect=1,DEBUG=true}
 local function update(n) print("update spline",n) end
 local camera = Camera(GL,"tps")
 local edit = Spline3D(GL,camera,update)--,doblend=true})
 edit:newmesh()
-edit:set_frame(nil,1)
+--edit:set_frame(nil,1)
 local plugin = require"anima.plugins.plugin"
 edit.fb = plugin.serializer(edit)
 function GL.imgui()

@@ -544,6 +544,7 @@ function M.mesh(t)
 			-- self.points[i] = pR:xyz()
 			points[i] = M3 * points[i] + tt
 		end
+		return self
 	end
 	function mesh:scale(f)
 		for i=1,#self.points do

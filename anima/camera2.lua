@@ -43,10 +43,27 @@ local function getgizmofunc(cam)
 	return func
 end
 
+local function get_imguizo_func(camera,GL)
+	local function func()
+	ig.ImGuizmo_BeginFrame() 
+	local MVmo = camera:MV().gl
+	local MPmo = camera:MP().gl
+	ig.ImGuizmo_SetRect(unpack(GL.stencil_sizes))
+
+	ig.ImGuizmo_SetOrthographic(camera.NM.ortho);
+	ig.ImGuizmo_ViewManipulate(MVmo,camera.NM.dist or 1,ig.ImVec2(0,0),ig.ImVec2(128,128),0x01010101)
+	--if NMzmo.grid then ig.ImGuizmo_DrawGrid(MVmo,MPmo,mat.identity().gl,10) end
+	camera:setMV(mat.gl2mat4(MVmo))
+	end
+	return func
+end
+
 local function imgui_lookat_cameraDialog(name,zforh,GL, invisible,cam)
 		local func
 		if cam.args.gizmo then
 			func = getgizmofunc(cam)
+		elseif cam.args.imguizmo then
+			func = get_imguizo_func(cam,GL)
 		end
 		local NMC =GL:Dialog(name .."_cam",
 		{
@@ -95,6 +112,8 @@ local function imgui_cameraDialog(name,zforh,GL, invisible,cam)
 		local func
 		if cam.args.gizmo then
 			func = getgizmofunc(cam)
+		elseif cam.args.imguizmo then
+			func = get_imguizo_func(cam,GL)
 		end
 		local NMC =GL:Dialog(name .."_cam",guitable,func,invisible)
 		return NMC

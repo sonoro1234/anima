@@ -585,8 +585,11 @@ local function GuiInit(GL)
 	ig.ImPlot_CreateContext()
 end
 --------------------------------------------------------------------------------------------
+local singleton_canvas
 function GLcanvas(GL)
-
+	if singleton_canvas then error"another GLcanvas is opened" end
+	singleton_canvas = true
+	
 	GL.fps = GL.fps or 25
 	GL.FPScounter = newFPScounter(print,GL.fps)
 	GL.globaltime = ffi.new"float[1]"
@@ -1080,6 +1083,7 @@ function GLcanvas(GL)
 		--dont destroy in case multiwindow
 		--imgui.igShutdown();
 		--lj_glfw.terminate()
+		singleton_canvas = nil
 	end
 	local function startGLFW(self, postf) 
 
@@ -1111,6 +1115,7 @@ function GLcanvas(GL)
 		--dont destroy in case multiwindow
 		--imgui.igShutdown();
 		lj_glfw.terminate()
+		singleton_canvas = nil
 	end
 	
 	local function GLgetAspectViewport(width,height)

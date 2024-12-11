@@ -1226,9 +1226,8 @@ local objects = {}
 local DboxO = GL:DialogBox("objects",true)
 local function makeObj(sp,MVinv,MVnor,iplane)
 	local i,maker = sp[1],sp[2]
-	local meshE,frame = edit.Makers[maker]:get_mesh(i)
-	local meshW = meshE:clone()
-	meshW:M4(MVinv)
+	local meshW,frame = edit.Makers[maker]:get_meshW(i)
+
 	local gtex
 --[[
 	if NM.gentex then 
@@ -1236,7 +1235,6 @@ local function makeObj(sp,MVinv,MVnor,iplane)
 	end
 --]]
 
-	local frame = mesh.move_frame(frame,MVinv)
 	objects[maker] = objects[maker] or {}
 	local object = objects[maker][i] 
 	if not object then
@@ -1245,7 +1243,9 @@ local function makeObj(sp,MVinv,MVnor,iplane)
 		objects[maker][i] = object
 		DboxO:add_dialog(object.NM)
 	end
+	if meshW then
 	object:setMesh(meshW,gtex, frame)
+	end
 end
 local function set_objects()
 	print"set_objects"
