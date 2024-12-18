@@ -58,11 +58,13 @@ local function Editor(GL,updatefunc,args)
 	--for converting from window coordinates to GL.fbo coordinates
 	--from imgui inverted Y
 	local function ScreenToViewport(X,Y)
+		--local sss = ig.GetMainViewport().Size
 		local sw,sh = GL:getWindowSize()
 		local x,y,w,h = unpack(GL.stencil_sizes)
 		return GL:ScreenToViewport(X,sh-Y)
 	end
 	local function ViewportToScreen(X,Y)
+		--local sss = ig.GetMainViewport().Size
 		local sw,sh = GL:getWindowSize()
 		local x,y,w,h = unpack(GL.stencil_sizes)
 		local X1,Y1 = GL:ViewportToScreen(X,Y)
@@ -72,7 +74,7 @@ local function Editor(GL,updatefunc,args)
 		--if numsplines==0 then return end
 		local igio = ig.GetIO()
 		local mpos = igio.MousePos
-		local dl = ig.GetBackgroundDrawList()
+		local dl = ig.GetBackgroundDrawList(ig.GetMainViewport())
 		local keepflags = dl.Flags
 		dl.Flags = bit.band(dl.Flags,bit.bnot(ig.lib.ImDrawListFlags_AntiAliasedLines))
 		--points in curr_spline
@@ -503,13 +505,14 @@ local function Editor(GL,updatefunc,args)
 	return M
 end
 
---[=[
-local GL = GLcanvas{H=500,aspect=1,DEBUG=true}
+---[=[
+local GL = GLcanvas{H=500,aspect=1,DEBUG=true,use_imgui_viewport=true}
 local function update(n) print("update spline",n) end
 local edit = Editor(GL,update,{region=true})--,doblend=true})
 local plugin = require"anima.plugins.plugin"
 edit.fb = plugin.serializer(edit)
 function GL.imgui()
+	--ig.ShowDemoWindow()
 	edit.NM:draw()
 end
 GL:start()

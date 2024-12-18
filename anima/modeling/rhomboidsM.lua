@@ -480,7 +480,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 		--print"Show"
 		local igio = ig.GetIO()
 		local mpos = igio.MousePos
-		local dl = ig.GetBackgroundDrawList()
+		local dl = ig.GetBackgroundDrawList(ig.GetMainViewport())
 		local keepflags = dl.Flags
 		dl.Flags = bit.band(dl.Flags,bit.bnot(ig.lib.ImDrawListFlags_AntiAliasedLines))
 		
