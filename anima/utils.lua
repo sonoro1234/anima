@@ -302,8 +302,10 @@ function tb2st_serialize(t)
 			if val:match '^[_%a][_%w]*$' and not kw[val] then
 				return dot..tostring(val)
 			else
-				return "['"..tostring(val).."']"
+				return "[\""..tostring(val).."\"]"
 			end
+		elseif (not dodot) and (type(val) == "number") and (math.floor(val)==val) then
+			return  --array index
 		else
 			return "["..tostring(val).."]"
 		end
@@ -311,46 +313,48 @@ function tb2st_serialize(t)
 	local function serialize_key_name(val)
 		return serialize_key(val, true)
 	end
+	local insert = table.insert
 	local function _tb2st(t,saved,sref,level,name)
 		saved = saved or {}		-- initial value
 		level = level or 0
 		sref = sref or {}
-		name = name or "t["..level.."]"
-		--if kk then name = name .. serialize_key_name(kk) end
+		name = name or "t"
 		if type(t)=="table" then
 			if saved[t] then
 				sref[#sref+1] = {saved[t],name}
 				return"nil"
 			else
 				saved[t] = name
-				local str2="{"
-				---------------
+
 				local ordered_keys = {}
 				for k,v in pairs(t) do
-					table.insert(ordered_keys,k)
+					insert(ordered_keys,k)
 				end
-            
 				table.sort(ordered_keys,sorter)
+				
+				local str2 = {}
+				insert(str2,"{")
 				for _,k in ipairs(ordered_keys) do
 					local v = t[k]
-				---------------
-				--for k,v in pairs(t) do
-					if type(v)=="number" then
-						str2=str2 .. serialize_key(k) .."=".. string.format("%0.17g",v) ..","
+					local kser = serialize_key(k)
+					insert(str2, (kser and (kser .."=") or ""))
+					if type(v)~="table" then
+						insert(str2, basicSerialize(v))
 					else
 						local name2 = name .. serialize_key_name(k)
-						str2=str2 .. serialize_key(k) .."=".. _tb2st(v,saved,sref,level+1,name2) ..","
+						insert(str2,_tb2st(v,saved,sref,level+1,name2))
 					end
+					insert(str2, ",")
 				end
-				str2=str2.."}"
+				str2[#str2] = "}"
 				if level == 0 then
-					str2 = "local t={}; t[0]="..str2
+					insert(str2, 1,"local ffi = require'ffi'\nlocal t=")
 					for i,v in ipairs(sref) do 
-						str2 = str2.."\n"..v[2].."="..v[1]
+						insert(str2, "\n"..v[2].."="..v[1])
 					end
-					str2 = str2.."\n return t[0]"
+					insert(str2,"\n return t")
 				end
-				return str2
+				return table.concat(str2)
 			end
 		else
 			return basicSerialize(t)
@@ -514,6 +518,7 @@ function dumpObj(o)
 end
 
 function tbl_compare(t1,t2)
+	local seen = {}
     local lookup_table = {}
     local function _comp(t1,t2)
         if type(t1) ~= "table" then
@@ -521,6 +526,8 @@ function tbl_compare(t1,t2)
         elseif lookup_table[t1] then
             return lookup_table[t1]
         end
+		if seen[t1] then print("seen",seen[t1] == t2, t1,t2) return true end
+		seen[t1] = t2
 		local eq = true
         for index, value in pairs(t1) do
 			if not _comp(t2[index] , value) then
@@ -532,10 +539,35 @@ function tbl_compare(t1,t2)
         return eq
     end
     if not _comp(t1,t2) then return false end
+	print"inverse compare"
 	lookup_table = {}
+	seen = {}
 	return _comp(t2,t1)
 end
 
+local function cdataser(val)
+	local ty = ffi.typeof(val)
+	local len = ffi.sizeof(val)
+	local s0 = ffi.sizeof(ty,0)
+	local s1 = ffi.sizeof(ty,1)
+	local tyst = tostring(ty):sub(7, -2)
+
+	if s0 ~= s1 then
+		--VLA s2=0, VLS s2~=0
+		local el_size = s1 - s0
+		local nelem = (len - s0)/el_size
+		local s = ffi.string(val, len)
+		-- local Y = ffi.typeof(ty)(nelem)
+		-- ffi.copy(Y, s, len)
+		-- return Y
+		return [[(function() local Y = ffi.typeof("]]..tyst..[[")(]]..nelem..[[);ffi.copy(Y,"]]..s..[[",]]..len..[=[);return Y; end)()]=]
+	end
+	local s = ffi.string(ty(val), len )
+	-- local Y = ffi.typeof(ty2)()
+	-- ffi.copy(Y, s, len)
+	-- return Y[0]
+	return [[(function() local Y = ffi.typeof("]]..tyst..[[")();ffi.copy(Y,"]]..s..[[",]]..len..[=[);return Y; end)()]=]
+end
 local function cdataSerialize(cd)
 	if ffi.istype("float[1]", cd) then
 		return table.concat{[[ffi.new('float[1]',]],cd[0],[[)]]}
@@ -557,7 +589,8 @@ local function cdataSerialize(cd)
 			tab[#tab] = [[})]]
 			return table.concat(tab)
 		else
-			print(cd,"not serialized")
+			print(cd,"binary serialized")
+			return cdataser(cd)
 		end
 	end
 end
