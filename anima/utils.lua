@@ -545,6 +545,7 @@ function tbl_compare(t1,t2)
 	return _comp(t2,t1)
 end
 
+--binary save, can have issues with binary compatibility: endianess
 local function cdataser(val)
 	local ty = ffi.typeof(val)
 	local len = ffi.sizeof(val)
@@ -568,6 +569,7 @@ local function cdataser(val)
 	-- return Y[0]
 	return [[(function() local Y = ffi.typeof("]]..tyst..[[")();ffi.copy(Y,"]]..s..[[",]]..len..[=[);return Y; end)()]=]
 end
+cdataser = require"anima.cdataser"
 local function cdataSerialize(cd)
 	if ffi.istype("float[1]", cd) then
 		return table.concat{[[ffi.new('float[1]',]],cd[0],[[)]]}
@@ -594,7 +596,7 @@ local function cdataSerialize(cd)
 		end
 	end
 end
-
+cdataSerialize = cdataser
 
 
 function basicSerialize (o)
@@ -620,12 +622,12 @@ function basicToStr (o)
         return tostring(o)
     elseif type(o) == "string" then
         return string.format("%q", o)
-	elseif ffi.istype("float[]",o) then
-		local size = ffi.sizeof(o)/ffi.sizeof"float"
-		local tab = {[[float[]<]],o[0]}
-		for i=1,size-1 do tab[#tab+1] = ",";tab[#tab+1] = o[i] end
-		tab[#tab+1] = [[>]]
-		return table.concat(tab)
+	-- elseif ffi.istype("float[]",o) then
+		-- local size = ffi.sizeof(o)/ffi.sizeof"float"
+		-- local tab = {[[float[]<]],o[0]}
+		-- for i=1,size-1 do tab[#tab+1] = ",";tab[#tab+1] = o[i] end
+		-- tab[#tab+1] = [[>]]
+		-- return table.concat(tab)
 	elseif ffi.istype("float[1]",o) then
 		return table.concat{[=[float[1]<]=],o[0],">"}
 	elseif ffi.istype("int[1]",o) then

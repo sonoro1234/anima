@@ -165,6 +165,7 @@ install(DIRECTORY examples DESTINATION ${LUAJIT_BIN})
 endif(NOT LUAJIT_WINDOW_ONLY)
 
 install(FILES luafilesystem/lfs_ffi.lua luafilesystem/lfs.lua DESTINATION ${LUAJIT_BIN}/lua)
+install(FILES ffi-reflect/reflect.lua DESTINATION ${LUAJIT_BIN}/lua)
 install(DIRECTORY LuaJIT-ImGui/examples DESTINATION ${LUAJIT_BIN}/examples/LuaJIT-ImGui)
 install(DIRECTORY LuaJIT-rtaudio/samples DESTINATION ${LUAJIT_BIN}/examples/LuaJIT-rtaudio)
 install(DIRECTORY LuaJIT-SDL2/test DESTINATION ${LUAJIT_BIN}/examples/LuaJIT-SDL2)
