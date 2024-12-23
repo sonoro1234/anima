@@ -606,8 +606,8 @@ function basicSerialize (o)
         return tostring(o)
     elseif type(o) == "string" then
         return string.format("%q", o)
-	elseif pcall(function() return o.__serialize end) then
-		return o.__serialize(o)
+	--elseif pcall(function() return o.__serialize end) then
+	--	return o.__serialize(o)
 	elseif type(o)=="cdata" then
 		return cdataSerialize(o)
 	else
