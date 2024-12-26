@@ -7,16 +7,16 @@ local sin, cos = math.sin, math.cos
 local sqrt = math.sqrt
 
 ffi.cdef [[
-typedef struct {
+typedef struct mat2{
   double m11, m21;
   double m12, m22;
 } mat2;
-typedef struct {
+typedef struct mat3{
   double m11, m21, m31;
   double m12, m22, m32;
   double m13, m23, m33;
 } mat3;
-typedef struct {
+typedef struct mat4{
   double m11, m21, m31, m41;
   double m12, m22, m32, m42;
   double m13, m23, m33, m43;
