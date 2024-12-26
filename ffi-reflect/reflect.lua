@@ -231,15 +231,20 @@ end
 -- Logic for merging an attribute CType onto the annotated CType.
 local CTAs = {[0] =
   function(a, refct) error("TODO: CTA_NONE") end,
-  function(a, refct) error("TODO: CTA_QUAL") end,
+  function(a, refct, info,num) 
+    print("CTA_QUAL",info,num)
+    refct.const = (bit.band(info, 0x02000000) ~= 0) and true or nil
+    refct.volatile = (bit.band(info, 0x01000000) ~= 0) and true or nil
+end, --error("TODO: CTA_QUAL") end,  
   function(a, refct)
     a = 2^a.value
     refct.alignment = a
-    refct.attributes.align = a
   end,
   function(a, refct)
     refct.transparent = true
+    refct.attributes = refct.attributes or {}
     refct.attributes.subtype = refct.typeid
+    refct.typeid = a.typeid
   end,
   function(a, refct) refct.sym_name = a.name end,
   function(a, refct) error("TODO: CTA_BAD") end,
@@ -303,9 +308,7 @@ local function refct_from_id(id) -- refct = refct_from_id(CTypeID)
     local CTA = CTAs[bit.band(bit.rshift(ctype.info, 16), 0xff)]
     if refct.type then
       local ct = refct.type
-      ct.attributes = {}
-      CTA(refct, ct)
-      ct.typeid = refct.typeid
+      CTA(refct, ct, bit.bor(ctype.info,ctype.size),1)
       refct = ct
     else
       refct.CTA = CTA
@@ -331,7 +334,7 @@ local function refct_from_id(id) -- refct = refct_from_id(CTypeID)
       if CTs[bit.rshift(entry.info, 28)][1] ~= "attrib" then break end
       if bit.band(entry.info, 0xffff) ~= 0 then break end
       local sib = refct_from_id(ctype.sib)
-      sib:CTA(refct)
+      sib:CTA(refct,bit.bor(entry.info,entry.size),2)
       ctype = entry
     end
   end
