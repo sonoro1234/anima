@@ -420,6 +420,11 @@ function GLSL:getunif()
 		local namel = ffi.string(name) 
 		local loc = glext.glGetUniformLocation(self.program,namel)
 		self.unif[namel] = Uniform(size[0],tipo[0],loc,namel)
+		--array uniforms name can vary between drivers
+		if namel:match("%[0%]") then
+			local name2 = namel:match"(%w+)"
+			self.unif[name2] = self.unif[namel]
+		end
 		--print(i,ffi.string(name),size[0],uniform_types[tipo[0]].name)
 		local typename = uniform_types[tipo[0]] and uniform_types[tipo[0]].name or "UNKNOWN_TYPE"
 		print(i,loc,string.format("%".. bufsize[0] .."s",namel),size[0],tipo[0],typename)
