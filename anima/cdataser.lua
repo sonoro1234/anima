@@ -119,8 +119,9 @@ local function cdataser(cd)
     if ti.what == "struct" or ti.what == "union" then
         --anonymous struct find typedef
         if not ti.name then
+            print("searching typedef for",tystr)
             local name
-             for i = 1, math.huge do
+            for i = 1, math.huge do
                 local t = ffi.typeinfo(i)
                 if t == nil then
                     break
