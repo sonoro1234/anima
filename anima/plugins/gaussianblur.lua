@@ -144,8 +144,8 @@ local function BlurClipMaker(GL)
 	Clip.NM = NM
 	function Clip.init()
 		print"gaussianblur init"
-		programH = GLSL:new():compile(nil,fragH2);
-		programV = GLSL:new():compile(nil,fragV2);
+		programH = GLSL:new():compile(vert_std,fragH2);
+		programV = GLSL:new():compile(vert_std,fragV2);
 		programstd = GLSL:new():compile(vert_std,frag_std);
 		mixfbos[0] = GL:initFBO()
 		mixfbos[1] = GL:initFBO()
@@ -215,16 +215,12 @@ require"anima"
 local GL = GLcanvas{H=1080,aspect=2/3}
 local blur = BlurClipMaker(GL,{size=2})
 -- local blur = require"anima.plugins.gaussianblur"(GL)
-local LM = require"anima.plugins.layermixer_blend"
-local themixer = LM.layers_mixer(GL,true)
 local tex
 function GL.init()
 	tex = GL:Texture():Load[[C:\luaGL\frames_anima\7thDoor\puertas\_MG_4250.tif]]
-	--cliplist = LM.layers_seq:new({{0,200,clip={blur,clip={tex}}}} )
 end
 function GL.draw(t,w,h)
 	blur:draw(t,w,h,{clip={tex}})
-	-- themixer:draw(t,w,h,{animclips=cliplist})
 end
 GL:start()
 --]=]

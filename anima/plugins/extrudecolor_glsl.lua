@@ -13,9 +13,9 @@ void main()
 	gl_TexCoord[0] = gl_TextureMatrix[0]* vec4(pos,1);
 	vec4 color = texture2D(texblured,gl_TexCoord[0].st);
 	float lum = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722))*extfac;
-	pos += vec3(0,0,1)*lum;
+	vec3 pos1 = pos + vec3(0,0,1)*lum;
 
-	vec4 point = MM * vec4(pos,1);
+	vec4 point = MM * vec4(pos1,1);
 	gl_Position = gl_ModelViewProjectionMatrix * point;
 }
 
@@ -126,29 +126,23 @@ end
 
 
 --[=[
-
 GL = GLcanvas{H=700,aspect = 1.5}
-
-extr = make(GL)
+local extr
 function GL.init()
-
 	--textura = Texture():Load[[C:\luajitbin2.0.2-copia\animacion\resonator6\resonator-038.jpg]]
-	
 	--textura = Texture():Load[[c:/luagl/media\frame-0001.tif]]
 	-- textura2 = Texture():Load[[c:/luagl/media\frame-0001Bilat.tif]]
-	
 	--textura = Texture():Load[[c:/luagl/media\leslie.tif]]
 	--textura2 = Texture():Load[[c:/luagl/media\leslie_blur.tif]]
-	textura = Texture():Load[[G:\VICTOR\pelis\pelipino\master1080\arbolenflordos\frame-0001.tif]]
+	textura = GL:Texture():Load[[c:\luagl\pelis\hadas\master1080\leslie_giro1\frame-0001.tif]]--[[G:\VICTOR\pelis\pelipino\master1080\arbolenflordos\frame-0001.tif]]
 	
 	GL:set_WH(textura.width,textura.height)
-	
+	extr = make(GL)
 	
 	GL:DirtyWrap()
 end
 
 function GL.draw(tim,w,h)
-
 	extr:draw(t,w,h,{clip={textura}})
 end
 

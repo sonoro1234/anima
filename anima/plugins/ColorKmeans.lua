@@ -675,7 +675,7 @@ Dbox:add_dialog(NM)
 Dbox:add_dialog(ColorK.NM)
 local fileName = [[C:\LuaGL\frames_anima\edges_detection\flowers2.png]]
 --local fileName = [[C:\LuaGL\frames_anima\edges_detection\bici.png]]
-local fileName = [[C:\LuaGL\frames_anima\vectorize\dummy_color.tif]]
+--local fileName = [[C:\LuaGL\frames_anima\vectorize\dummy_color.tif]]
 --local fileName = [[C:\LuaGL\frames_anima\vectorize\dummy.png]]
 --local fileName = [[C:\anima\examples\vectorize\letraO.png]]
 --local fileName = [[C:\LuaGL\media\gradient.tif]]

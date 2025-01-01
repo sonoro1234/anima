@@ -81,7 +81,7 @@ void main()
 ]]
 
 local vert_std = [[
-#version 330 core
+//#version 330 core
 
 void main()
 {
@@ -92,7 +92,7 @@ void main()
 ]]
 
 local frag_mix = [[
-#version 330 core
+//#version 330 core
 uniform sampler2D tex0,tex1;
 uniform float bloomfac;
 
@@ -104,7 +104,7 @@ void main()
 }
 ]]
 local frag_lights = [[
-#version 330 core
+//#version 330 core
 uniform sampler2D tex0;
 uniform float bloomlevel;
 void main()
@@ -206,11 +206,11 @@ end
 --test
 
 GL = GLcanvas{fps=250,RENDERINI=0,RENDEREND=208,H=700,aspect = 1.5}
-texter = require"anima.plugins.GLTextClip"(GL)
-texini = {texter,size=AN({0.05,0.2,15}),text={[[Palmeras]],"Huecas"},color={1,1,1},rot_speed = 30,centered=true,dontclear=true,shadow=true,shadowdist=0.01, posX = AN{-0.75,-0.55,15},posY = AN{-0.5,0,15},bright = AN({0,1,1},{1,1,20},{1,0,3})}
+--texter = require"anima.plugins.GLTextClip"(GL)
+--texini = {texter,size=AN({0.05,0.2,15}),text={[[Palmeras]],"Huecas"},color={1,1,1},rot_speed = 30,centered=true,dontclear=true,shadow=true,shadowdist=0.01, posX = AN{-0.75,-0.55,15},posY = AN{-0.5,0,15},bright = AN({0,1,1},{1,1,20},{1,0,3})}
 
 function GL.init()
-	textura2 = Texture():Load([[C:\luaGL\animacion\resonator6\resonator-038.jpg]])
+	textura2 = GL:Texture():Load([[c:\luaGL\media\estanque-001.jpg]])
 	theblommer = M.make(GL)
 	--GL.animation:add_animatable(AN1(theblommer.NM.vars.bloomlevel,{1,0.85,40,unit_maps.sinemapf(40*2)}))
 end

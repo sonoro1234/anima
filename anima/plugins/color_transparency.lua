@@ -3,9 +3,11 @@
 local vert_shad = [[
 in vec3 Position;
 in vec2 texcoords;
+out vec2 texcoordsf;
 void main()
 {
-	gl_TexCoord[0] = vec4(texcoords,0,1);
+	texcoordsf = texcoords;
+	//gl_TexCoord[0] = vec4(texcoords,0,1);
 	gl_Position = vec4(Position,1);
 }
 
@@ -20,13 +22,12 @@ uniform float maxdist;
 uniform float stepd = 0.0;
 uniform int mode;
 uniform bool invert;
-
-
-
+in vec2 texcoordsf;
+out vec4 fragcolor;
 void main()
 {
-
-	vec4 color = texture2D(tex0,gl_TexCoord[0].st);
+	vec4 color = texture2D(tex0,texcoordsf);
+	//vec4 color = texture2D(tex0,gl_TexCoord[0].st);
 	float norm = distance(color.rgb,tcolor);
 	float a = smoothstep(maxdist-stepd,maxdist,norm);
 	if(mode == 1){
@@ -37,7 +38,8 @@ void main()
 	
 	//gl_FragColor = vec4(vec3(a),1.0);
 	//gl_FragColor = color*a; //vec4(color.rgb*a,a);
-	gl_FragColor = vec4(color.rgb,color.a*a);	
+	//gl_FragColor = vec4(color.rgb,color.a*a);	
+	fragcolor = vec4(color.rgb,color.a*a);
 }
 ]]
 
@@ -62,25 +64,29 @@ float LabDistance(vec3 col1,vec3 col2){
 	collab1 = collab1*labscale + laboffset;
 	collab2 = collab2*labscale + laboffset;
 	
+	//return distance(col1,col2);
+	//return distance(collab1.yz,collab2.yz);
+	return distance(collab1.z,collab2.z);
 	//return distance(collab1,collab2);
-	return distance(collab1.yz,collab2.yz);
 	//collab = collab*labscale + laboffset;
 	//collab = (collab - laboffset)/labscale;
 	//color = XYZ2RGB(LAB2XYZ(collab,D65));
 }
 
-
+in vec2 texcoordsf;
+out vec4 fragcolor;
 void main()
 {
-
-	vec4 color = texture2D(tex0,gl_TexCoord[0].st);
+	vec4 color = texture2D(tex0,texcoordsf);
+	//vec4 color = texture2D(tex0,gl_TexCoord[0].st);
 	float norm = LabDistance(color.rgb,tcolor);
 	float a = smoothstep(maxdist-stepd,maxdist,norm);
 	if(mode == 1)
 		a = clamp(norm/maxdist,0.0,1.0);
 	if(invert)
 		a = 1.0 - a;
-	gl_FragColor = color*a; //vec4(color.rgb*a,a); 
+	//gl_FragColor = color*a; //vec4(color.rgb*a,a); 
+	fragcolor = color*a;
 }
 ]]
 
@@ -123,7 +129,7 @@ end},
 	local fbo, programfx, progrgb,proglab
 	local lapse,oldtime,lapsesum = 0,0,0
 	function LM:init()
-		fbo = GL:initFBO()--{no_depth=true})
+		fbo = GL:initFBO({no_depth=true})
 		proglab = GLSL:new():compile(vert_shad,frag_shad_Lab)
 
 		progrgb = GLSL:new():compile(vert_shad,frag_shad)
@@ -209,18 +215,19 @@ end
 require"anima"
 GL = GLcanvas{H=1080,viewH=700,aspect=1.5}
 --GLSL.default_version = "#version 120\n"
-trans = make(GL)
+local trans 
 local textura
 function GL.init()
-	textura = GL:Texture()
-	print(textura)
-	textura = textura:Load[[C:\luagl\media\cara2.png]]
+	textura = GL:Texture():Load[[C:\luagl\media\cara2.png]]
+	GL:set_WH(textura.width,textura.height)
+	trans = make(GL)
 end
 
 function GL.draw(t,w,h)
 gl.glEnable(glc.GL_BLEND);
 gl.glBlendFunc(glc.GL_SRC_ALPHA, glc.GL_ONE_MINUS_SRC_ALPHA);
-	trans:draw(t,w,h,{clip={textura}})
+	--trans:draw(t,w,h,{clip={textura}})
+	trans:process(textura,w,h)
 gl.glDisable(glc.GL_BLEND);
 end
 

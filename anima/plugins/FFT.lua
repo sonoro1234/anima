@@ -29,7 +29,7 @@ local FULLSCREEN_VERTEX_SOURCE = [[
 
 local SUBTRANSFORM_FRAGMENT_SOURCE = [[
     //precision highp float;
-
+    out vec4 fragcolor;
     const float PI = 3.14159265;
 
     uniform sampler2D u_input;
@@ -83,7 +83,7 @@ local SUBTRANSFORM_FRAGMENT_SOURCE = [[
         vec2 outputA = even.rg + multiplyComplex(twiddle, odd.rg);
         vec2 outputB = even.ba + multiplyComplex(twiddle, odd.ba);
 
-        gl_FragColor = vec4(outputA, outputB);
+        fragcolor = vec4(outputA, outputB);
 		//if(!u_forward)
 		//	gl_FragColor = vec4(1,0,0,1);
     }
@@ -98,7 +98,7 @@ local FILTER_FRAGMENT_SOURCE = [[
     uniform float u_maxEditFrequency;
 
     uniform sampler2D u_filter;
-
+    out vec4 fragcolor;
     void main (void) {
         vec2 coordinates = gl_FragCoord.xy - 0.5;
         float xFrequency = (coordinates.x < u_resolution * 0.5) ? coordinates.x : coordinates.x - u_resolution;
@@ -109,7 +109,7 @@ local FILTER_FRAGMENT_SOURCE = [[
         float gain = texture2D(u_filter, vec2(frequency / u_maxEditFrequency, 0.5)).r*2.0;
         vec4 originalPower = texture2D(u_input, gl_FragCoord.xy / u_resolution);
 
-        gl_FragColor = originalPower * gain;
+        fragcolor = originalPower * gain;
 
     }
 ]]
@@ -118,7 +118,7 @@ local POWER_FRAGMENT_SOURCE = [[
     //precision highp float;
 
     in vec2 v_coordinates;
-
+    out vec4 fragcolor;
     uniform sampler2D u_spectrum;
     uniform float u_resolution;
 
@@ -154,7 +154,7 @@ local POWER_FRAGMENT_SOURCE = [[
 
         float averagePower = (rPower + gPower + bPower) / 3.0;
         //gl_FragColor = encodeFloat(averagePower / (u_resolution * u_resolution));
-		gl_FragColor = vec4(averagePower / (u_resolution * u_resolution));
+		fragcolor = vec4(averagePower / (u_resolution * u_resolution));
     }
 ]]
 
@@ -162,7 +162,7 @@ local IMAGE_FRAGMENT_SOURCE = [[
     //precision highp float;
 
     in vec2 v_coordinates;
-
+    out vec4 fragcolor;
     //uniform float u_resolution;
 
     uniform sampler2D u_texture;
@@ -171,7 +171,7 @@ local IMAGE_FRAGMENT_SOURCE = [[
     void main (void) {
         vec3 image = texture2D(u_texture, v_coordinates).rgb;
 
-        gl_FragColor = vec4(image, 1.0);
+        fragcolor = vec4(image, 1.0);
     }
 ]]
 
@@ -295,8 +295,8 @@ local function Filterer(GL,args)
 		bindtex(FILTER_TEXTURE_UNIT,filterTexture,glc.GL_CLAMP_TO_EDGE, glc.GL_CLAMP_TO_EDGE, glc.GL_NEAREST, glc.GL_NEAREST)
 		bindtex(ORIGINAL_SPECTRUM_TEXTURE_UNIT,originalSpectrumTexture, glc.GL_REPEAT, glc.GL_REPEAT, glc.GL_NEAREST, glc.GL_NEAREST)
 		bindtex(FILTERED_SPECTRUM_TEXTURE_UNIT,filteredSpectrumTexture, glc.GL_REPEAT, glc.GL_REPEAT, glc.GL_NEAREST, glc.GL_NEAREST)
-		--bindtex(FILTERED_IMAGE_TEXTURE_UNIT,filteredImageTexture, glc.GL_CLAMP_TO_EDGE, glc.GL_CLAMP_TO_EDGE, glc.GL_NEAREST, glc.GL_NEAREST)
-		bindtex(FILTERED_IMAGE_TEXTURE_UNIT,filteredImageTexture, glc.GL_CLAMP_TO_EDGE, glc.GL_CLAMP_TO_EDGE, glc.GL_LINEAR_MIPMAP_LINEAR, glc.GL_LINEAR)
+		bindtex(FILTERED_IMAGE_TEXTURE_UNIT,filteredImageTexture, glc.GL_CLAMP_TO_EDGE, glc.GL_CLAMP_TO_EDGE, glc.GL_NEAREST, glc.GL_NEAREST)
+		--bindtex(FILTERED_IMAGE_TEXTURE_UNIT,filteredImageTexture, glc.GL_CLAMP_TO_EDGE, glc.GL_CLAMP_TO_EDGE, glc.GL_LINEAR_MIPMAP_LINEAR, glc.GL_LINEAR)
 		bindtex(READOUT_TEXTURE_UNIT,readoutTexture, glc.GL_CLAMP_TO_EDGE, glc.GL_CLAMP_TO_EDGE, glc.GL_NEAREST, glc.GL_NEAREST)
 	end
 	function FF:init()
@@ -495,7 +495,7 @@ local function Filterer(GL,args)
         self:fft(FILTERED_SPECTRUM_TEXTURE_UNIT, filteredImageFramebuffer, RESOLUTION, RESOLUTION, INVERSE);
 		--self:fft(ORIGINAL_SPECTRUM_TEXTURE_UNIT, filteredImageFramebuffer, RESOLUTION, RESOLUTION, INVERSE);
 
-       -- self:output();
+       --self:output();
 	   self:setoldFBO()
     end
 
@@ -517,7 +517,7 @@ local function Filterer(GL,args)
 			end
 			--gl.glViewport(0,0,GL.W,GL.H) --for resize in set_texture
 			gl.glViewport(xoff,yoff,w,h) --for resample in set_texture
-			bindtex(nn,texturebyunit[nn],glc.GL_CLAMP_TO_EDGE, glc.GL_CLAMP_TO_EDGE, glc.GL_LINEAR_MIPMAP_LINEAR, glc.GL_LINEAR)
+			bindtex(nn,texturebyunit[nn],glc.GL_CLAMP_TO_EDGE, glc.GL_CLAMP_TO_EDGE, glc.GL_LINEAR, glc.GL_LINEAR)--glc.GL_LINEAR_MIPMAP_LINEAR, glc.GL_LINEAR)
 		else
 			gl.glViewport(getAspectViewport(GL.W,GL.H,RESOLUTION, RESOLUTION));
 		end
@@ -557,7 +557,7 @@ function GL.init()
 	
 	--tex = tex:resample_fac(0.25)
 	GL:set_WH(tex.width,tex.height)
-	fft = Filterer(GL,{power=false})
+	fft = Filterer(GL,{power=true})
 	fbo = GL:initFBO{no_depth=true}
 	--print_glinfo(GL)
 	GL:DirtyWrap()
@@ -585,8 +585,6 @@ local NM = GL:Dialog("sines",{
 {"freq",100,guitypes.val,{min=0,max=RES/2}},
 {"turns",0,guitypes.dial,{fac=-0.5/math.pi}}
 })
-
-
 
 local tproc,chain,fft
 local Dbox
@@ -635,15 +633,13 @@ function GL.init()
 	local tex = GL:Texture()
 
 	chain = tex:make_chain{tproc,fft}
-	GL:DirtyWrap()
+	--GL:DirtyWrap()
 end
 
 function GL.draw(t,w,h)
 	ut.Clear()
-
 	chain:process({})
 	chain:tex():drawcenter()
-
 end
 
 GL:start()

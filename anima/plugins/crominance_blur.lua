@@ -5,7 +5,7 @@ local function make(GL)
 	local M = plugin.new{res={GL.W,GL.H}}
 	
 	local NM = GL:Dialog("cr",{
-	{"mix",0,guitypes.val,{min=0,max=1}}
+	{"mixv",0,guitypes.val,{min=0,max=1}}
 	})
 	
 	local texproc = require"anima.plugins.texture_processor"(GL,2,NM)
@@ -27,8 +27,8 @@ local function make(GL)
 			vec3 c1lab = sRGB2LAB(c1.rgb);
 			vec3 c2lab = sRGB2LAB(c2.rgb);
 			vec3 res = LAB2sRGB(vec3(c1lab.r,c2lab.g,c2lab.b));
-			return mix(c1,vec4(res,1),mix);
-			//return c1 + (c1- c2)*clarity;
+			return mix(c1,vec4(res,1),mixv);
+			//return c1 + (c1- c2)*mixv;
 		}
 		]])
 	end

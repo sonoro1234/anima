@@ -3,9 +3,11 @@
 local vert_shad = [[
 in vec3 Position;
 in vec2 texcoords;
+out vec2 texcoordsf;
 void main()
 {
-	gl_TexCoord[0] = vec4(texcoords,0,1);
+	texcoordsf = texcoords;
+	//gl_TexCoord[0] = vec4(texcoords,0,1);
 	gl_Position = vec4(Position,1);
 }
 
@@ -20,13 +22,12 @@ uniform float maxdist;
 uniform float stepd = 0.0;
 uniform int mode;
 uniform bool invert;
-
+in vec2 texcoordsf;
 
 
 void main()
 {
-
-	vec4 color = texture2D(tex0,gl_TexCoord[0].st);
+	vec4 color = texture2D(tex0,texcoordsf);
 	float norm = distance(color.rgb,tcolor);
 	float a = smoothstep(maxdist-stepd,maxdist,norm);
 	if(mode == 1)
@@ -34,6 +35,8 @@ void main()
 	if(invert)
 		a = 1.0 - a;
 	gl_FragColor = color*a; //vec4(color.rgb*a,a);
+	//gl_FragColor = vec4(vec3(norm),1.0);
+	//gl_FragColor = vec4(vec3(a),1);
 	//gl_FragColor = vec4(color.rgb,color.a*a);	
 }
 ]]
@@ -50,6 +53,7 @@ uniform int mode;
 uniform bool invert;
 
 vec3 labscale = vec3(1.0/100.0,1.0/115.0,1.0/115.0);
+//vec3 labscale = vec3(1.0/100.0,1.0/30.0,1.0/30.0);
 //a* is -79 to 94, and the range of b* is -112 to 93
 vec3 laboffset = vec3(0.0,0.5,0.5);
 float LabDistance(vec3 col1,vec3 col2){
@@ -59,23 +63,23 @@ float LabDistance(vec3 col1,vec3 col2){
 	collab1 = collab1*labscale + laboffset;
 	collab2 = collab2*labscale + laboffset;
 	
-	//return distance(collab1,collab2);
-	return distance(collab1.yz,collab2.yz);
+	return distance(collab1,collab2);
+	//return distance(collab1.yz,collab2.yz);
 
 }
-
+in vec2 texcoordsf;
 
 void main()
 {
-
-	vec4 color = texture2D(tex0,gl_TexCoord[0].st);
+	vec4 color = texture2D(tex0,texcoordsf);
 	float norm = LabDistance(color.rgb,tcolor);
 	float a = smoothstep(maxdist-stepd,maxdist,norm);
 	if(mode == 1)
 		a = clamp(norm/maxdist,0.0,1.0);
 	if(invert)
 		a = 1.0 - a;
-	gl_FragColor = color*a; //vec4(color.rgb*a,a); 
+	gl_FragColor = color*a; //vec4(color.rgb*a,a);
+	//gl_FragColor = vec4(vec3(norm),1.0);	
 }
 ]]
 
@@ -88,24 +92,43 @@ uniform float stepd = 0.0;
 uniform int mode;
 uniform bool invert;
 
+float Hdist(float a,float b){
+	float d = abs(a-b);
+	float d2 = 1.0-d;
+	return min(d,d2);
+}
+
 float HSVDistance(vec3 col1,vec3 col2){
 	vec3 collab1 = RGB2HSV(sRGB2RGB(col1));
 	vec3 collab2 = RGB2HSV(sRGB2RGB(col2));
-
-	return distance(collab1.x,collab2.x);
+	//vec3 collab1 = RGB2HSV(col1);
+	//vec3 collab2 = RGB2HSV(col2);
+	//vec3 collab1 = sRGB2RGB(col1);
+	//vec3 collab2 = sRGB2RGB(col2);
+	float hdis = Hdist(collab1.x, collab2.x);
+	vec3 v = (collab1 - collab2);
+	return length(vec3(hdis,v.y,v.z));
+	//return distance(collab1.y,collab2.y);
+	//return distance(col1,col2);
+	//return clamp(distance(collab1.x,collab2.x),0.0,1.0);
+	//return distance(collab1.x,collab2.x);
 }
-
+in vec2 texcoordsf;
 void main()
 {
-
-	vec4 color = texture2D(tex0,gl_TexCoord[0].st);
+	vec4 color = texture2D(tex0,texcoordsf);
+	//vec4 color = texture2D(tex0,gl_TexCoord[0].st);
 	float norm = HSVDistance(color.rgb,tcolor);
 	float a = smoothstep(maxdist-stepd,maxdist,norm);
 	if(mode == 1)
 		a = clamp(norm/maxdist,0.0,1.0);
 	if(invert)
 		a = 1.0 - a;
+	//gl_FragColor = vec4(vec3(a),1);
 	gl_FragColor = color*a; //vec4(color.rgb*a,a); 
+	//gl_FragColor = vec4(vec3(norm),1.0);
+	//gl_FragColor = vec4(RGB2sRGB(HSV2RGB(RGB2HSV(sRGB2RGB(color.rgb)))),1);
+	//gl_FragColor = vec4(HSV2RGB(RGB2HSV(color.rgb)),1);
 }
 ]]
 
@@ -244,20 +267,18 @@ end
 
 --[=[
 require"anima"
-GL = GLcanvas{H=1080,viewH=700,aspect=1.5,SDL=true}
-trans = make(GL)
+local GL = GLcanvas{H=1080,viewH=700,aspect=1.5,SDL=false}
+GLSL.default_version = "#version 400\n"
+local trans
 local textura
 function GL.init()
-	textura = GL:Texture()
-	print(textura)
-	textura = textura:Load[[C:\luagl\media\cara2.png]]
-	--textura = textura:Load[[G:\VICTOR\pelis\hadas\master1080\teatrito\frame-0001.tif]]
+	textura = GL:Texture():Load[[C:\luagl\media\cara2.png]]
+	GL:set_WH(textura.width,textura.height)
+	trans = make(GL)
 end
 
 function GL.draw(t,w,h)
-
 	trans:draw(t,w,h,{clip={textura}})
-
 end
 
 GL:start()

@@ -166,7 +166,7 @@ uniform float     iTime;           // shader playback time (in seconds)
 uniform float     iTimeDelta;            // render time (in seconds)
 uniform int       iFrame;                // shader playback frame
 uniform float     iChannelTime[4];       // channel playback time (in seconds)
-uniform vec3      iChannelResolution[4]; // channel resolution (in pixels)
+uniform vec3      iChannelResolution[1]; // channel resolution (in pixels)
 uniform vec4      iMouse;                // mouse pixel coords. xy: current (if MLB down), zw: click
 uniform sampler2D iChannel0;          // input channel. XX = 2D/Cube
 uniform sampler2D iChannel1;          // input channel. XX = 2D/Cube
@@ -236,7 +236,7 @@ GL = GLcanvas{H=800,aspect=1.5}
 local textura
 local emboss
 function GL.init()
-	textura = Texture():Load([[G:\VICTOR\pelis\pelipino\master1080\muro\frame-0001.tif]],false,true)
+	textura = GL:Texture():Load([[c:\luagl\pelis\pelipino\master1080\muro\frame-0001.tif]],false,true)
 	emboss = make(GL)
 end
 function GL.draw(t,w,h)
