@@ -569,7 +569,7 @@ local function cdataser(val)
 	-- return Y[0]
 	return [[(function() local Y = ffi.typeof("]]..tyst..[[")();ffi.copy(Y,"]]..s..[[",]]..len..[=[);return Y; end)()]=]
 end
-cdataser = require"anima.cdataser"
+cdataser = require"anima.cdataser0"
 local function cdataSerialize(cd)
 	if ffi.istype("float[1]", cd) then
 		return table.concat{[[ffi.new('float[1]',]],cd[0],[[)]]}
