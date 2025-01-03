@@ -505,7 +505,7 @@ local function Editor(GL,updatefunc,args)
 	return M
 end
 
----[=[
+--[=[
 local GL = GLcanvas{H=500,aspect=1,DEBUG=true,use_imgui_viewport=true}
 local function update(n) print("update spline",n) end
 local edit = Editor(GL,update,{region=true})--,doblend=true})
