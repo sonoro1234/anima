@@ -278,90 +278,7 @@ function tb2st(t)
 	end
 	return(_tb2st(t))
 end
--- very readable and now suited for cyclic tables
-local kw = {['and'] = true, ['break'] = true, ['do'] = true, ['else'] = true,
-	['elseif'] = true, ['end'] = true, ['false'] = true, ['for'] = true,
-	['function'] = true, ['goto'] = true, ['if'] = true, ['in'] = true,
-	['local'] = true, ['nil'] = true, ['not'] = true, ['or'] = true,
-	['repeat'] = true, ['return'] = true, ['then'] = true, ['true'] = true,
-	['until'] = true, ['while'] = true}
-function tb2st_serialize(t)
-	local function sorter(a,b)
-        if type(a)==type(b) then 
-            return a<b 
-        elseif type(a)=="number" then
-            return true
-        else
-            assert(type(b)=="number")
-            return false
-        end
-    end
-	local function serialize_key(val, dodot)
-		local dot = dodot and "." or ""
-		if type(val)=="string" then
-			if val:match '^[_%a][_%w]*$' and not kw[val] then
-				return dot..tostring(val)
-			else
-				return "[\""..tostring(val).."\"]"
-			end
-		elseif (not dodot) and (type(val) == "number") and (math.floor(val)==val) then
-			return  --array index
-		else
-			return "["..tostring(val).."]"
-		end
-	end
-	local function serialize_key_name(val)
-		return serialize_key(val, true)
-	end
-	local insert = table.insert
-	local function _tb2st(t,saved,sref,level,name)
-		saved = saved or {}		-- initial value
-		level = level or 0
-		sref = sref or {}
-		name = name or "t"
-		if type(t)=="table" then
-			if saved[t] then
-				sref[#sref+1] = {saved[t],name}
-				return"nil"
-			else
-				saved[t] = name
 
-				local ordered_keys = {}
-				for k,v in pairs(t) do
-					insert(ordered_keys,k)
-				end
-				table.sort(ordered_keys,sorter)
-				
-				local str2 = {}
-				insert(str2,"{")
-				for _,k in ipairs(ordered_keys) do
-					local v = t[k]
-					local kser = serialize_key(k)
-					insert(str2, (kser and (kser .."=") or ""))
-					if type(v)~="table" then
-						insert(str2, basicSerialize(v))
-					else
-						local name2 = name .. serialize_key_name(k)
-						insert(str2,_tb2st(v,saved,sref,level+1,name2))
-					end
-					insert(str2, ",")
-				end
-				str2[#str2] = "}"
-				if level == 0 then
-					insert(str2, 1,"local ffi = require'ffi'\nlocal t=")
-					for i,v in ipairs(sref) do 
-						insert(str2, "\n"..v[2].."="..v[1])
-					end
-					insert(str2,"\n return t")
-				end
-				return table.concat(str2)
-			end
-		else
-			return basicSerialize(t)
-		end
-	end
-	return(_tb2st(t))
-end
 function tb2stSerialize(t)
 	local function _tb2st(t,saved)
 		saved = saved or {}
@@ -614,7 +531,96 @@ function basicSerialize (o)
 		return tostring(o) --"nil"
     end
 end
+-- very readable and now suited for cyclic tables
+local kw = {['and'] = true, ['break'] = true, ['do'] = true, ['else'] = true,
+	['elseif'] = true, ['end'] = true, ['false'] = true, ['for'] = true,
+	['function'] = true, ['goto'] = true, ['if'] = true, ['in'] = true,
+	['local'] = true, ['nil'] = true, ['not'] = true, ['or'] = true,
+	['repeat'] = true, ['return'] = true, ['then'] = true, ['true'] = true,
+	['until'] = true, ['while'] = true}
+function tb2st_serialize(t,options)
+	options = options or {}
+	local function sorter(a,b)
+        if type(a)==type(b) then 
+            return a<b 
+        elseif type(a)=="number" then
+            return true
+        else
+            assert(type(b)=="number")
+            return false
+        end
+    end
+	local function serialize_key(val, dodot, pretty)
+		local dot = dodot and "." or ""
+		if type(val)=="string" then
+			if  val:match '^[_%a][_%w]*$' and not kw[val] then
+				return dot..tostring(val)
+			else
+				return "[\""..tostring(val).."\"]"
+			end
+		elseif (not pretty) and (not dodot) and (type(val) == "number") and (math.floor(val)==val) then
+			return  --array index
+		else
+			return "["..tostring(val).."]"
+		end
+	end
+	local function serialize_key_name(val)
+		return serialize_key(val, true)
+	end
+	local insert = table.insert
+	local function _tb2st(t,saved,sref,level,name)
+		saved = saved or {}		-- initial value
+		level = level or 0
+		sref = sref or {}
+		name = name or "t"
+		if type(t)=="table" then
+			if saved[t] then
+				sref[#sref+1] = {saved[t],name}
+				return"nil"
+			else
+				saved[t] = name
 
+				local ordered_keys = {}
+				for k,v in pairs(t) do
+					insert(ordered_keys,k)
+				end
+				table.sort(ordered_keys,sorter)
+				
+				local str2 = {}
+				insert(str2,"{")
+				if options.pretty then insert(str2,"\n") end
+				for _,k in ipairs(ordered_keys) do
+					if options.pretty then insert(str2,("  "):rep(level+1)) end
+					local v = t[k]
+					local kser = serialize_key(k, nil, options.pretty)
+					insert(str2, (kser and (kser .."=") or ""))
+					if type(v)~="table" then
+						insert(str2, basicSerialize(v))
+					else
+						local name2 = name .. serialize_key_name(k)
+						insert(str2,_tb2st(v,saved,sref,level+1,name2))
+					end
+					if options.pretty then insert(str2,",\n") else insert(str2, ",") end
+				end
+				str2[#str2] = "}"
+				if level == 0 then
+					insert(str2, 1,"local ffi = require'ffi'\nlocal t=")
+					for i,v in ipairs(sref) do 
+						insert(str2, "\n"..v[2].."="..v[1])
+					end
+					insert(str2,"\n return t")
+				end
+				return table.concat(str2)
+			end
+		else
+			return basicSerialize(t)
+		end
+	end
+	return(_tb2st(t))
+end
+-- local a = {1,2,3,{11,12,13},casa="mia",6,["return"]=66}
+-- a[2] = a
+--print(tb2st_serialize(a,{pretty=true}))
 function basicToStr (o)
     if type(o) == "number" then
 		return string.format("%.17g", o)
