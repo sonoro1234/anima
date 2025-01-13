@@ -429,9 +429,9 @@ function GLSL:getunif()
 		local typename = uniform_types[tipo[0]] and uniform_types[tipo[0]].name or "UNKNOWN_TYPE"
 		print(i,loc,string.format("%".. bufsize[0] .."s",namel),size[0],tipo[0],typename)
 		if loc >= 0 and tipo[0] == glc.GL_IMAGE_BUFFER then
-		local val = ffi.new("GLint[1]")
-		glext.glGetUniformiv(self.program,loc,val)
-		print("binding",val[0])
+			local val = ffi.new("GLint[1]")
+			glext.glGetUniformiv(self.program,loc,val)
+			print("binding",val[0])
 		end
 		assert(uniform_types[tipo[0]],"tipo desconocido")
 	end
@@ -1340,7 +1340,30 @@ function image2D(w,h,type,data)
 	end
 	return im
 end
+function image2DArray(w,h,l,type)
+	type = type or "GL_RGBA"
+	local type32f = type.."32F"
+	if type=="GL_RED" then type32f = "GL_R32F" end
 
+	local tex = ffi.new("GLuint[1]")
+	gl.glGenTextures(1, tex);
+	gl.glBindTexture(glc.GL_TEXTURE_2D_ARRAY, tex[0]);
+	glext.glTexStorage3D(glc.GL_TEXTURE_2D_ARRAY, 1, glc[type32f], w, h, l)
+	
+	gl.glBindTexture(glc.GL_TEXTURE_2D_ARRAY, 0);
+	local im = {tex=tex[0]}
+	function im:Bind(unit,mode)
+		mode = mode or glc.GL_READ_WRITE
+		unit = unit or 0
+		glext.glBindImageTexture(unit, self.tex, 0, glc.GL_FALSE, 0, mode,glc[type32f]);
+	end
+	function im:BindT(unit)
+		glext.glActiveTexture(glc.GL_TEXTURE0 + unit);
+		--if not self.GL.restricted then gl.glEnable( glc.GL_TEXTURE_2D ); end
+		gl.glBindTexture(glc.GL_TEXTURE_2D, self.tex)
+	end
+	return im
+end
 --transform feedback with ping-pong
 function TFV(t,prog_update,update_vao)
 	local tfb = {}
