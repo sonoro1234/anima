@@ -25,6 +25,9 @@
 [submodule "LuaJIT-rtaudio"]
 	path = LuaJIT-rtaudio
 	url = https://github.com/sonoro1234/LuaJIT-rtaudio.git
+[submodule "LuaJIT-rtmidi"]
+	path = LuaJIT-rtmidi
+	url = https://github.com/sonoro1234/LuaJIT-rtmidi.git
 [submodule "LuaJIT"]
 	path = LuaJIT/LuaJIT
 	url = https://github.com/LuaJIT/LuaJIT.git

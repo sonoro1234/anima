@@ -27,6 +27,7 @@ option(ANIMA_BUILD_IMGUI "Build LuaJIT-IMGUI" ON)
 option(ANIMA_BUILD_FREETYPE "Build LuaJIT-freetype" ON)
 option(ANIMA_BUILD_SNDFILE "Build LuaJIT-libsndfile" ON)
 option(ANIMA_BUILD_RTAUDIO "Build LuaJIT-rtaudio" OFF)
+option(ANIMA_BUILD_RTMIDI "Build LuaJIT-rtmidi" OFF)
 
 # This function is used to force a build on a dependant project at cmake configuration phase.
 # 
@@ -137,6 +138,10 @@ add_subdirectory(LuaJIT-rtaudio)
 #message("LuaJIT-rtaudio HAVE_GETTIMEOFDAY " ${HAVE_GETTIMEOFDAY})
 endif(ANIMA_BUILD_RTAUDIO)
 
+if(ANIMA_BUILD_RTMIDI)
+add_subdirectory(LuaJIT-rtmidi)
+endif(ANIMA_BUILD_RTMIDI)
+
 add_subdirectory(luajit-async)
 
 if(NOT LUAJIT_WINDOW_ONLY)
@@ -168,6 +173,7 @@ install(FILES luafilesystem/lfs_ffi.lua luafilesystem/lfs.lua DESTINATION ${LUAJ
 install(FILES ffi-reflect/reflect.lua DESTINATION ${LUAJIT_BIN}/lua)
 install(DIRECTORY LuaJIT-ImGui/examples DESTINATION ${LUAJIT_BIN}/examples/LuaJIT-ImGui)
 install(DIRECTORY LuaJIT-rtaudio/samples DESTINATION ${LUAJIT_BIN}/examples/LuaJIT-rtaudio)
+install(DIRECTORY LuaJIT-rtmidi/examples DESTINATION ${LUAJIT_BIN}/examples/LuaJIT-rtmidi)
 install(DIRECTORY LuaJIT-SDL2/test DESTINATION ${LUAJIT_BIN}/examples/LuaJIT-SDL2)
 install(DIRECTORY LuaJIT-SDL3/test DESTINATION ${LUAJIT_BIN}/examples/LuaJIT-SDL3)
 install(DIRECTORY luajit-async/tests DESTINATION ${LUAJIT_BIN}/examples/luajit-async)
