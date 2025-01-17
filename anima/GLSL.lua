@@ -928,7 +928,7 @@ end
 --------------different version of VBO
 function VBOk(kind)
 	kind = kind or glc.GL_ARRAY_BUFFER
-	local tVbo = {isVBO=true}
+	local tVbo = {isVBO=true,kind=kind}
 	tVbo.vbo = ffi.new("GLuint[1]",1)
 	glext.glGenBuffers(1, tVbo.vbo);
 	tVbo.handle = tVbo.vbo[0]
@@ -941,6 +941,12 @@ function VBOk(kind)
 		self:Bind(kind)
 		self.b_size = size or ffi.sizeof(values)
 		glext.glBufferData(kind,self.b_size,values, usage);
+	end
+	function tVbo:BufferStorage(values,usage,size)
+		usage = usage or glc.GL_DYNAMIC_DRAW
+		self:Bind(kind)
+		self.b_size = size or ffi.sizeof(values)
+		glext.glBufferStorage(kind,self.b_size,values, usage);
 	end
 	function tVbo:BindBufferBase(bind)
 		--kind = GL_ATOMIC_COUNTER_BUFFER, GL_TRANSFORM_FEEDBACK_BUFFER, GL_UNIFORM_BUFFER or GL_SHADER_STORAGE_BUFFER.
@@ -960,7 +966,9 @@ function VBOk(kind)
 		flags = flags or glc.GL_MAP_READ_BIT --,bit.bor(glc.GL_MAP_READ_BIT, glc.GL_MAP_INVALIDATE_BUFFER_BIT)
 		local ptr = glext.glMapBufferRange(kind,off,size,flags);
 		func(ptr)
+		--if not bit.bor(flags,glc.GL_MAP_PERSISTENT_BIT) then
 		glext.glUnmapBuffer(kind);
+		--end
 	end
 	function tVbo:delete()
 		glext.glDeleteBuffers(1,tVbo.vbo)
