@@ -1412,7 +1412,11 @@ function gui.SetImGui(GL)
 		name = number_name(name)
 		local NM = gui.Dialog(name,def,func,invisible)
 		self.imguimodals[#self.imguimodals + 1] = NM
+		local index = #self.imguimodals
 		NM.GL = self
+		function NM.close()
+			table.remove(self.imguimodals,index)
+		end
 		return NM
 	end
 	function GL:DialogBox(name,autosaved)

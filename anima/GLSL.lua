@@ -1,5 +1,9 @@
 --------------------------------GLSL
+local gllib = require"gl"
+local gl, glc, glu, glext = gllib.libraries()
 
+-- local eeee = {} --to check globals in this file
+-- for k,v in pairs(_G) do eeee[k]=v end
 
 local t = 
 {	GL_FLOAT = {1,'glUniform1fv'},
@@ -1469,3 +1473,5 @@ function MakeGLGlobal()
 	end
 	setmetatable(_G,glmeta)
 end
+
+--for k,v in pairs(_G) do if not eeee[k] then print(k,v) end end
