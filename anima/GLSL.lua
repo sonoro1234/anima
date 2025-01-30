@@ -1,6 +1,6 @@
 --------------------------------GLSL
-local gllib = require"gl"
-local gl, glc, glu, glext = gllib.libraries()
+-- local gllib = require"gl"
+-- local gl, glc, glu, glext = gllib.libraries()
 
 -- local eeee = {} --to check globals in this file
 -- for k,v in pairs(_G) do eeee[k]=v end
