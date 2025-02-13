@@ -14,7 +14,7 @@
 	path = LuaJIT-ImGui
 	url = https://github.com/sonoro1234/LuaJIT-ImGui
 [submodule "LuaJIT-libsndfile"]
-	path = luajit-libsndfile
+	path = LuaJIT-libsndfile
 	url = https://github.com/sonoro1234/LuaJIT-libsndfile
 [submodule "mirror-im"]
 	path = mirror-im
