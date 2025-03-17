@@ -371,7 +371,7 @@ local function GuiInitSDL(GL)
 
 		--GL.Impl.MouseButtonCallback(win, button, action, mods)
 		--dont process mouse if used by imgui
-		if imgui.igGetIO().WantCaptureMouse then return end
+		if ig.GetIO().WantCaptureMouse then return end
 		
 		if button == sdl.BUTTON_RIGHT then
 			GL.mouse_but[2] = (action == sdl.PRESSED) and 1 or 0
@@ -512,7 +512,7 @@ local function GuiInitGLFW(GL)
 		
 		GL.Impl.MouseButtonCallback(win, button, action, mods)
 		--dont process mouse if used by imgui
-		if imgui.igGetIO().WantCaptureMouse then return end
+		if ig.GetIO().WantCaptureMouse then return end
 		
 		if button == glfwc.GLFW_MOUSE_BUTTON_2 then
 			GL.mouse_but[2] = (action == glfwc.GLFW_PRESS) and 1 or 0

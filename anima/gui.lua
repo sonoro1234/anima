@@ -1373,13 +1373,14 @@ function gui.SetImGui(GL)
 		--local theFONT = FontsAt:AddFontFromFileTTF([[C:\luaGL\gitsources\Fonts\Anonymous-Pro\Anonymous_pro.ttf]],12,fnt_cfg,rangescyr)
 		assert(theFONT ~= nil)
 		--theFONT.DisplayOffset.y = theFONT.DisplayOffset.y +1
-		imgui.igGetIO().FontDefault = theFONT
+		--imgui.igGetIO().FontDefault = theFONT
+		ig.GetIO().FontDefault = theFONT
 		--]=]
 		if imguifontloader then imguifontloader() end
 		GL.Ficons:LoadFont() 
 		--FyndGlyph in GetCursors needs frame to work!!
 		print"Fonts"
-		local cfg_data = FontsAt.ConfigData
+		local cfg_data = FontsAt.Sources --ConfigData
 		for i=0,cfg_data.Size-1 do
 			print(i,ffistr(cfg_data.Data[i].Name))
 		end
