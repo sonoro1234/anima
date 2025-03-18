@@ -20,9 +20,9 @@ local NM = GL:Dialog("juliaS",{
 {"useShadow",true,guitypes.toggle},
 {"useAO",true,guitypes.toggle},
 },function() 
-	local vL = ffi.new("vec3",{-Ldir[1],-Ldir[2],-Ldir[3]})
+	local vL = ffi.new("vec3",{Ldir[1],Ldir[2],Ldir[3]})
 	if ig.gizmo3D("###guizmoL",vL,150,imgui.modeDirection) then
-		Ldir = {-vL.x,-vL.y,-vL.z}
+		Ldir = {vL.x,vL.y,vL.z}
 	end
 	if ig.gizmo3D("###guizmo0",position,Quat,150,imgui.mode3Axes + imgui.cubeAtOrigin) then
 		local m4f = ig.mat4_cast(Quat)
