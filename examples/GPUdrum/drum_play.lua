@@ -79,7 +79,7 @@ local function set_odev(API,dev)
 	end
 	local audioframedur = nFrames/SR
 	local aufr_per_glfr = math.ceil(glframedur/audioframedur)
-	clip = phys(GL,nFrames,aufr_per_glfr,SR,NNx,ud, midi_in)
+	clip = phys(GL,nFrames,aufr_per_glfr,SR,NNx,ud, midi_in, close)
 	clip:init({recordNo="grabar.wav",hexa=HEXA[0]})
 	local errty = dac:start_stream()
 	if errty~=rt.ERROR_NONE then
