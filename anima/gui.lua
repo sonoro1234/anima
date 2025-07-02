@@ -940,9 +940,10 @@ function gui.FontIcons(GL,source,ranges,size)
 	function FAicons:Button(cp,ID)
 		--local glyph = self.font:FindGlyphNoFallback(cp + self.ranges[0])
 		--if glyph==nil then print("bad codepoint",cp);return false end
-		local glyph = self.font:FindGlyph(cp + self.ranges[0])
+		local fontbaked = self.font:GetFontBaked(self.size)
+		local glyph = fontbaked:FindGlyph(cp + self.ranges[0])
 		ID = ID or tostring(cp)
-		local ret = ig.ImageButton(ID,self.atlas.TexID, ig.ImVec2(self.size,self.size), ig.ImVec2(glyph.U0,glyph.V0), ig.ImVec2(glyph.U1,glyph.V1), ig.ImVec4(0,0,0,0), ig.ImVec4(1,1,1,1));
+		local ret = ig.ImageButton(ID,self.atlas.TexData:GetTexRef(), ig.ImVec2(self.size,self.size), ig.ImVec2(glyph.U0,glyph.V0), ig.ImVec2(glyph.U1,glyph.V1), ig.ImVec4(0,0,0,0), ig.ImVec4(1,1,1,1));
 		return ret
 	end
 	
@@ -954,27 +955,29 @@ function gui.FontIcons(GL,source,ranges,size)
 		-- local img = ffi.new("unsigned char[?]",self.atlas.TexWidth * self.atlas.TexHeight * 4)
 		-- gl.glBindTexture(glc.GL_TEXTURE_2D,ffi.cast("GLuint",self.atlas.TexID))
 		-- gl.glGetTexImage(glc.GL_TEXTURE_2D,0,glc.GL_RGBA,glc.GL_UNSIGNED_BYTE,img);
-		print("atlas data",FAicons.atlas.TexWidth,FAicons.atlas.TexHeight)
+		local TexWidth = FAicons.atlas.TexData.Width
+		local TexHeight = FAicons.atlas.TexData.Height
+		print("atlas data",TexWidth, TexHeight)
 		--local imgp = ffi.new("unsigned char*[1]")
 		local wi = ffi.new("int[1]")
 		local hi = ffi.new("int[1]")
 		--self.atlas:GetTexDataAsRGBA32(imgp,wi,hi)
 		local atlas = ig.GetIO().Fonts
 		
-		local img = ffi.cast("unsigned char*",atlas.TexPixelsRGBA32)
-		--print("wi,hi",wi[0],hi[0])
-		--local img = imgp[0]
+		--local img = ffi.cast("unsigned char*",atlas.TexPixelsRGBA32)
+		local img = ffi.cast("unsigned char*",atlas.TexData.Pixels)
 
 		local cursors = {}
 		
+		local fontbaked = self.font:GetFontBaked(self.size)
 		for k,cp in pairs(cps) do
-			local glyph = self.font:FindGlyphNoFallback(cp + self.ranges[0])
+			local glyph = fontbaked:FindGlyphNoFallback(cp + self.ranges[0])
 			assert(glyph~=nil,"no glyph!! "..(cp + self.ranges[0]))
-			local basex = math.floor(glyph.U0*self.atlas.TexWidth)
-			local basey = math.floor(glyph.V0*self.atlas.TexHeight)
-			local width = math.floor((glyph.U1-glyph.U0)*self.atlas.TexWidth)
-			local height = math.floor((glyph.V1-glyph.V0)*self.atlas.TexHeight)
-			print("glyph data",width,height,self.atlas.TexWidth,self.atlas.TexHeight)
+			local basex = math.floor(glyph.U0*TexWidth)
+			local basey = math.floor(glyph.V0*TexHeight)
+			local width = math.floor((glyph.U1-glyph.U0)*TexWidth)
+			local height = math.floor((glyph.V1-glyph.V0)*TexHeight)
+			print("glyph data",width,height,TexWidth,TexHeight)
 			
 			if not GL.SDL then
 				local image = ffi.new("GLFWimage")
@@ -985,7 +988,7 @@ function gui.FontIcons(GL,source,ranges,size)
 				for i=0,width-1 do
 					for j = 0,height-1 do
 						for p=0,3 do
-							image.pixels[(i + j*width)*4 + p] = img[(basex+i + (basey+j)*self.atlas.TexWidth)*4 + p]
+							image.pixels[(i + j*width)*4 + p] = img[(basex+i + (basey+j)*TexWidth)*4 + p]
 						end
 					end
 				end
@@ -1007,7 +1010,7 @@ function gui.FontIcons(GL,source,ranges,size)
 					for j = 0,height-1 do
 						for p=0,3 do
 							--pixels[(i + j*width)*4 + p] = img[(basex+i + (basey+j)*self.atlas.TexWidth)*4 + p]
-							pixels[i*4 + j*pitch + p] = img[(basex+i + (basey+j)*self.atlas.TexWidth)*4 + p]
+							pixels[i*4 + j*pitch + p] = img[(basex+i + (basey+j)*TexWidth)*4 + p]
 						end
 					end
 				end
@@ -1359,17 +1362,17 @@ function gui.SetImGui(GL)
 		fnt_cfg.PixelSnapH = false
 		fnt_cfg.OversampleH = 1
 		fnt_cfg.OversampleV = 1
-		rangescyr = FontsAt:GetGlyphRangesCyrillic()
-		print("FontsAt:GetGlyphRangesCyrillic()",rangescyr,ffi.sizeof(rangescyr))
-		local totranges = 0
-		for i=0,10000,2 do
-			if rangescyr[i]==0 or rangescyr[i+1]==0 then break end
-			totranges = totranges + rangescyr[i+1] - rangescyr[i] + 1
-		end
-		print("totranges",totranges)
+		--rangescyr = FontsAt:GetGlyphRangesCyrillic()
+		-- print("FontsAt:GetGlyphRangesCyrillic()",rangescyr,ffi.sizeof(rangescyr))
+		-- local totranges = 0
+		-- for i=0,10000,2 do
+			-- if rangescyr[i]==0 or rangescyr[i+1]==0 then break end
+			-- totranges = totranges + rangescyr[i+1] - rangescyr[i] + 1
+		-- end
+		-- print("totranges",totranges)
 		local path = require"anima.path"
 		local fontpath = path.chain(path.animapath(),"fonts","ProggyTiny.ttf")
-		local theFONT = FontsAt:AddFontFromFileTTF(fontpath, 10,fnt_cfg,rangescyr)
+		local theFONT = FontsAt:AddFontFromFileTTF(fontpath, 10,fnt_cfg)--,rangescyr)
 		--local theFONT = FontsAt:AddFontFromFileTTF([[C:\luaGL\gitsources\Fonts\Anonymous-Pro\Anonymous_pro.ttf]],12,fnt_cfg,rangescyr)
 		assert(theFONT ~= nil)
 		--theFONT.DisplayOffset.y = theFONT.DisplayOffset.y +1
