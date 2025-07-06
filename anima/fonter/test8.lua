@@ -4,7 +4,7 @@ local fonter = require"fonter"
 
 local filen = [[C:\anima\lua\anima\fonts\ProggyTiny.ttf]]
 local filen = [[C:\anima\lua\anima\fonts\SilkRemington-SBold.ttf]]
---local filen = [[C:\anima\lua\anima\fonts\fontawesome-webfont.ttf]]
+local filen = [[C:\anima\lua\anima\fonts\fontawesome-webfont.ttf]]
 --local filen = [[C:\anima\lua\anima\fonts\fa-solid-900.ttf]]
 --local filen = [[C:\anima\lua\anima\fonts\verdana.ttf]]
 --local filen = [[C:\anima\lua\anima\fonts\seguiemj.ttf]]
@@ -27,9 +27,13 @@ local ch1=string.byte"D"
 	--{61724,62000}
 	--{61724,0xFFFF}
 	--{61400,0xFFFF}
-	{0,0xFFFF}
+	--{0,0xFFFF}
+	--{0,0x10FFFF}
+	--{0,128120}
+	--{128121, 128121}
+	--{199,199}
 	--{62524,62524}
-	--{61726,61726} --flagchecked
+	{61726,61726} --flagchecked
 	
 	--{61886,61886}
 	--{61580,61580} --lined
@@ -53,6 +57,7 @@ local ch1=string.byte"D"
 	--{61926,61926} --W
 	--{61937,61937} --W
 	--{61940,61940} --paypal
+	--{61612,61612} --globe
 	--{61970,61970} --W
 	--{62012,62012} --W
 	--{62042,62042} --W
@@ -62,7 +67,7 @@ local ch1=string.byte"D"
 	--{62142,62142} --W
 	--{61580, 61580} --linkedin
 	}
-	,1024*4,5,false)--,{{35,35}})
+	,1024*4,10,false)--,{{35,35}})
 --local f1 = fonter.new_face(filen,{{ch1,ch1}},1024*4,5)
 --ProfileStop()
 

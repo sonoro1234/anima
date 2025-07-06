@@ -376,11 +376,17 @@ local function check_collinear(poly)
 	for i=1,numpt do
 		local ang,conv,s,cose = CG.Angle(poly[mod(i-1,numpt)],poly[i],poly[mod(i+1,numpt)])
 		if s==0 then  
+			-- local ang2,conv2,s2,cose2 = CG.Angle(poly[mod(i+1,numpt)],poly[i],poly[mod(i-1,numpt)])
+			-- if s2~=0 then
+				-- print("rev colin",s,s2,poly[mod(i-1,numpt)],poly[i],poly[mod(i+1,numpt)])
+				-- print(ang,conv,s,cose)
+				-- print(ang2,conv2,s2,cose2)
+			-- end
 			if cose<0 then
-				print("collinear on",i)
+				print("collinear1 on",i)
 				error"collinear"
 			elseif poly[mod(i-1,numpt)]==poly[mod(i+1,numpt)] then --cose>0 and repeated
-				print("collinear on",i)
+				print("collinear2 on",i)
 				error"collinear"
 			end
 		end
