@@ -70,6 +70,24 @@ local function Editor(GL,updatefunc,args)
 		local X1,Y1 = GL:ViewportToScreen(X,Y)
 		return ig.ImVec2(X1,sh-Y1)
 	end
+	local function PolyArrow(dl, points, numpoints, color)
+		local lenh = 10
+		local lena = 1/math.sqrt(3)
+		for i=0,numpoints-2 do
+			dl:AddLine(points[i],points[i+1],color)
+			local vec = points[i] - points[i+1]
+			vec = vec*(lenh/#vec)
+			local veca = ig.ImVec2(vec.y,-vec.x)*lena
+			local vecb = ig.ImVec2(-vec.y,vec.x)*lena
+			dl:AddTriangleFilled(points[i+1], points[i+1] + vec + veca, points[i+1] + vec + vecb, color)
+		end
+		dl:AddLine(points[numpoints-1],points[0],color)
+		local vec = points[numpoints-1] - points[0]
+		vec = vec*(lenh/#vec)
+		local veca = ig.ImVec2(vec.y,-vec.x)*lena
+		local vecb = ig.ImVec2(-vec.y,vec.x)*lena
+		dl:AddTriangleFilled(points[0], points[0] + vec + veca, points[0] + vec + vecb, color)
+	end
 	local function ShowSplines(NM)
 		--if numsplines==0 then return end
 		local igio = ig.GetIO()
@@ -78,13 +96,14 @@ local function Editor(GL,updatefunc,args)
 		local keepflags = dl.Flags
 		dl.Flags = bit.band(dl.Flags,bit.bnot(ig.lib.ImDrawListFlags_AntiAliasedLines))
 		--points in curr_spline
-		for i,v in ipairs(M.sccoors[NM.curr_spline]) do
-			local scpoint = ViewportToScreen(v.x,v.y)
-			local color = i==1 and ig.U32(1,1,0,1) or ig.U32(1,0,0,0.5)
-			dl:AddCircleFilled(scpoint, 4, color)
-		end
 		if curr_hole[0]>0 then
 			for i,v in ipairs(M.sccoors[NM.curr_spline].holes[curr_hole[0]]) do
+				local scpoint = ViewportToScreen(v.x,v.y)
+				local color = i==1 and ig.U32(1,1,0,1) or ig.U32(1,0,0,1)
+				dl:AddCircleFilled(scpoint, 4, color)
+			end
+		else
+			for i,v in ipairs(M.sccoors[NM.curr_spline]) do
 				local scpoint = ViewportToScreen(v.x,v.y)
 				local color = i==1 and ig.U32(1,1,0,1) or ig.U32(1,0,0,1)
 				dl:AddCircleFilled(scpoint, 4, color)
@@ -93,16 +112,18 @@ local function Editor(GL,updatefunc,args)
 		--polylines
 		for i=1,numsplines do
 			local color = i == NM.curr_spline and ig.U32(0.75,1,0,1) or ig.U32(0.75,1,0,0.2) --(0.25,0.5,0,0.5)
+			local color2 = i == NM.curr_spline and ig.U32(0.75,1,0,0.1) or ig.U32(0.75,1,0,0.0) --(0.25,0.5,0,0.5)
+			local colorhole = i == NM.curr_spline and ig.U32(1,0,0,1) or ig.U32(0.75,1,0,0.0) --(0.25,0.5,0,0.5)
 			local pointsI = ffi.new("ImVec2[?]",#M.ps[i])
 			for j,p in ipairs(M.ps[i]) do
 				local scpoint = ViewportToScreen(p.x,p.y)
 				pointsI[j-1] = scpoint
 			end
 			if NM.drawregion then
-				dl:AddConcavePolyFilled(pointsI,#M.ps[i],color)
-			else
-				dl:AddPolyline(pointsI,#M.ps[i],color,ig.lib.ImDrawFlags_Closed, 1)
+				dl:AddConcavePolyFilled(pointsI,#M.ps[i],color2)
 			end
+			--dl:AddPolyline(pointsI, #M.ps[i], color, ig.lib.ImDrawFlags_Closed, 1)
+			PolyArrow(dl, pointsI, #M.ps[i], color)
 			if M.ps[i].holes then
 				for j,hole in ipairs(M.ps[i].holes) do
 					local pointsI = ffi.new("ImVec2[?]",#hole)
@@ -110,7 +131,8 @@ local function Editor(GL,updatefunc,args)
 						local scpoint = ViewportToScreen(p.x,p.y)
 						pointsI[k-1] = scpoint
 					end
-					dl:AddPolyline(pointsI,#hole,color,true, 1)
+					--dl:AddPolyline(pointsI, #hole, colorhole, ig.lib.ImDrawFlags_Closed, 1)
+					PolyArrow(dl, pointsI, #hole, colorhole)
 				end
 			end
 		end
@@ -506,14 +528,18 @@ local function Editor(GL,updatefunc,args)
 end
 
 --[=[
-local GL = GLcanvas{H=500,aspect=1,DEBUG=true,use_imgui_viewport=true}
+local GL = GLcanvas{H=800,aspect=1,DEBUG=true,use_imgui_viewport=false}
 local function update(n) print("update spline",n) end
 local edit = Editor(GL,update,{region=true})--,doblend=true})
 local plugin = require"anima.plugins.plugin"
 edit.fb = plugin.serializer(edit)
+local DBox = GL:DialogBox("Spline demo",true)
+function GL.init()
+	DBox:add_dialog(edit.NM)
+end
 function GL.imgui()
 	--ig.ShowDemoWindow()
-	edit.NM:draw()
+	--edit.NM:draw()
 end
 GL:start()
 --]=]
