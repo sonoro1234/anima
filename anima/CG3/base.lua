@@ -53,6 +53,12 @@ end
 
 M.Angle = Angle
 
+function M.PointInCone(p,a,b,c,d)
+	local sab = Sign(a,b,p)
+	local scd = Sign(c,d,p)
+	return (sab < 0) and (scd > 0)
+end
+
 --say if interiors of segments a-b c-d overlap
 local function SegmentIntersect(a,b,c,d)
 	local sc,sd = Sign(c,b,a),Sign(d,b,a)
@@ -144,7 +150,12 @@ function M.IntersecPoint2(a,b,c,d)
 	
 	return a + t*(b - a), true, t
 end
-
+-- local a = mat.vec2(0,0)
+-- local b = mat.vec2(1,0)
+-- local c = mat.vec2(0.5,0)
+-- local d = mat.vec2(1.5,0)
+-- print(M.SegmentIntersectC(a,b,c,d))
+-- print(M.IntersecPoint(a,b,c,d))
 --tries to get the same as calling IntersecPoint2 twice
 function M.IntersecPoint3(a,b,c,d)
 	local den = (a.x - b.x)*(c.y - d.y) - (a.y - b.y)*(c.x - d.x)
@@ -282,14 +293,7 @@ end
 M.IsPointInPoly = IsPointInPolyCn
 M.IsPointInPolyWn = IsPointInPolyWn
 
-function M.IntersecPoint2(a,b,c,d)
-	local den = (a.x - b.x)*(c.y - d.y) - (a.y - b.y)*(c.x - d.x)
-	if den==0 then return 0,false end
-	local num = (a.x - c.x)*(c.y - d.y) - (a.y - c.y)*(c.x - d.x)
-	local t = num/den
-	
-	return a + t*(b - a), true, t
-end
+
 --triangulation of polygon as a table of vertices
 --EarClip helpers
 --find intersection of c+(1,0) with a-b

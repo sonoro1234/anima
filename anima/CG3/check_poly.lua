@@ -57,6 +57,7 @@ local function check_point_repetition(poly)
 	check_self_consec_repetition(poly)
 	if poly.holes then
 	for nh,hole in ipairs(poly.holes) do
+		check_self_consec_repetition(hole)
 		local repe = check2poly_repetition(poly,hole)
 		if repe then return true end
 		for nh2=nh+1,#poly.holes do
@@ -337,9 +338,9 @@ local function check_crossings(poly,crossings)
 	if poly.holes then
 	for nh,hole in ipairs(poly.holes) do
 		local  cross = check_self_crossings(hole)
-		if #cross > 0 then print(nh,"hole self crossings",#cross) end
+		if #cross > 0 then print("hole",nh,"hole self crossings",#cross) end
 		local cross = check2poly_crossings(poly,hole)
-		if #cross > 0 then print(nh,"poly-hole crossings",#cross) end
+		if #cross > 0 then print("hole",nh,"poly-hole crossings",#cross) end
 		for nh2=nh+1,#poly.holes do
 			local cross = check2poly_crossings(hole,poly.holes[nh2])
 			if #cross > 0 then print(nh,nh2,"hole-hole crossings",#cross) end
@@ -361,11 +362,12 @@ local function check_polyset_crossings(polyset,crossings)
 	return crossings
 end
 
-local function CHECKPOLY(poly)
+local function CHECKPOLY(poly, doerror)
 	local has = check_point_repetition(poly)
 	if has then print"CHECKPOLY point repetition" end
 	local cross = check_crossings(poly)
 	if #cross > 0 then print("CHECKPOLY self crossings",#cross) end
+	if doerror then if has or #cross >0 then error"CHECKPOLY" end end
 	return cross
 end
 

@@ -9,13 +9,15 @@ end
 local function leftmostvertex(poly)
 	local minx = math.huge
 	local mini
+	local point 
 	for i,p in ipairs(poly) do
 		if p.x < minx then
 			minx = p.x
 			mini = i
+			point = p
 		end
 	end
-	return minx,mini
+	return minx,mini,point
 end
 
 local function IsPointInSegment(pt,a,b)
@@ -252,6 +254,7 @@ local function Equiv()
 end
 
 local function InsertHoles(poly,skip_check)
+	--print"InsertHoles"
 	local EQ = Equiv()
 	local algo = require"anima.algorithm.algorithm"
 	local holes = poly.holes
@@ -296,38 +299,76 @@ local function InsertHoles(poly,skip_check)
 	--check hole dont intersect poly or other holes
 	--first poly with holes
 	if not skip_check then
+	--local cc = require"anima.CG3.check_poly"
+	--cc.CHECKPOLY(poly,true)
 	for i,p in ipairs(poly) do
 		for nh,hole in ipairs(holes) do
+			
 			local crossi = {}
+			local pointscross = {}
 			for ih,ph in ipairs(hole) do
-				local inter = CG.SegmentBeginIntersect(p,poly[mod(i+1,#poly)],ph,hole[mod(ih+1,#hole)])
+				--local inter = CG.SegmentBeginIntersect(p,poly[mod(i+1,#poly)],ph,hole[mod(ih+1,#hole)])
+				local inter = CG.SegmentIntersectC(p,poly[mod(i+1,#poly)],ph,hole[mod(ih+1,#hole)])
 				if inter then
 					local pc,ok = IntersecPoint2(p,poly[mod(i+1,#poly)],ph,hole[mod(ih+1,#hole)])
-						
-					crossi[#crossi+1] = {pc=pc,i1=ih,i2=mod(ih+1,#hole)}
+					pointscross[#pointscross+1] = {p,poly[mod(i+1,#poly)],ph,hole[mod(ih+1,#hole)]}
+					local sign = CG.Sign(p,poly[mod(i+1,#poly)],ph) --positive inside, negative outside, 0 is in line
+					crossi[#crossi+1] = {pc=pc,i1=ih,i2=mod(ih+1,#hole),sign=sign}
+					
 					print("hole to insert",nh,"intersects poly on index",i,ih)
+					--print("Sign1",CG.Sign(p,poly[mod(i+1,#poly)],ph))
+					--print("Sign2",CG.Sign(p,poly[mod(i+1,#poly)],hole[mod(ih+1,#hole)]))
 						--assert(ok)
 					if not ok then
-						--print(ph,hole[mod(ih+1,#hole)]);print(ph2,hole2[mod(ih2+1,#hole2)])
-						error"paralelos"
+						print(p,poly[mod(i+1,#poly)],ph,hole[mod(ih+1,#hole)])
+						if CG.IsPointInSegment(p,ph,hole[mod(ih+1,#hole)]) then
+							crossi[#crossi].pc = p
+						elseif(CG.IsPointInSegment(ph,p,poly[mod(i+1,#poly)])) then
+							crossi[#crossi].pc = ph
+						else
+							error"paralelos"
+						end
 					end
 				end
 			end
 			if #crossi>0 then 
 				print("#crossi",#crossi) 
-				assert(#crossi%2==0)
+				--assert(#crossi%2==0)
+				--[==[ --can be odd if point in line
+				if not (#crossi%2==0) then
+					--cc.CHECKPOLY(hole,true)
+					-- for i1,pt in ipairs(hole) do
+						-- print(i1,pt-hole[mod(i1+1,#hole)])
+					-- end
+					prtable(crossi[1])
+					prtable(pointscross)
+					error"odd number of crossings"
+				end
+				--]==]
 				local todel = {}
 				local toins = {}
 				--repair hole deleting points outside
-				for ii=1,#crossi,2 do
-					local ibegin = crossi[ii].i2
-					local iend = crossi[ii+1].i2
-					toins[ibegin] = (crossi[ii].pc + hole[crossi[ii].i1])*0.5
-					toins[iend] = (crossi[ii+1].pc + hole[crossi[ii+1].i2])*0.5
-					local j=ibegin
-					while j~=iend do
-						todel[j] = true
-						j = mod(j+1,#hole)
+				--prtable("hole before",hole)
+				
+				local ii=1
+				while(ii<=#crossi) do
+					if crossi[ii].sign > 0 then
+						local ibegin = crossi[ii].i2
+						local iend = crossi[ii+1].i2
+						toins[ibegin] = 0.99*crossi[ii].pc + 0.01*hole[crossi[ii].i1] 
+						toins[iend] = 0.99*crossi[ii+1].pc + 0.01*hole[crossi[ii+1].i2] 
+						local j=ibegin
+						while j~=iend do
+							todel[j] = true
+							j = mod(j+1,#hole)
+						end
+						ii=ii+2
+					else
+						assert(crossi[ii].sign==0,crossi[ii].sign)
+						local ibegin = crossi[ii].i1
+						toins[ibegin] = 0.99*crossi[ii].pc + 0.01*hole[crossi[ii].i2]
+						todel[ibegin] = true
+						ii=ii+1
 					end
 				end
 				--apply actions
@@ -336,6 +377,7 @@ local function InsertHoles(poly,skip_check)
 					if toins[ii] then table.insert(hole,ii,toins[ii]) end
 				end
 				if #hole==0 then table.remove(holes,nh) end
+				--prtable("hole after",hole)
 			end
 		end
 	end
@@ -395,16 +437,32 @@ local function InsertHoles(poly,skip_check)
 	local bridges = {}
 	local br_equal = {} --same point because of bridge
 	local holes_order = {}
+	
+	local function find_bridges_tween(j)
+		--print("find_bridges_tween",j)
+		assert(EQ:has(j))
+		if bridges[j] then 
+			return br_equal[j]
+		else
+			return br_equal[j-1]-1
+		end
+	end
+	
 	for i,hole in ipairs(holes) do
 		
-		local minx,mini = leftmostvertex(hole)
-		holes_order[i] = {i=i,minx=minx,mini=mini}
+		local minx,mini,point = leftmostvertex(hole)
+		holes_order[i] = {i=i,minx=minx,mini=mini,point=point}
 		--assert(not CG.IsPointInPoly(poly,hole[mini]))
 		--print("hole",i,minx,mini)
 	end
 
 	-- table.sort(holes_order,function(a,b) return a.minx < b.minx end)
-	algo.quicksort(holes_order, 1, #holes_order, function(a,b) return a.minx < b.minx end)
+	algo.quicksort(holes_order, 1, #holes_order, function(a,b)
+													if a.minx==b.minx then
+														return a.point.y > b.point.y
+													end
+													return a.minx < b.minx 
+												end)
 
 	for i,horder in ipairs(holes_order) do
 		--prtable(horder)
@@ -420,21 +478,65 @@ local function InsertHoles(poly,skip_check)
 			--and not bridges[j]
 			-- and not EQ:has(j)
 			then
-				--when p is in bridge we have equal p and p1, choose the one having minv to the left
+				
 				if not EQ:has(j) then
-					sortedp[#sortedp+1] = {j=j,dist=(minv-p):norm()}
+					sortedp[#sortedp+1] = {j=j,dist=(minv-p):norm(),p=p}
 				else
+					--print("--EQ:has",j,bridges[j])
+					--when p is in bridge we have equal p and p1, choose the one having minv to the left
+					
+					--[==[
 					local a,b
 					if bridges[j] then a=j;b=j+1 else a=j-1;b=j end
-					--print("check",j,b,CG.Sign(poly[mod(a,#poly)],poly[mod(b,#poly)],minv))
+					--print("check",j,a,b,CG.Sign(poly[mod(a,#poly)],poly[mod(b,#poly)],minv))
 					if CG.Sign(poly[mod(a,#poly)],poly[mod(b,#poly)],minv) > 0 then
 						sortedp[#sortedp+1] = {j=j,dist=(minv-p):norm()}
 					end
+					--]==]
+					--take the equal greater to complete the hole
+					--[==[
+					local p1 = find_bridges_tween(j)
+					if p1 < j then
+						sortedp[#sortedp+1] = {j=j,dist=(minv-p):norm(),p=p}
+					end
+					--]==]
+					--si minv en cono primer lado coger menor bridge
+					--si en cono ultimo lado coger mayor
+					--si en ninguno deberia haber insterseccion con poly?
+					local found = false
+					local p1 = find_bridges_tween(j)
+					if p1 > j then --first
+						--local a,b = poly[mod(j+1,#poly)], poly[mod(p1-1,#poly)]
+						local a,b,c = p,poly[mod(j+2,#poly)], poly[mod(j+1,#poly)]
+						if CG.PointInCone(minv, c, a, c, b) then
+							found = true
+							sortedp[#sortedp+1] = {j=j,dist=(minv-p):norm(),p=p}
+						end
+					elseif p1 < j then --second
+						--local a,b = poly[mod(j-1,#poly)], poly[mod(j+1,#poly)]
+						local a,b,c = poly[mod(j-1,#poly)],poly[mod(j+1,#poly)],p
+						if CG.PointInCone(minv, c, a, c, b) then
+							found = true
+							sortedp[#sortedp+1] = {j=j,dist=(minv-p):norm(),p=p}
+						end
+					end
+					--CG.SegmentIntersect(minv,poly[dd.j],p,poly[mod(k+1,#poly)])
+					--if not found then	error"---------CHECK intersec" end
 				end
 			end
 		end
+
 		-- table.sort(sortedp,function(a,b) return a.dist < b.dist end)
-		algo.quicksort(sortedp, 1, #sortedp, function(a,b) return a.dist < b.dist end)
+		algo.quicksort(sortedp, 1, #sortedp, function(a,b)
+													-- if a.dist == b.dist then
+														-- return a.p.y < b.p.y
+													-- end
+													return a.dist < b.dist 
+												end)
+		--prtable(sortedp)
+		--prtable("bridges before",bridges)
+		--prtable(br_equal)
+		
 		--test then to find bridge
 		local bridgedone = false
 		for j,dd in ipairs(sortedp) do
@@ -447,7 +549,7 @@ local function InsertHoles(poly,skip_check)
 				end
 			end
 			if found then
-				-- print("create bridge",dd.j,#hole)
+				--print("create bridge",dd.j,#hole)
 				-- prtable(EQ)
 				-- prtable(bridges)
 				-- prtable(br_equal)
@@ -480,12 +582,12 @@ local function InsertHoles(poly,skip_check)
 				local newbr_equal = {}
 				local inc = #hole + 2
 				for k,v in pairs(bridges) do
-					if k > dd.j then
+					if k >= dd.j then
 						--bridges[k] = nil
 						newbridges[k+inc] = true
 						newbr_equal[k+inc] = br_equal[k] > dd.j and (br_equal[k] + inc) or br_equal[k]
 						--newbr_equal[br_equal[k] + inc] = k + inc
-					else
+					elseif k < dd.j then
 						newbridges[k] = true
 						newbr_equal[k] = br_equal[k] > dd.j and (br_equal[k] + inc) or br_equal[k]
 						--newbr_equal[br_equal[k]] = k
@@ -516,6 +618,11 @@ local function InsertHoles(poly,skip_check)
 			end
 		end
 		if not bridgedone then error"not bridge" end
+		
+		-- prtable("bridges after",bridges)
+		-- prtable(br_equal)
+		local co,bb = coroutine.running()
+		if not bb then coroutine.yield(poly,{},true,nil,nil,eartips, convex,angles,ind) end
 	end
 	poly.holes = {}
 	--add reversed br_equal
@@ -532,6 +639,7 @@ local function InsertHoles(poly,skip_check)
 	-- prtable(EQ)
 	-- prtable(bridges)
 	-- prtable(br_equal)
+	--print"end InsertHoles"
 	return poly
 end
 CG.InsertHoles = InsertHoles

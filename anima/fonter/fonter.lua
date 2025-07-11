@@ -2,7 +2,13 @@ local ft = require"freetype"
 local ffi = require"ffi"
 local CG3 = require"anima.CG3"
 local vec2 = mat.vec2
-local printD = function() end
+local DEBUG = false
+local printD
+if DEBUG then
+  printD = print
+else
+  printD = function() end
+end
 local function Vec(a, b)
 	return vec2(a, b)
 end 
@@ -117,10 +123,10 @@ local function face_glyph_outline_to_polyset(face,fosize,glyph_index,steps,outli
 	end
 	
 	--outline:check()
-	--print("outline: contours",outline.n_contours,",points:", outline.n_points)
-	--for i=0,outline.n_points-1 do
-		--print(i,outline.points[i].x,outline.points[i].y,bit.band(outline.tags[i],0x03))
-	--end
+	-- print("outline: contours",outline.n_contours,",points:", outline.n_points)
+	-- for i=0,outline.n_points-1 do
+		-- print(i,outline.points[i].x,outline.points[i].y,outline.tags[i],bit.band(outline.tags[i],0x04))
+	-- end
 	--print"-------contours-----------"
 	local lasti = 0
 	for i=0,outline.n_contours-1 do
@@ -204,7 +210,7 @@ local function face_glyph_outline_to_polyset(face,fosize,glyph_index,steps,outli
 end
 local function face_char_outline_to_polyset(face,fosize,ch,steps,outlinef)
 	local glyph_index = face:char_index(ch )
-	print("------face_char_outline_to_polyset",ch,glyph_index,face:glyph_name(glyph_index,nil,64))
+	printD("------face_char_outline_to_polyset",ch,glyph_index,face:glyph_name(glyph_index,nil,64))
 	return face_glyph_outline_to_polyset(face,fosize,glyph_index,steps,outlinef)
 end
 function M.GetStrPolys(face,str,fosize)
@@ -300,34 +306,36 @@ function M.repair_char1(ch)
 	for i=1,#polyset do
 		printD("--doing repair1",i,"from",#polyset,#polyset[i],"points")
 		if #polyset[i] < 3 then goto continue end
-		local remr,remc = CG3.degenerate_poly_repair(polyset[i],false)
+		local remr,remc = CG3.degenerate_poly_repair(polyset[i],DEBUG)
 		--CHK.CHECKCOLIN(polyset[i])
 		if remr > 0 or remc >0 then printD("degenerate repairs",remr,remc) end
-		if #polyset[i] < 3 then goto continue end
+		if #polyset[i] < 3 then printD("discard poly with less than 3 points");goto continue end
 		local polys = CHK.check_repair_self_crossings(polyset[i])
+		--local polys = {polyset[i]}
 		if #polys > 1 then
 			print("--------------repair self crossings:")
 			print(#polys,"polys returned")
 			for j=1,#polys do
 				printD(j,#polys[j])
-				local remr,remc = CG3.degenerate_poly_repair(polys[j],false)
-				if remr > 0 or remc >0 then printD("degenerate repairs after repir cross",remr,remc) end
+				local remr,remc = CG3.degenerate_poly_repair(polys[j],DEBUG)
+				if remr > 0 or remc >0 then printD("degenerate repairs after repair cross",remr,remc) end
 				-- local cross = CHK.check_self_crossings(polys[j])
 				-- if #cross > 0  then print("bad repairing",j) end
-				CHK.CHECKPOLY(polys[j])
+				CHK.CHECKPOLY(polys[j],true)
 				CHK.CHECKCOLIN(polys[j])
 				table.insert(polyset2, polys[j])	
 			end
 		else
-			local remr,remc = CG3.degenerate_poly_repair(polys[1],false)
+			local remr,remc = CG3.degenerate_poly_repair(polys[1],DEBUG)
 			if remr > 0 or remc >0 then printD("degenerate repairs after repair cross returns 1",remr,remc) end
-			CHK.CHECKPOLY(polys[1])
+			CHK.CHECKPOLY(polys[1],true)
 			CHK.CHECKCOLIN(polys[1])
 			table.insert(polyset2, polys[1])
 		end
 		
 		::continue::
 	end
+	printD("end repair1, num polys", #polyset2)
 	layer.polyset = polyset2
 	end
 end
@@ -347,22 +355,25 @@ function M.repair_char2(ch)
 			local sA = CG3.signed_area(polyset[i])
 			printD("signed area",i,sA,"npoints",#polyset[i])
 			--discard 0 area
-			--if math.abs(sA) > 1e-12 then
-			if math.abs(sA) > 0 then
+			if math.abs(sA) > (M.min_area or 0) then --1e-12 then
+			--if math.abs(sA) > 0 then
 			polyset[i].sA = math.abs(sA)
 			if sA < 0 then
 
 				polyset2[#polyset2+1] = reverse(polyset[i])
-				CG3.degenerate_poly_repair(polyset2[#polyset2],false)
+				CG3.degenerate_poly_repair(polyset2[#polyset2],DEBUG)
+				CHK.CHECKPOLY(polyset2[#polyset2],true)
 				--CHK.CHECKCOLIN(polyset2[#polyset2])
 			else --is hole
 				if M.mode == "polys" then
 					polyset2[#polyset2+1] = reverse(polyset[i])
-					CG3.degenerate_poly_repair(polyset2[#polyset2],false)
+					CG3.degenerate_poly_repair(polyset2[#polyset2],DEBUG)
+					CHK.CHECKPOLY(polyset2[#polyset2],true)
 				else
 					polyset[i].sA = sA
 					table.insert(holes,reverse(polyset[i]))
-					CG3.degenerate_poly_repair(holes[#holes],false)
+					CG3.degenerate_poly_repair(holes[#holes],DEBUG)
+					CHK.CHECKPOLY(holes[#holes],true)
 				end
 			end
 			end
@@ -458,10 +469,11 @@ function M.repair_char2(ch)
 		end
 	--end
 	--ch.polyset = {polyset2[5]}
-	printD("end repair2",#polyset2)
+	
 	for i,p in ipairs(polyset2) do
-		printD(i,p.holes and #p.holes or 0)
+		printD("poly",i,"holes",p.holes and #p.holes or 0)
 	end
+	printD("end repair2 num polys:",#polyset2)
 	layer.polyset = polyset2
 	end
 	--prtable(polyset2)
@@ -485,23 +497,32 @@ function M.char_to_trmeshes(ch)
 			table.remove(ch.polyset[i].holes,1)
 		end
 
-		local cross = CHK.CHECKPOLY(ch.polyset[i])
-		if #cross > 0 then print("char_to_mesh: poly",i,"has crossings",#cross); end
-		CHK.CHECKCOLIN(ch.polyset[i])
+		-- local cross = CHK.CHECKPOLY(ch.polyset[i],true)
+		-- if #cross > 0 then print("char_to_mesh: poly",i,"has crossings",#cross); end
+		-- CHK.CHECKCOLIN(ch.polyset[i])
 		
 		printD("--doing EarClip:")
+		
+		--fontawesome-webfont.ttf: 20+ cross
 		-- ch.polyset[i] = CG3.InsertHoles2(ch.polyset[i],false)
 		-- ch.polyset[i].holes = {}
 		-- local trs,ok,rest,restind = CG3.EarClipSimple(ch.polyset[i]) -- insert1 >7 , insert2 > 10
 		-- local ptsr = ch.polyset[i]
+		
+		--fontawesome-webfont.ttf: 1 cross
 		local ptsr,trs,ok,rest,restind = CG3.EarClipSimple2(ch.polyset[i], true) --7 con false, 2con true,7 true insert2,7 false insert2
+		
+		--fontawesome-webfont.ttf: 3 cross
 		--local ptsr,trs,ok,rest,restind = CG3.EarClipFIST(ch.polyset[i])
 		
-		--ch.polyset[i] = CG3.lexicografic_sort_ind(ch.polyset[i])
-		--local ptsr,trs,ok,rest,restind = ff.EarClipFIST2(ch.polyset[i])
+		--fontawesome-webfont.ttf: 4 cross
+		-- ch.polyset[i] = CG3.lexicografic_sort_ind(ch.polyset[i])
+		-- local ptsr,trs,ok,rest,restind = ff.EarClipFIST2(ch.polyset[i])
+		
 		--assert(ok,ch.cp)
 		if not ok then
 			print("--------------------------bad EarClip-----------------------------------------")
+			--error"Earclip"
 			--table.insert(Rests,mesh.mesh{points=rest})
 			ch.cross = true
 		end
@@ -595,8 +616,8 @@ function M.new_face(filename,ranges,size,steps,outlinef)
 	T.allcps = {}
 	for i,range in ipairs(T.ranges) do
 		for j=range[1],range[2] do
-			--print("--------------getting cp",j,string.char(j))
 			if T.visrng[j] then
+			print("--------------getting cp",j)--,string.char(j))
 			local ch = M.GetCodePointColor(T.face, j, T.size , T.steps, outlinef)
 			--M.GetCodePointColor(T.face, j)
 			--if not ch.name:match"ches" then ch.empty = true end --filter by name
@@ -604,8 +625,9 @@ function M.new_face(filename,ranges,size,steps,outlinef)
 			if not ch.empty then
 				M.repair_char1(ch)
 				M.repair_char2(ch)
+			
 				for ii,layer in ipairs(ch.layers) do
-				local cc = CHK.check_polyset_crossings(layer.polyset)
+					local cc = CHK.check_polyset_crossings(layer.polyset)
 				end
 				--assert(#cc==0, "check_polyset_crossings")
 
@@ -618,10 +640,13 @@ function M.new_face(filename,ranges,size,steps,outlinef)
 					end
 					T.chars[j] = ch --{ch=ch,meshes=meshes}
 				else
+					local cross
 					for ii,layer in ipairs(ch.layers) do
 						local meshes,rests = M.char_to_trmeshes(layer)
+						cross = cross or layer.cross
 						layer.meshes, layer.rests = meshes, rests
 					end
+					ch.cross = cross
 					T.chars[j] = ch --{ch=ch,mesh=mesh,rests=rests}
 				end
 				--else print("bad cp",j)
@@ -671,6 +696,7 @@ function M.new_face(filename,ranges,size,steps,outlinef)
 			local k,v = next(self.chars)
 			cha  = v
 		end
+		if not cha then return end
 		if M.mode == "polys" then
 			for ii, layer in ipairs(cha.layers) do
 			M.program.unif.color:set{layer.color[1],layer.color[2],layer.color[3]}

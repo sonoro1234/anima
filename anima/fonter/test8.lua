@@ -1,4 +1,14 @@
-
+local function codepoint_to_utf8(c)
+    if     c < 128 then
+        return                                                          string.char(c)
+    elseif c < 2048 then
+        return                                     string.char(192 + c/64, 128 + c%64)
+    elseif c < 55296 or 57343 < c and c < 65536 then
+        return                    string.char(224 + c/4096, 128 + c/64%64, 128 + c%64)
+    elseif c < 1114112 then
+        return string.char(240 + c/262144, 128 + c/4096%64, 128 + c/64%64, 128 + c%64)
+    end
+end
 
 local fonter = require"fonter"
 
@@ -10,15 +20,21 @@ local filen = [[C:\anima\lua\anima\fonts\fontawesome-webfont.ttf]]
 --local filen = [[C:\anima\lua\anima\fonts\seguiemj.ttf]]
 
 --fonter.mode = "polys"
+fonter.min_area = 1e-4 --1e-12
 local ch1=string.byte"D"
 --ch1=91
 
 --ProfileStart()--"3vfsi4m1")
  local f1 = fonter.new_face(filen,
 	{
-
+	-- {9641,9641}, --bad seguiemj
+	-- {10037,10037}, --bad seguiemj
+	-- {127959,127959}, --bad seguiemj
+	-- {126982,126982}, --bad seguiemj
+	--{63076,63076} --bad fa-solid
+	--{57434,57434}
+	--{57447,57447}--virus-lung
 	--{8987,8987} --seguiemj reloj arena
-	--{63076,63076}
 	--{62904,62904}
 	--{62851,62851}
 	--{57433,57433}
@@ -28,18 +44,18 @@ local ch1=string.byte"D"
 	--{61724,0xFFFF}
 	--{61400,0xFFFF}
 	--{0,0xFFFF}
-	--{0,0x10FFFF}
+	--{0,0xFFFF}
+	{0,0x10FFFF}
 	--{0,128120}
 	--{128121, 128121}
 	--{199,199}
 	--{62524,62524}
-	{61726,61726} --flagchecked
-	
+	--{61726,61726} --flagchecked
 	--{61886,61886}
 	--{61580,61580} --lined
 	--{61442,61442}
 	--{62046,62046}
-	--{61868,61869} --calculadora
+	--{61868,61868} --calculadora (BAD)
 	--{61869,61869}
 	--{62082,62082}
 	--{61821,61821} --drible
@@ -67,7 +83,7 @@ local ch1=string.byte"D"
 	--{62142,62142} --W
 	--{61580, 61580} --linkedin
 	}
-	,1024*4,10,false)--,{{35,35}})
+	,1024*4,5,false)--,{{35,35}})
 --local f1 = fonter.new_face(filen,{{ch1,ch1}},1024*4,5)
 --ProfileStop()
 
@@ -98,7 +114,7 @@ local ch1 = ffi.new("int[?]",1,string.byte"D")
 local function save_polyset( filename)
 		local ch = f1.chars[ch1[0]]
 		local str = {}
-		table.insert(str,serializeTable("polyset",ch.polyset))
+		table.insert(str,serializeTable("polyset",ch.layers[1].polyset))
 		table.insert(str,"\nreturn polyset")
 		local file,err = io.open(filename,"w")
 		if not file then print(err); return end
@@ -119,7 +135,30 @@ function GL.imgui()
 		polysaver.open()
 	end
 	polysaver.draw()
-	if ig.BeginTable("dirsizes",4, ig.lib.ImGuiTableFlags_Borders + ig.lib.ImGuiTableFlags_RowBg + ig.lib.ImGuiTableFlags_ScrollY + ig.lib.ImGuiTableFlags_Resizable) then
+	if ig.BeginTable("dirsizes",5, ig.lib.ImGuiTableFlags_Borders + ig.lib.ImGuiTableFlags_RowBg + ig.lib.ImGuiTableFlags_ScrollY + ig.lib.ImGuiTableFlags_Resizable + ig.lib.ImGuiTableFlags_Sortable) then
+		ig.TableSetupColumn("cp");
+        ig.TableSetupColumn("name");
+		ig.TableSetupColumn("cross");
+		ig.TableSetupColumn("badhole");
+		ig.TableSetupColumn("utf8");
+        ig.TableHeadersRow();
+		local sort_specs = ig.TableGetSortSpecs();
+		if sort_specs and sort_specs.SpecsDirty then 
+			local col_specs = sort_specs.Specs[0]
+			--print(col_specs.ColumnUserID, col_specs.ColumnIndex, col_specs.SortOrder, col_specs.SortDirection);
+			local sortfield = ({"cp","name","cross","badhole"})[col_specs.ColumnIndex + 1]
+			local function sortf1(a,field) return a[field] end
+			local function sortf_bool(a,field) return a[field] and 1 or 0 end
+			local sortff = ({sortf1,sortf1,sortf_bool,sortf_bool})[col_specs.ColumnIndex + 1]
+			if sortfield then
+				if col_specs.SortDirection == ig.lib.ImGuiSortDirection_Ascending then
+					table.sort(f1.allcps,function(a,b) return sortff(a,sortfield) < sortff(b,sortfield) end)
+				elseif col_specs.SortDirection == ig.lib.ImGuiSortDirection_Descending then
+					table.sort(f1.allcps,function(a,b) return sortff(a,sortfield) > sortff(b,sortfield) end)
+				end
+			end
+			sort_specs.SpecsDirty=false 
+		end
 		local clipper = ig.ImGuiListClipper()
 			clipper:Begin(#f1.allcps)
 			while (clipper:Step()) do
@@ -137,6 +176,12 @@ function GL.imgui()
 					ig.TextUnformatted(f1.allcps[line].cross and "cross" or "")
 					ig.TableNextColumn()
 					ig.TextUnformatted(f1.allcps[line].badhole and "badhole" or "")
+					ig.TableNextColumn()
+					local str = codepoint_to_utf8(f1.allcps[line].cp)
+					local bytes = {string.byte(str, 1, #str)}
+					local str2 = ""
+					for i=1,#str do str2 = str2 .. "\\x" .. string.format("%X",bytes[i]) end
+					ig.TextUnformatted(str2)
 					end
 				end
 			end

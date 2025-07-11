@@ -457,7 +457,7 @@ local function do_criminisi()
 		local P,i = calcPriorityGPU() --Dummy()
 		if i < 0 then break end
 		local P2 = searchDistancesGPU(P[i].i,P[i].j)
-		if not P2 then print"No sample found: reduce win_halfsize" end
+		if not P2 then print"No sample found: reduce win_halfsize";return end
 		UpdateCanvasGPU(P[i],P2)
 		
 		iterscount = iterscount + 1
@@ -502,9 +502,12 @@ NM = GL:Dialog("inpaint",{
 	--this.vars.mostrar[0] = 1
 	M.make_mask_co = coroutine.create(do_criminisi)
 	local ok,err = coroutine.resume(M.make_mask_co) 
-	if not ok then print(err) end
+	if not ok then print(err, "status:", coroutine.status(M.make_mask_co)) end
 end}
-})
+},function()
+ig.SameLine()
+ig.TextUnformatted(M.doing and "doing" or "done")
+end)
 M.NM = NM
 
 function M.draw(t,w,h)
@@ -526,7 +529,7 @@ function M.draw(t,w,h)
 	end
 	if M.make_mask_co and coroutine.status(M.make_mask_co)~="dead" then
 		local ok,err = coroutine.resume(M.make_mask_co) 
-		if not ok then print(err); print(debug.traceback(M.make_mask_co)) end
+		if not ok then print(err, "status:",coroutine.status(M.make_mask_co)); print(debug.traceback(M.make_mask_co)) end
 	end
 end
 	GL:add_plugin(M,"criminisi")

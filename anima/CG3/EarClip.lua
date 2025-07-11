@@ -211,7 +211,8 @@ local function EarClipSimple(poly,CW)
 					table.insert(tr,a-1)
 					table.insert(tr,b-1)
 					table.insert(tr,c-1)
-					--coroutine.yield(tr, true)
+					local co,bb = coroutine.running()
+					if not bb then coroutine.yield(tr, true) end
 					break
 				end
 			end
@@ -565,7 +566,8 @@ local function EarClipSimple2(poly, use_closed)
 			table.insert(tr,a-1)
 			table.insert(tr,b-1)
 			table.insert(tr,c-1)
-			--coroutine.yield(poly,tr,true)
+			local co,bb = coroutine.running()
+			if not bb then coroutine.yield(poly,tr,true,nil,nil,eartips, convex,angles,ind) end
 		end
 	end
 	--first bridges
