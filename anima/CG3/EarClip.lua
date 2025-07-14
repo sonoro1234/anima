@@ -326,6 +326,7 @@ local function EarClipSimple2(poly, use_closed)
 	local IsPointInTriI
 	if use_closed then
 		IsPointInTriI = function(pti,ai,bi,ci)
+			local p,a,b,c = poly[pti],poly[ai],poly[bi],poly[ci]
 		--[[
 			if EQ:equal(ai,pti) or EQ:equal(bi,pti) or EQ:equal(ci,pti) then
 				--assert(CG.IsPointInTriC(poly[pti],poly[ai],poly[bi],poly[ci]))
@@ -333,15 +334,28 @@ local function EarClipSimple2(poly, use_closed)
 			end
 			return CG.IsPointInTriC(poly[pti],poly[ai],poly[bi],poly[ci])
 			--]]
-			local isintri = CG.IsPointInTriC(poly[pti],poly[ai],poly[bi],poly[ci])
+			
+			local isintri = CG.IsPointInTriC(p, a, b, c)
+			--[=[
 			if isintri and (EQ:equal(ai,pti) or EQ:equal(bi,pti) or EQ:equal(ci,pti)) then
-				return CG.IsPointInTri(poly[pti],poly[ai],poly[bi],poly[ci])
+				return CG.IsPointInTri(p,a,b,c)
 			end
+			--]=]
+			---[=[
+			if isintri then
+				if p==a or p==b or p==c then 
+					return false 
+				end
+			end
+			--]=]
 			return isintri
 		end
 	else
 		IsPointInTriI = function(pti,ai,bi,ci)
-			return CG.IsPointInTri(poly[pti],poly[ai],poly[bi],poly[ci])
+			local p,a,b,c = poly[pti],poly[ai],poly[bi],poly[ci]
+			--if p==a or p==b or p==c then return false end
+			local isintri = CG.IsPointInTri(p,a,b,c)
+			return isintri
 		end
 	end
 	
