@@ -15,22 +15,26 @@ local fonter = require"fonter"
 local filen = [[C:\anima\lua\anima\fonts\ProggyTiny.ttf]]
 local filen = [[C:\anima\lua\anima\fonts\SilkRemington-SBold.ttf]]
 local filen = [[C:\anima\lua\anima\fonts\fontawesome-webfont.ttf]]
---local filen = [[C:\anima\lua\anima\fonts\fa-solid-900.ttf]]
+local filen = [[C:\anima\lua\anima\fonts\fa-solid-900.ttf]]
 --local filen = [[C:\anima\lua\anima\fonts\verdana.ttf]]
---local filen = [[C:\anima\lua\anima\fonts\seguiemj.ttf]]
+local filen = [[C:\anima\lua\anima\fonts\seguiemj.ttf]]
 
+fonter.triangulator = "glu"
 --fonter.mode = "polys"
 fonter.min_area = 1e-4 --1e-12
 local ch1=string.byte"D"
 --ch1=91
 
---ProfileStart()--"3vfsi4m1")
+ProfileStart()--"3vfsi4m1")
+local t1 = secs_now()
  local f1 = fonter.new_face(filen,
 	{
-	-- {9641,9641}, --bad seguiemj
-	-- {10037,10037}, --bad seguiemj
-	-- {127959,127959}, --bad seguiemj
-	-- {126982,126982}, --bad seguiemj
+	--{129691,129691}
+	--{199,199} 
+	{9641,9641}, --bad seguiemj
+	--{10037,10037}, --bad seguiemj
+	--{127959,127959}, --bad seguiemj
+	--{126982,126982}, --bad seguiemj
 	--{63076,63076} --bad fa-solid
 	--{57434,57434}
 	--{57447,57447}--virus-lung
@@ -45,7 +49,7 @@ local ch1=string.byte"D"
 	--{61400,0xFFFF}
 	--{0,0xFFFF}
 	--{0,0xFFFF}
-	{0,0x10FFFF}
+	--{0,0x10FFFF}
 	--{0,128120}
 	--{128121, 128121}
 	--{199,199}
@@ -85,7 +89,8 @@ local ch1=string.byte"D"
 	}
 	,1024*4,5,false)--,{{35,35}})
 --local f1 = fonter.new_face(filen,{{ch1,ch1}},1024*4,5)
---ProfileStop()
+ProfileStop()
+print("-----------done in",secs_now()-t1)
 
 -------------
 

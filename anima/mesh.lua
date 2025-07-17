@@ -577,6 +577,7 @@ function M.mesh(t)
 		tt.normal = self.normals and mat.vec2vao(self.normals) or nil
 		if not notcoords then tt.texcoords = self.tcoords and mat.vec2vao(self.tcoords) or nil end
 		local vao =  VAO(tt,program, mesh.triangles)
+		vao.modedraw = self.modedraw
 		function vao:reset_mesh(mesh1)
 			self:set_buffer("position",mat.vec2vao(mesh1.points))
 			if self.normals then

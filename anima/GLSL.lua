@@ -1266,7 +1266,7 @@ function VAO(t,program,indices,tsize,isize)
 		glext.glBindVertexArray(0);
 	end
 	function tVao:draw(type,count,ini,primcount)
-		type = type or glc.GL_TRIANGLES
+		type = type or self.modedraw or glc.GL_TRIANGLES
 		self:check_counts()
 		count = count or self.count
 		count = math.min(count , self.count)

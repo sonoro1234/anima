@@ -74,7 +74,7 @@ local function conictof(ctrl,to,user)
 	local poly = poldec[#poldec]
 	local ini = poly[#poly]
 	local steps = 5
-	for i=0,steps do
+	for i=1,steps do
 			poly[#poly+1] = Bezier2(i/steps,ini,Vec(ctrl.x,ctrl.y),Vec(to.x,to.y))
 	end
 	return 0
@@ -84,7 +84,7 @@ local function cubictof(ctrl,ctrl2,to,user)
 	local poly = poldec[#poldec]
 	local ini = poly[#poly]
 	local steps = 5
-	for i=0,steps do
+	for i=1,steps do
 			poly[#poly+1] = Bezier3(i/steps,ini,Vec(ctrl.x,ctrl.y),Vec(ctrl2.x,ctrl2.y),Vec(to.x,to.y))
 	end
 	return 0
@@ -112,14 +112,16 @@ local function face_glyph_outline_to_polyset(face,fosize,glyph_index,steps,outli
 	--print("flags",bit.band(outline.flags, ft.C.FT_OUTLINE_REVERSE_FILL),outline.flags)
 	printD("orientation",outline:orientation(),ft.C.FT_ORIENTATION_POSTSCRIPT)
 	local polyset = {}
+	local polyset2 = {}
 	if outlinef then
-		decompose(outline, polyset)
-		for i,pol in ipairs(polyset) do
+		--local polyset2 = {}
+		decompose(outline, polyset2)
+		for i,pol in ipairs(polyset2) do
 			for j,v in ipairs(pol) do
 				pol[j] = v*invsize
 			end
 		end
-		return Vec(glyph.advance.x, glyph.advance.y,0)*invsize, outline:orientation(), polyset
+		return Vec(glyph.advance.x, glyph.advance.y,0)*invsize, outline:orientation(), polyset2
 	end
 	
 	--outline:check()
@@ -205,7 +207,17 @@ local function face_glyph_outline_to_polyset(face,fosize,glyph_index,steps,outli
 		file:write(table.concat(str))
 		file:close()
 	--]]
-	
+	--[[
+	local maxpol = #polyset>#polyset2 and #polyset or #polyset2
+	print("compare outlinef",#polyset, #polyset2)
+	for i=1,maxpol do
+		local pol1,pol2 = polyset[i], polyset2[i]
+		local maxind = #pol1>#pol2 and #pol1 or #pol2
+		for j=1,maxind do
+			print(j,pol1[j], pol2[j])
+		end
+	end
+	---]]
 	return Vec(glyph.advance.x, glyph.advance.y,0)*invsize, outline:orientation(),polyset
 end
 local function face_char_outline_to_polyset(face,fosize,ch,steps,outlinef)
@@ -317,19 +329,19 @@ function M.repair_char1(ch)
 			print(#polys,"polys returned")
 			for j=1,#polys do
 				printD(j,#polys[j])
-				local remr,remc = CG3.degenerate_poly_repair(polys[j],DEBUG)
-				if remr > 0 or remc >0 then printD("degenerate repairs after repair cross",remr,remc) end
+				local remr,remc = CG3.degenerate_poly_repair(polys[j],true)--DEBUG)
+				if remr > 0 or remc >0 then print("degenerate repairs after repair cross",remr,remc) end
 				-- local cross = CHK.check_self_crossings(polys[j])
 				-- if #cross > 0  then print("bad repairing",j) end
-				CHK.CHECKPOLY(polys[j],true)
-				CHK.CHECKCOLIN(polys[j])
+				--CHK.CHECKPOLY(polys[j],true)
+				--CHK.CHECKCOLIN(polys[j])
 				table.insert(polyset2, polys[j])	
 			end
 		else
-			local remr,remc = CG3.degenerate_poly_repair(polys[1],DEBUG)
-			if remr > 0 or remc >0 then printD("degenerate repairs after repair cross returns 1",remr,remc) end
-			CHK.CHECKPOLY(polys[1],true)
-			CHK.CHECKCOLIN(polys[1])
+			--local remr,remc = CG3.degenerate_poly_repair(polys[1],true)--DEBUG)
+			--if remr > 0 or remc >0 then print("degenerate repairs after repair cross returns 1",remr,remc) end
+			--CHK.CHECKPOLY(polys[1],true)
+			--CHK.CHECKCOLIN(polys[1])
 			table.insert(polyset2, polys[1])
 		end
 		
@@ -341,105 +353,110 @@ function M.repair_char1(ch)
 end
 function M.repair_char2(ch)
 	for ii,layer in ipairs(ch.layers) do
-	local polyset2 = {}
-	local polyset = layer.polyset
-	if ch.orientation == 1 then --FT_ORIENTATION_POSTSCRIPT
-		printD"reversing orientation"
-		for i,pol in ipairs(polyset) do
-			reverse(pol)
+		local polyset2 = {}
+		local polyset = layer.polyset
+		if ch.orientation == 1 then --FT_ORIENTATION_POSTSCRIPT
+			printD"------------reversing orientation"
+			for i,pol in ipairs(polyset) do
+				reverse(pol)
+			end
 		end
-	end
-	local holes = {}
-	for i=1,#polyset do
-		if #polyset[i] > 0 then
-			local sA = CG3.signed_area(polyset[i])
-			printD("signed area",i,sA,"npoints",#polyset[i])
-			--discard 0 area
-			if math.abs(sA) > (M.min_area or 0) then --1e-12 then
-			--if math.abs(sA) > 0 then
-			polyset[i].sA = math.abs(sA)
-			if sA < 0 then
-
-				polyset2[#polyset2+1] = reverse(polyset[i])
-				CG3.degenerate_poly_repair(polyset2[#polyset2],DEBUG)
-				CHK.CHECKPOLY(polyset2[#polyset2],true)
-				--CHK.CHECKCOLIN(polyset2[#polyset2])
-			else --is hole
-				if M.mode == "polys" then
+		local holes = {}
+		for i=1,#polyset do
+			if #polyset[i] > 0 then
+				local sA = CG3.signed_area(polyset[i])
+				printD("signed area",i,sA,"npoints",#polyset[i])
+				--discard 0 area
+				if math.abs(sA) > (M.min_area or 0) then --1e-12 then
+				--if math.abs(sA) > 0 then
+				polyset[i].sA = math.abs(sA)
+				if sA < 0 then
+					printD"reverse"
 					polyset2[#polyset2+1] = reverse(polyset[i])
-					CG3.degenerate_poly_repair(polyset2[#polyset2],DEBUG)
-					CHK.CHECKPOLY(polyset2[#polyset2],true)
-				else
-					polyset[i].sA = sA
-					table.insert(holes,reverse(polyset[i]))
-					CG3.degenerate_poly_repair(holes[#holes],DEBUG)
-					CHK.CHECKPOLY(holes[#holes],true)
-				end
-			end
-			end
-		end
-	end
-	printD("#polyset2",#polyset2,"holes",#holes)
-
-	--prtable(polyset2)
-	--insert holes
-	--if M.mode ~= "polys" then
-	algo.quicksort(polyset2,1,#polyset2,function(a,b) return a.sA < b.sA end)
-	algo.quicksort(holes,1,#holes,function(a,b) return a.sA > b.sA end)
-	--prtable(holes)
-	---discard bad holes inside other holes
---[[
-	local badholes = {}
-	for i=1,#holes do
-		for j=i+1,#holes do
-			if fitsInside(holes[i],holes[j]) then
-				print("---  bad hole",i,j)
-				ch.badhole = true
-				table.insert(badholes,j)
-			end
-		end
-	end
-	table.sort(badholes,function(a,b) return a > b end)
-	for i,j in ipairs(badholes) do
-		local hole = table.remove(holes,j)
-		table.insert(polyset2,reverse(hole))
-	end
---]]
-
-	local maxbox = CG3.box2d(polyset2[#polyset2])
-	local maxsize = maxbox[2].x > maxbox[2].y and maxbox[2].x or maxbox[2].y
-	local facPad = maxsize/1000
-	for i,h in ipairs(holes) do
-		local found = false
-		for j,p in ipairs(polyset2) do
-			if fitsInside(p,h) then
-				p.holes = p.holes or {}
-				local holecross = false
-				for i2,h2 in ipairs(p.holes) do
-					local cross = CHK.check2poly_crossings(h2,h)
-					if #cross > 0 then 
-						printD("holes cross",i,i2)
-						local hpad = CG3.PolygonPad(h,-facPad,true)
-						for l,lv in ipairs(hpad) do h[l] = lv end
-						holecross = false; --for inserting afted padding
-						break 
+					--CG3.degenerate_poly_repair(polyset2[#polyset2],DEBUG)
+					--CHK.CHECKPOLY(polyset2[#polyset2],true)
+					--CHK.CHECKCOLIN(polyset2[#polyset2])
+				else --is hole
+					if M.mode == "polys" then
+						printD"reverse"
+						polyset2[#polyset2+1] = reverse(polyset[i])
+						--CG3.degenerate_poly_repair(polyset2[#polyset2],DEBUG)
+						--CHK.CHECKPOLY(polyset2[#polyset2],true)
+					else
+						printD"reverse"
+						polyset[i].sA = sA
+						table.insert(holes,reverse(polyset[i]))
+						-- polyset2[#polyset2].holes = polyset2[#polyset2].holes or {}
+						-- table.insert(polyset2[#polyset2].holes,reverse(polyset[i]))
+						--polyset2[#polyset2+1] = reverse(polyset[i])
 					end
 				end
-				--check dont overlap other holes
-				if not holecross then
-					found = true
-					table.insert(p.holes,h)
-					break
 				end
 			end
 		end
-		if not found then 
-			print("hole",i,"not found"); 
-			table.insert(polyset2,reverse(holes[i])) 
-			ch.badhole = true
+		printD("layer",ii,"from",#ch.layers,"#polyset2",#polyset2,"holes",#holes)
+
+	if true then
+		--prtable(polyset2)
+		--insert holes
+		--if M.mode ~= "polys" then
+		algo.quicksort(polyset2,1,#polyset2,function(a,b) return a.sA < b.sA end)
+		algo.quicksort(holes,1,#holes,function(a,b) return a.sA > b.sA end)
+		--prtable(holes)
+		---discard bad holes inside other holes
+--[[	
+		local badholes = {}
+		for i=1,#holes do
+			for j=i+1,#holes do
+				if fitsInside(holes[i],holes[j]) then
+					print("---  bad hole",i,j)
+					ch.badhole = true
+					table.insert(badholes,j)
+				end
+			end
 		end
-	end
-	
+		table.sort(badholes,function(a,b) return a > b end)
+		for i,j in ipairs(badholes) do
+			local hole = table.remove(holes,j)
+			table.insert(polyset2,reverse(hole))
+		end
+--]]	
+		if true then
+		local maxbox = CG3.box2d(polyset2[#polyset2])
+		local maxsize = maxbox[2].x > maxbox[2].y and maxbox[2].x or maxbox[2].y
+		local facPad = maxsize/1000
+		for i,h in ipairs(holes) do
+			local found = false
+			for j,p in ipairs(polyset2) do
+				if fitsInside(p,h) then
+					p.holes = p.holes or {}
+					local holecross = false
+					for i2,h2 in ipairs(p.holes) do
+						local cross = CHK.check2poly_crossings(h2,h)
+						if #cross > 0 then 
+							print("holes cross",i,i2)
+							local hpad = CG3.PolygonPad(h,-facPad,true)
+							for l,lv in ipairs(hpad) do h[l] = lv end
+							holecross = false; --for inserting afted padding
+							break 
+						end
+					end
+					--check dont overlap other holes
+					if not holecross then
+						found = true
+						table.insert(p.holes,h)
+						break
+					end
+				end
+			end
+			if not found then 
+				print("hole",i,"not found"); 
+				table.insert(polyset2,reverse(holes[i])) 
+				ch.badhole = true
+			end
+		end
+		end
+		
 		--check bad holes
 		for i,p in ipairs(polyset2) do
 			--prtable(p.holes)
@@ -467,15 +484,16 @@ function M.repair_char2(ch)
 				end
 			end
 		end
-	--end
-	--ch.polyset = {polyset2[5]}
-	
-	for i,p in ipairs(polyset2) do
-		printD("poly",i,"holes",p.holes and #p.holes or 0)
-	end
-	printD("end repair2 num polys:",#polyset2)
-	layer.polyset = polyset2
-	end
+		--end
+		--ch.polyset = {polyset2[5]}
+		
+		for i,p in ipairs(polyset2) do
+			printD("poly",i,"holes",p.holes and #p.holes or 0)
+		end
+		printD("end repair2 num polys:",#polyset2)
+		end
+		layer.polyset = polyset2
+	end --layer
 	--prtable(polyset2)
 end
 -- function M.repair_chars(chars)
@@ -483,7 +501,25 @@ end
 		-- M.repair_char(ch)
 	-- end
 -- end
+function M.char_to_trmeshes_gluBAK(ch)
+	local glutess = require"glu_tesselator"
+	local meshes = {}
+	for i=1,#ch.polyset do
+		local m = glutess.tesselate(ch.polyset[i])
+		for j=1,#m do table.insert(meshes, m[j]) end
+	end
+	return meshes
+end
+function M.char_to_trmeshes_glu(layer, orientation)
+	local glutess = require"glu_tesselator"
+	local meshes = {}
+	local winding = (orientation==1) and glc.GLU_TESS_WINDING_POSITIVE or glc.GLU_TESS_WINDING_NEGATIVE
+	--print("winding",orientation,(orientation==1), winding, glc.GLU_TESS_WINDING_POSITIVE , glc.GLU_TESS_WINDING_NEGATIVE)
+	local m = glutess.tesselate_set(layer.polyset, winding)
+	for j=1,#m do table.insert(meshes, m[j]) end
 
+	return meshes
+end
 
 
 function M.char_to_trmeshes(ch)
@@ -493,9 +529,9 @@ function M.char_to_trmeshes(ch)
 	for i=1,#ch.polyset do
 		printD("----------char_to_tr_mesh",i)
 		--if i==2 then prtable(ch.polyset[i]) end
-		for k=1,0 do
-			table.remove(ch.polyset[i].holes,1)
-		end
+		-- for k=1,0 do
+			-- table.remove(ch.polyset[i].holes,1)
+		-- end
 
 		-- local cross = CHK.CHECKPOLY(ch.polyset[i],true)
 		-- if #cross > 0 then print("char_to_mesh: poly",i,"has crossings",#cross); end
@@ -617,21 +653,17 @@ function M.new_face(filename,ranges,size,steps,outlinef)
 	for i,range in ipairs(T.ranges) do
 		for j=range[1],range[2] do
 			if T.visrng[j] then
-			print("--------------getting cp",j)--,string.char(j))
+			--print("--------------getting cp",j)--,string.char(j))
 			local ch = M.GetCodePointColor(T.face, j, T.size , T.steps, outlinef)
 			--M.GetCodePointColor(T.face, j)
 			--if not ch.name:match"ches" then ch.empty = true end --filter by name
 			printD("-----------ch.empty",ch.empty,j)
 			if not ch.empty then
-				M.repair_char1(ch)
-				M.repair_char2(ch)
-			
-				for ii,layer in ipairs(ch.layers) do
-					local cc = CHK.check_polyset_crossings(layer.polyset)
+				if M.triangulator ~= "glu" then
+					M.repair_char1(ch)
+					M.repair_char2(ch)
 				end
-				--assert(#cc==0, "check_polyset_crossings")
 
-				--printD(#ch.polyset, "polys after repair")
 				table.insert(T.allcps,ch)
 				if M.mode == "polys" then
 					for ii,layer in ipairs(ch.layers) do
@@ -641,8 +673,14 @@ function M.new_face(filename,ranges,size,steps,outlinef)
 					T.chars[j] = ch --{ch=ch,meshes=meshes}
 				else
 					local cross
+					--prtable(ch.layers)
 					for ii,layer in ipairs(ch.layers) do
-						local meshes,rests = M.char_to_trmeshes(layer)
+						local meshes,rests
+						if M.triangulator == "glu" then
+							meshes,rests = M.char_to_trmeshes_glu(layer, ch.orientation)
+						else
+							meshes,rests = M.char_to_trmeshes(layer)
+						end
 						cross = cross or layer.cross
 						layer.meshes, layer.rests = meshes, rests
 					end
@@ -658,6 +696,7 @@ function M.new_face(filename,ranges,size,steps,outlinef)
 	table.sort(T.allcps, function(a,b) return a.cp < b.cp end)
 	
 	function T:initgl()
+		print"begin initgl"
 		if not M.program then M.initgl() end
 		for k,v in pairs(self.chars) do
 			if M.mode == "polys" then
@@ -674,11 +713,14 @@ function M.new_face(filename,ranges,size,steps,outlinef)
 				layer.vaos = {}
 				for i,m in ipairs(layer.meshes) do
 					layer.vaos[i] = m:vao(M.program)
-					layer.restsvaos[i] = layer.rests[i]:vao(M.program)
+					if layer.rests and layer.rests[i] then
+						layer.restsvaos[i] = layer.rests[i]:vao(M.program)
+					end
 				end
 				end
 			end
 		end
+		print"end initgl"
 	end
 	local color = require"anima.graphics.color"
 	T.MO = mat.identity4()
@@ -729,12 +771,19 @@ function M.new_face(filename,ranges,size,steps,outlinef)
 						if vao then vao:draw_mesh() end
 					end
 				else
-					if vao then vao:draw_elm() end
+					if vao then 
+						if vao.modedraw then
+							vao:draw(vao.modedraw)
+						else
+							vao:draw_elm() 
+						end
+					end
 				end
 				M.program.unif.color:set{1,0,0}
+				if layer.restvaos then
 				local r = layer.restsvaos[i]
 				r:draw(glc.GL_LINE_LOOP)
-				
+				end
 				-- gl.glPointSize(6)
 				-- M.program.unif.color:set{1,1,1}
 				-- if cha.vao then cha.vao:draw(glc.GL_POINTS) end
