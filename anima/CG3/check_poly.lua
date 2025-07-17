@@ -281,6 +281,7 @@ local function  split_on_cross(poly, cr)
 	--print("returns",#P1,#P2)
 	return {P1, P2}
 end
+-- best than RC
 --in poly with crossings
 --out polyset
 local function check_repair_self_crossings(poly)
@@ -395,6 +396,7 @@ local function check_collinear(poly)
 	end
 
 end
+
 M.CHECKPOLY=CHECKPOLY
 M.CHECKCOLIN=check_collinear
 M.check_self_crossings=check_self_crossings

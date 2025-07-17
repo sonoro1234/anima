@@ -83,7 +83,7 @@ local function remove_colinear(pt,verbose)
 		end
 	end
 	--if #pt < 3 then pt[2]=nil;pt[1]=nil;print"zero poly--------------" end
-	if verbose then print("collinear removes",colin) end
+	if verbose and colin > 0 then print("collinear removes",colin) end
 
 	return colin
 end
@@ -315,12 +315,12 @@ local function InsertHoles(poly,skip_check)
 					local sign = CG.Sign(p,poly[mod(i+1,#poly)],ph) --positive inside, negative outside, 0 is in line
 					crossi[#crossi+1] = {pc=pc,i1=ih,i2=mod(ih+1,#hole),sign=sign}
 					
-					print("hole to insert",nh,"intersects poly on index",i,ih)
+					print("hole to insert",nh,"intersects poly on indexes",i,ih)
 					--print("Sign1",CG.Sign(p,poly[mod(i+1,#poly)],ph))
 					--print("Sign2",CG.Sign(p,poly[mod(i+1,#poly)],hole[mod(ih+1,#hole)]))
 						--assert(ok)
 					if not ok then
-						print(p,poly[mod(i+1,#poly)],ph,hole[mod(ih+1,#hole)])
+						print("IntersecPoint2 error",p,poly[mod(i+1,#poly)],ph,hole[mod(ih+1,#hole)])
 						if CG.IsPointInSegment(p,ph,hole[mod(ih+1,#hole)]) then
 							crossi[#crossi].pc = p
 						elseif(CG.IsPointInSegment(ph,p,poly[mod(i+1,#poly)])) then
@@ -345,29 +345,34 @@ local function InsertHoles(poly,skip_check)
 					error"odd number of crossings"
 				end
 				--]==]
+				--prtable("crossi",crossi)
 				local todel = {}
 				local toins = {}
 				--repair hole deleting points outside
 				--prtable("hole before",hole)
 				
 				local ii=1
+				--process pair if sign>0
 				while(ii<=#crossi) do
 					if crossi[ii].sign > 0 then
 						local ibegin = crossi[ii].i2
-						local iend = crossi[ii+1].i2
+						local iend = crossi[mod(ii+1,#crossi)].i2
 						toins[ibegin] = 0.99*crossi[ii].pc + 0.01*hole[crossi[ii].i1] 
-						toins[iend] = 0.99*crossi[ii+1].pc + 0.01*hole[crossi[ii+1].i2] 
+						toins[iend] = 0.99*crossi[mod(ii+1,#crossi)].pc + 0.01*hole[crossi[mod(ii+1,#crossi)].i2] 
 						local j=ibegin
 						while j~=iend do
 							todel[j] = true
 							j = mod(j+1,#hole)
 						end
 						ii=ii+2
-					else
-						assert(crossi[ii].sign==0,crossi[ii].sign)
+					--process one if sign ==0
+					elseif crossi[ii].sign == 0 then
+						--assert(crossi[ii].sign==0,crossi[ii].sign)
 						local ibegin = crossi[ii].i1
 						toins[ibegin] = 0.99*crossi[ii].pc + 0.01*hole[crossi[ii].i2]
 						todel[ibegin] = true
+						ii=ii+1
+					else -- if sign<0 comes from outside, skip
 						ii=ii+1
 					end
 				end
@@ -392,8 +397,8 @@ local function InsertHoles(poly,skip_check)
 					local inter = CG.SegmentBeginIntersect(ph,hole[mod(ih+1,#hole)],ph2,hole2[mod(ih2+1,#hole2)])
 					if inter then
 						local pc,ok = IntersecPoint2(ph,hole[mod(ih+1,#hole)],ph2,hole2[mod(ih2+1,#hole2)])
-						
-						crossi[#crossi+1] = {pc=pc,ih=ih,ih2=ih2}
+						local sign = CG.Sign(ph,hole[mod(ih+1,#hole)],ph2) --positive inside, negative outside, 0 is in line
+						crossi[#crossi+1] = {pc=pc,ih=ih,ih2=ih2,sign=sign}
 						print("holes to insert",nh,nh2,"intersects on index",ih,ih2)
 						--assert(ok)
 						if not ok then
@@ -403,29 +408,41 @@ local function InsertHoles(poly,skip_check)
 					end
 				end
 			end
-			if #crossi>0 then 
-				print("#crossi",#crossi) 
+			if #crossi > 0 then
+			local ii=1
+			while ii < #crossi do 
+				print("#crossi holes",#crossi, crossi[ii].sign, crossi[ii+1].sign) 
+				prtable(crossi)
 				assert(#crossi%2==0)
+				--assert(#crossi == 2)
 				--merge hole2 into hole
 				local merged = {}
-				merged[1] = hole[crossi[1].ih]
-				--merged[2] = crossi[1].pc
-				local j = mod(crossi[1].ih2 + 1,#hole2)
-				local jlimit = mod(crossi[#crossi].ih2 + 1,#hole2)
+				merged[1] = hole[crossi[ii].ih]
+				merged[2] = crossi[ii].pc
+				local j = mod(crossi[ii].ih2 + 1,#hole2)
+				merged[3] = hole2[j]
+				j = mod(j+1,#hole2)
+				local jlimit = mod(crossi[ii+1].ih2 + 1,#hole2)
+				print("hole2 j",j, jlimit)
 				while j ~= jlimit do
+					print("merge hole2",j)
 					merged[#merged+1] = hole2[j]
 					j = mod(j+1,#hole2)
 				end
-				--merged[#merged+1] = crossi[#crossi].pc
-				j = mod(crossi[#crossi].ih + 1,#hole)
-				jlimit = crossi[1].ih
+				merged[#merged+1] = crossi[ii+1].pc
+				j = mod(crossi[ii+1].ih + 1,#hole)
+				jlimit = crossi[ii].ih
+				print("hole1 j",j, jlimit)
 				while j ~= jlimit do
+					print("merge hole1",j)
 					merged[#merged+1] = hole[j]
 					j = mod(j+1,#hole)
 				end
 				holes[nh] = merged
-				table.remove(holes,nh2)
-				goto compare_again
+				ii = ii + 2
+			end
+			table.remove(holes,nh2)
+			goto compare_again
 			end
 		end
 		::continue::
@@ -451,8 +468,12 @@ local function InsertHoles(poly,skip_check)
 	for i,hole in ipairs(holes) do
 		
 		local minx,mini,point = leftmostvertex(hole)
-		holes_order[i] = {i=i,minx=minx,mini=mini,point=point}
-		--assert(not CG.IsPointInPoly(poly,hole[mini]))
+		--holes_order[i] = {i=i,minx=minx,mini=mini,point=point}
+		if(CG.IsPointInPoly(poly,hole[mini])) then --if out dont add (whole hole must be out)
+			table.insert(holes_order, {i=i,minx=minx,mini=mini,point=point})
+		--else
+			--print"hole is out"
+		end
 		--print("hole",i,minx,mini)
 	end
 
@@ -617,7 +638,7 @@ local function InsertHoles(poly,skip_check)
 				break
 			end
 		end
-		if not bridgedone then error"not bridge" end
+		if not bridgedone and #sortedp>0 then error"---------------not bridge----------------" end
 		
 		-- prtable("bridges after",bridges)
 		-- prtable(br_equal)

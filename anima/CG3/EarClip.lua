@@ -320,9 +320,13 @@ local function EarClipSimple2(poly, use_closed)
 	--do return poly,{},true end
 	
 	
-	local EQ = poly.EQ
+	--local EQ = poly.EQ
 	--prtable(EQ)
-	local br_equal = poly.br_equal or {}
+	--local br_equal = poly.br_equal or {}
+	poly.EQ = nil
+	poly.br_equal = nil
+	poly.bridges = nil
+	
 	local IsPointInTriI
 	if use_closed then
 		IsPointInTriI = function(pti,ai,bi,ci)
