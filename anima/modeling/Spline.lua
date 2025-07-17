@@ -33,6 +33,7 @@ local function Editor(GL,updatefunc1,args)
 	M.triangulation = {}
 	M.alpha = {}
 	M.divs = {}
+	local action = 1
 	--local updatefunc = updatefunc or function() end
 	local updatefunc = function(E,...)
 			if E.NM.curr_spline > 0 then
@@ -61,7 +62,8 @@ local function Editor(GL,updatefunc1,args)
 			M:deletespline()
 		end,
 		{sameline=true}},
-	{"points",1,guitypes.slider_enum,{"nil","set","edit","clear"}},
+	--{"points",1,guitypes.slider_enum,{"nil","set","edit","clear"}},
+	
 	}
 	
 	if args.region then table.insert(vars,{"drawregion",false,guitypes.toggle,function() updatefunc(M) end}) end
@@ -143,7 +145,9 @@ local function Editor(GL,updatefunc1,args)
 			if NM.drawregion then
 				--print"drawregion"
 				if not M.triangulation[i] then M:triangulate(i) end
-				DrawTriangulation(dl,M.triangulation[i],color2)
+				if not M.triangulation[i].error then
+					DrawTriangulation(dl,M.triangulation[i],color2)
+				end
 				--dl:AddConcavePolyFilled(pointsI,#M.ps[i],color2)
 			end
 			--dl:AddPolyline(pointsI, #M.ps[i], color, ig.lib.ImDrawFlags_Closed, 1)
@@ -161,7 +165,7 @@ local function Editor(GL,updatefunc1,args)
 			end
 		end
 		if NM.curr_spline > 0 then
-		if NM.points == 3 or NM.points == 4 then --edit or clear
+		if action == 3 or action == 4 then --edit or clear
 			local mposvp = vec2(ScreenToViewport(mpos.x, mpos.y))
 			if curr_hole[0] == 0 then
 				for i,sc in ipairs(M.sccoors[NM.curr_spline]) do
@@ -221,8 +225,9 @@ local function load_polyset( filename)
 		for i=1,numsplines do M.divs[i] = ffi.new("int[1]",1) end
 		M.ps = {}
 		NM.defs.curr_spline.args.max=numsplines
-		NM.vars.points[0]=1 --no edit acction
+		action=1 --no edit acction
 		NM.vars.curr_spline[0] = 1
+		curr_hole[0] = 0
 		M:calc_all_splines()
 
 end
@@ -239,6 +244,26 @@ local polyloader = gui.FileBrowser(nil,{filename="phfx",key="import",pattern="po
 		local mposvp = vec2(ScreenToViewport(mpos.x, mpos.y))
 		if NM.curr_spline == 0 then goto SHOW end
 		
+		-------action toolbox
+		ig.Text("actions:")
+		ig.SameLine()
+		if ig.Button"none" then
+			GL:SetCursor(nil)
+			action = 1
+		end
+		ig.SameLine() --add
+		if GL.Ficons:Button(GL.Ficons.cursorcps.pen) then
+			action = 2
+		end
+		ig.SameLine() --move
+		if GL.Ficons:Button(GL.Ficons.cursorcps.hand) then
+			action = 3
+		end
+		ig.SameLine() --delete
+		if GL.Ficons:Button(GL.Ficons.cursorcps.eraser) then
+			action = 4
+		end
+		-----------
 		if ig.SliderFloat("alpha",M.alpha[NM.curr_spline],0,1) then
 			M:process_all()
 		end
@@ -275,9 +300,10 @@ local polyloader = gui.FileBrowser(nil,{filename="phfx",key="import",pattern="po
 			end
 			goto SHOW
 		end
-		if this.points == 1 then goto SHOW end
-		ig.SetMouseCursor(ig.lib.ImGuiMouseCursor_Hand);
-		if this.points == 2 then --set
+		if action == 1 then goto SHOW end --GL:SetCursor(nil); goto SHOW end
+		--ig.SetMouseCursor(ig.lib.ImGuiMouseCursor_Hand);
+		if action == 2 then --set
+			GL:SetCursor(GL.cursors.pen)
 			if igio.MouseClicked[0] and not igio.MouseDownOwned[0] then
 				if curr_hole[0]==0 then
 					table.insert(M.sccoors[NM.curr_spline],mposvp)
@@ -289,7 +315,8 @@ local polyloader = gui.FileBrowser(nil,{filename="phfx",key="import",pattern="po
 				if M:numpoints(ii)>2 then updatefunc(M) end
 			end
 			
-		elseif this.points == 3 then --edit
+		elseif action == 3 then --edit
+			GL:SetCursor(GL.cursors.hand)
 			if doingedit then
 				if curr_hole[0] == 0 then
 					M.sccoors[NM.curr_spline][doingedit] = mposvp
@@ -316,7 +343,8 @@ local polyloader = gui.FileBrowser(nil,{filename="phfx",key="import",pattern="po
 				end
 				if touched > 0 then doingedit = touched end
 			end
-		elseif this.points == 4 then --clear
+		elseif action == 4 then --clear
+			GL:SetCursor(GL.cursors.eraser)
 			if igio.MouseClicked[0] then
 				local touched = -1
 				if curr_hole[0] == 0 then
@@ -560,11 +588,19 @@ local polyloader = gui.FileBrowser(nil,{filename="phfx",key="import",pattern="po
 	end
 	
 	function M:triangulate(ii)
-		print("triangulate",ii)
+		--print("triangulate",ii)
+		if not NM.drawregion then return end
 		if #self.ps[ii] < 3 then return end
-		local good
+		local good, OK
 		self.triangulation[ii] = {}
-		self.triangulation[ii].points, self.triangulation[ii].tr, good = CG.EarClipSimple2(self.ps[ii],true)
+		OK, self.triangulation[ii].points, self.triangulation[ii].tr, good = pcall(CG.EarClipSimple2, self.ps[ii], true)
+		if not OK then
+			print("EarClip error:", self.triangulation[ii].points)
+			print(debug.traceback())
+			self.triangulation[ii].error = true
+			action = 1
+			doingedit = false
+		end
 		if not good then print"bad EarClip" end
 		--return indexes,good
 	end
@@ -600,9 +636,10 @@ local polyloader = gui.FileBrowser(nil,{filename="phfx",key="import",pattern="po
 			-- NM.vars.curr_spline[0] = j
 			-- self:process_all()
 		-- end
+		curr_hole[0] = 0
 		numsplines = params.numsplines
 		NM.defs.curr_spline.args.max=numsplines
-		NM.vars.points[0]=1 --no edit acction
+		action=1 --no edit acction
 		NM.vars.curr_spline[0] = 1
 		M:calc_all_splines()
 	end
@@ -614,7 +651,7 @@ end
 
 --[=[
 local GL = GLcanvas{H=800,aspect=1,DEBUG=true,use_imgui_viewport=false}
-local function update(n) print("update spline",n) end
+local function update(n) end --print("update spline",n) end
 local edit = Editor(GL,update,{region=true})--,doblend=true})
 local plugin = require"anima.plugins.plugin"
 edit.fb = plugin.serializer(edit)

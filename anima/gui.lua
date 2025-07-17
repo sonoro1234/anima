@@ -941,7 +941,7 @@ function gui.FontIcons(GL,source,ranges,size)
 		--local glyph = self.font:FindGlyphNoFallback(cp + self.ranges[0])
 		--if glyph==nil then print("bad codepoint",cp);return false end
 		local fontbaked = self.font:GetFontBaked(self.size)
-		local glyph = fontbaked:FindGlyph(cp + self.ranges[0])
+		local glyph = fontbaked:FindGlyph(cp)
 		ID = ID or tostring(cp)
 		local ret = ig.ImageButton(ID,self.atlas.TexData:GetTexRef(), ig.ImVec2(self.size,self.size), ig.ImVec2(glyph.U0,glyph.V0), ig.ImVec2(glyph.U1,glyph.V1), ig.ImVec4(0,0,0,0), ig.ImVec4(1,1,1,1));
 		return ret
@@ -949,7 +949,9 @@ function gui.FontIcons(GL,source,ranges,size)
 	
 	function FAicons:GetCursors(cps)
 		
-		cps = cps or {hand=166,glass=2,glass_p=14,glass_m=16,pickcolor=0x01FB}--0x01FB}
+		cps = cps or {hand=61606,glass=61442,glass_p=61454,glass_m=61456,pickcolor=0xF1FB,pen=61504,eraser=61741,arrow=62021}
+		--factor for hotspot
+		local hotspots = {eraser={0,1},pen={0,1}, hand= {0.5,0}}
 		self.cursorcps = cps
 		
 		-- local img = ffi.new("unsigned char[?]",self.atlas.TexWidth * self.atlas.TexHeight * 4)
@@ -971,8 +973,8 @@ function gui.FontIcons(GL,source,ranges,size)
 		
 		local fontbaked = self.font:GetFontBaked(self.size)
 		for k,cp in pairs(cps) do
-			local glyph = fontbaked:FindGlyphNoFallback(cp + self.ranges[0])
-			assert(glyph~=nil,"no glyph!! "..(cp + self.ranges[0]))
+			local glyph = fontbaked:FindGlyphNoFallback(cp)
+			assert(glyph~=nil,"no glyph!! "..(cp))
 			local basex = math.floor(glyph.U0*TexWidth)
 			local basey = math.floor(glyph.V0*TexHeight)
 			local width = math.floor((glyph.U1-glyph.U0)*TexWidth)
@@ -992,7 +994,8 @@ function gui.FontIcons(GL,source,ranges,size)
 						end
 					end
 				end
-				cursors[k] = glfw.glfwCreateCursor(image, 0, 0);
+				local hs = hotspots[k] or {0,0}
+				cursors[k] = glfw.glfwCreateCursor(image, hs[1]*width, hs[2]*height);
 				assert(cursors[k]~=nil,"glfwCreateCursor failed")
 			else --SDL
 				--local surface = sdl.createRGBSurface(0, width, height, 32, 0, 0, 0, 0);
@@ -1014,7 +1017,8 @@ function gui.FontIcons(GL,source,ranges,size)
 						end
 					end
 				end
-				cursors[k] = sdl.createColorCursor(surface,0,0)
+				local hs = hotspots[k] or {0,0}
+				cursors[k] = sdl.createColorCursor(surface, hs[1]*width, hs[2]*height)
 				sdl.freeSurface(surface)
 				assert(cursors[k]~=nil,"sdl.createColorCursor failed")
 			end
