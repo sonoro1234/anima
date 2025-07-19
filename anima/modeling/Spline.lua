@@ -224,6 +224,7 @@ local function load_polyset( filename)
 		M.divs = {}
 		for i=1,numsplines do M.divs[i] = ffi.new("int[1]",1) end
 		M.ps = {}
+		M.triangulation = {}
 		NM.defs.curr_spline.args.max=numsplines
 		action=1 --no edit acction
 		NM.vars.curr_spline[0] = 1
@@ -586,6 +587,7 @@ local polyloader = gui.FileBrowser(nil,{filename="phfx",key="import",pattern="po
 		end
 		updatefunc(self)
 	end
+	
 	local glu_tesselator = require"anima.Fonter.glu_tesselator"
 	function M:triangulate(ii)
 		--print("triangulate",ii)
@@ -606,7 +608,9 @@ local polyloader = gui.FileBrowser(nil,{filename="phfx",key="import",pattern="po
 		--]]
 		--winding positive and get tr
 		local meshes = glu_tesselator.tesselate(self.ps[ii],nil,true)
+		meshes[1].triangles = CG.Delaunay( meshes[1].points,meshes[1].triangles)
 		self.triangulation[ii].points, self.triangulation[ii].tr = meshes[1].points, meshes[1].triangles
+		
 	end
 	
 	function M:save()
@@ -636,6 +640,7 @@ local polyloader = gui.FileBrowser(nil,{filename="phfx",key="import",pattern="po
 		M.alpha = params.alpha
 		M.divs = params.divs
 		M.ps = {}
+		M.triangulation = {}
 		-- for j,sc in ipairs(params.sccoors) do
 			-- NM.vars.curr_spline[0] = j
 			-- self:process_all()
