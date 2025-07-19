@@ -71,8 +71,60 @@ end
 local cb_combineCallback = ffi.cast("void (*)()", ffi.cast("void (*)(GLdouble[3], GLdouble*[4], GLfloat[4], GLdouble ** )", combineCallback))
 
 local M = {}
+
+local function get_Meshes(meshes, get_indexes)
+   local Meshes = {}
+   local tr = {}
+   for i=1,#meshes do
+		if get_indexes then
+			tr[i] = {}
+			if meshes[i].mode == glc.GL_TRIANGLE_STRIP then
+				--print("GL_TRIANGLE_STRIP",#meshes[i])
+				for j=3,#meshes[i] do
+					table.insert(tr[i],j-2-1)
+					table.insert(tr[i],j-1-1)
+					table.insert(tr[i],j-1)
+				end
+			elseif meshes[i].mode == glc.GL_TRIANGLE_FAN then
+				--print("GL_TRIANGLE_FAN",#meshes[i])
+				for j=3,#meshes[i] do
+					table.insert(tr[i],0)
+					table.insert(tr[i],j-1-1)
+					table.insert(tr[i],j-1)
+				end
+			elseif meshes[i].mode == glc.GL_TRIANGLES then
+				--print("GL_TRIANGLES")
+				for j=1,#meshes[i]-2,3 do
+					table.insert(tr[i],j-1)
+					table.insert(tr[i],j+1-1)
+					table.insert(tr[i],j+2-1)
+				end
+			else
+				error"not done"
+			end
+			--local m = mesh.mesh{points=meshes[i],triangles=tr}
+			--table.insert(Meshes, m)
+		else
+			local m = mesh.mesh{points=meshes[i]}
+			m.modedraw = meshes[i].mode
+			table.insert(Meshes, m)
+		end
+   end
+   local Points, trs = {},{}
+   local last_tr = 0
+   if get_indexes then
+		for i=1,#meshes do
+			for j=1,#meshes[i] do table.insert(Points, meshes[i][j]) end
+			for j=1,#tr[i] do table.insert(trs, tr[i][j] + last_tr) end
+			last_tr = last_tr + #meshes[i]
+		end
+		local m = mesh.mesh{points=Points, triangles=trs}
+		table.insert(Meshes, m)
+   end
+   return Meshes
+end
 --polygon with poly.holes
-function M.tesselate(poly)
+function M.tesselate(poly, winding, get_indexes)
 	meshes = {}
    local tobj = glu.gluNewTess();
 
@@ -82,7 +134,7 @@ function M.tesselate(poly)
    glu.gluTessCallback(tobj, glc.GLU_TESS_ERROR, cb_errorCallback);
    glu.gluTessCallback(tobj, glc.GLU_TESS_COMBINE, cb_combineCallback);
 
-   glu.gluTessProperty(tobj, glc.GLU_TESS_WINDING_RULE,glc.GLU_TESS_WINDING_POSITIVE);
+   glu.gluTessProperty(tobj, glc.GLU_TESS_WINDING_RULE,winding or glc.GLU_TESS_WINDING_POSITIVE);
    glu.gluTessNormal(tobj, 0,0,1)
   -- for ii,poly in ipairs(polyset) do
    glu.gluTessBeginPolygon(tobj, NULL);
@@ -107,17 +159,18 @@ function M.tesselate(poly)
   -- end
    glu.gluDeleteTess(tobj);
    
-   local Meshes = {}
-   for i=1,#meshes do
-		local m = mesh.mesh{points=meshes[i]}
-		m.modedraw = meshes[i].mode
-		table.insert(Meshes, m)
-   end
+   -- local Meshes = {}
+   -- for i=1,#meshes do
+		-- local m = mesh.mesh{points=meshes[i]}
+		-- m.modedraw = meshes[i].mode
+		-- table.insert(Meshes, m)
+   -- end
 
-   return Meshes
+   --return Meshes
+      return get_Meshes(meshes, get_indexes)
 end
 --polyset no poly.holes
-function M.tesselate_set(polyset,winding)
+function M.tesselate_set(polyset,winding,get_indexes)
 	--print("tesselate_set winding", winding)
 	meshes = {}
    local tobj = glu.gluNewTess();
@@ -144,12 +197,7 @@ function M.tesselate_set(polyset,winding)
   -- end
    glu.gluDeleteTess(tobj);
    
-   local Meshes = {}
-   for i=1,#meshes do
-		local m = mesh.mesh{points=meshes[i]}
-		m.modedraw = meshes[i].mode
-		table.insert(Meshes, m)
-   end
-   return Meshes
+
+   return get_Meshes(meshes, get_indexes)
 end
 return M

@@ -757,6 +757,7 @@ function CG.triang_sweept(P)
 	end
 
 	for i=4,#P do
+		--up and down
 		local u,d = last,last
 		while (Sign(P[i],P[Q[u]],P[Q[mod(u+1,#Q)]]) < 0) do
 			table.insert(tr,i-1)
@@ -775,7 +776,7 @@ function CG.triang_sweept(P)
 			--prtable(Q)
 			error("asdfasdf")
 		end
-		
+		--update Q for convex hull: add i between d and u
 		if u > d then
 			for h=1,u-d-1 do table.remove(Q,d+1) end
 		else

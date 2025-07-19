@@ -586,13 +586,14 @@ local polyloader = gui.FileBrowser(nil,{filename="phfx",key="import",pattern="po
 		end
 		updatefunc(self)
 	end
-	
+	local glu_tesselator = require"anima.Fonter.glu_tesselator"
 	function M:triangulate(ii)
 		--print("triangulate",ii)
 		if not NM.drawregion then return end
 		if #self.ps[ii] < 3 then return end
-		local good, OK
 		self.triangulation[ii] = {}
+		--[[
+		local good, OK
 		OK, self.triangulation[ii].points, self.triangulation[ii].tr, good = pcall(CG.EarClipSimple2, self.ps[ii], true)
 		if not OK then
 			print("EarClip error:", self.triangulation[ii].points)
@@ -602,7 +603,10 @@ local polyloader = gui.FileBrowser(nil,{filename="phfx",key="import",pattern="po
 			doingedit = false
 		end
 		if not good then print"bad EarClip" end
-		--return indexes,good
+		--]]
+		--winding positive and get tr
+		local meshes = glu_tesselator.tesselate(self.ps[ii],nil,true)
+		self.triangulation[ii].points, self.triangulation[ii].tr = meshes[1].points, meshes[1].triangles
 	end
 	
 	function M:save()
