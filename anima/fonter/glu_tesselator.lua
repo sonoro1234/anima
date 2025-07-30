@@ -1,5 +1,5 @@
 
-
+local ffi = require"ffi"
 local libgl = require"gl"
 local glu = libgl.glu
 local glc = libgl.glc
