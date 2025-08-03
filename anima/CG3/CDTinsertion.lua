@@ -2,27 +2,39 @@ local CG = require"anima.CG3.base"
 
 local SegmentIntersect = CG.SegmentIntersect
 --takes P: table of points, indexes: openGL tr over P (offset -1 for being 0-indexed)
--- Poli: table of poligon indexes over P 
+-- Polinds: table of poligon indexes over P 
 -- delout: (boolean) delete edges out of polygon
-function CG.CDTinsertion(P,indexes,Polind,bridges,delout)
+function CG.CDTinsertion(P,indexes,Polinds,bridges,delout)
+		--assert(type(Polinds[1])=="table")-- for change in behaviour
+		if type(Polinds[1])~="table" then Polinds = {Polinds} end
 
 		local Ed = CG.TR2Ed(indexes)
+		--prtable(indexes)
+		--prtable("Ed",Ed)
 				
 		--edges of polygon 
-		local Poli = {}
-		for ii=1,#Polind-1 do
-			if not bridges[ii] then
-				Poli[#Poli+1] = {Polind[ii],Polind[ii+1]}
+		local Polis = {}
+		for i,Polind in ipairs(Polinds) do
+			local Poli = {}
+			for ii=1,#Polind-1 do
+				if not bridges[ii] then
+					Poli[#Poli+1] = {Polind[ii],Polind[ii+1]}
+				end
 			end
-		end
-		if not bridges[#Polind] then
-			Poli[#Poli+1] = {Polind[#Polind],Polind[1]}
+			if not bridges[#Polind] then
+				Poli[#Poli+1] = {Polind[#Polind],Polind[1]}
+			end
+			Polis[#Polis+1] = Poli
 		end
 
 		--polygon points
-		local Pol = {}
-		for i=1,#Polind do
-			Pol[i] = P[Polind[i]]
+		local Pols = {}
+		for i,Polind in ipairs(Polinds) do
+			local Pol = {}
+			for i=1,#Polind do
+				Pol[i] = P[Polind[i]]
+			end
+			Pols[#Pols+1] = Pol
 		end
 		
 		local IsPointInPoly = CG.IsPointInPoly
@@ -58,7 +70,7 @@ function CG.CDTinsertion(P,indexes,Polind,bridges,delout)
 			--print("find",a,b)
 			local inter,sc,sd
 			for op2a,op2 in pairs(E[a]) do
-					--print("test",a,b,op2a,op2)
+					--print("FindTriangleInterAB2 test",a,b,op2a,op2)
 					inter,sc,sd,sgabcd = SegmentIntersect(P[a],P[b],P[op2a],P[op2])
 					--print("\t",inter,sc,sd,sgabcd)
 					if inter then
@@ -77,6 +89,7 @@ function CG.CDTinsertion(P,indexes,Polind,bridges,delout)
 			--print("Walk",a,b,c,d)
 			local a1 = a
 			while true do 
+				--print("while",a1,b,c,d)
 				--seguir desde c-d hasta b
 				--segundo triangulo es el opuesto de a sobre c-d
 				--print("test",c,d,a1)
@@ -84,12 +97,14 @@ function CG.CDTinsertion(P,indexes,Polind,bridges,delout)
 				local op = Ed[d][c] --CG.Eopposite(Ed[c][d],a1)
 				if not (op) then
 					
-					prtable("no opos in:",c,d,a1,Ed[c][d])
+					prtable("no opos in:",c,d,a1,Ed[c][d],Ed[d][c])
+					prtable(Ed)
 					error"no op"
 				end
 				--print("opos",op)
 				--print("a,b",a,b)
 				if op == b then
+					--print("op == b")
 					break
 				else
 					--test c-op
@@ -165,18 +180,39 @@ function CG.CDTinsertion(P,indexes,Polind,bridges,delout)
 			return t
 		end
 		
+		local function IsPointInPolis(Polys,pt)
+			local wn = 0
+			--print("IsPointInPolis",pt)
+			for ip,Pol in ipairs(Polys) do
+				local intt,wn1 = CG.IsPointInPolyWn(Pol,pt)
+				wn = wn + wn1
+				--print(ip,"is_in1",is_in1,CG.IsPointInPolyX(Pol,pt),CG.IsPointInPolyCn(Pol,pt),CG.IsPointInPolyWn(Pol,pt))
+				--is_in = is_in1 or is_in
+			end
+			return wn~=0,wn
+		end
+		
 		local Pdelout = {}
+		--local Pdelouts = {}
 		--CHECK(Ed)
+		for ip,Poli in ipairs(Polis) do
+		local Pol = Pols[ip]
+		local sigA = CG.signed_area(Pol)
+		--print("sigA",sigA)
+		--local Pdelout = {}
+		--Pdelouts[ip] = Pdelout
 		for i=1,#Poli do
 			local a = Poli[i][1]
 			local b = Poli[i][2] --Poli[mod(i+1,#Poli)]
 			local e = Ed[a][b] or Ed[b][a]
-			
+			--print("---check edge",a,b)
 			if not e then --no esta, hay que insertar
 				--print("searchingxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",a,b)
 				local Pu,Pl = {},{} --{a},{a}
 				--primero buscar punto a y arista intersecada
 				local c,d,sc,sd =	FindTriangleInterAB2(a,b,Ed)
+				--print("c",c,d,sc,sd,Ed[c][d],Ed[d][c])
+				assert(c)
 				if not c then return CG.Ed2TR(Ed),Ed,false end
 				ClasifyVerts(c,d,sc,sd,Pu,Pl)
 				--ahora recorrer los triangulos hasta b
@@ -203,35 +239,47 @@ function CG.CDTinsertion(P,indexes,Polind,bridges,delout)
 					Tpseudo(Ed,P,Pl,b,a)
 					if delout then
 						--CW poly
+						-- if sigA < 0 then
 						-- for i=1,#Pl do 
 							-- if not IsPointInPoly(Pol,P[Pl[i]]) then
 								-- Pdelout[Pl[i]] = true 
 							-- end
 						-- end
+						-- else
 						--CCW poly
 						for i=1,#Pu do 
-							if not IsPointInPoly(Pol,P[Pu[i]]) then
+							if not IsPointInPolis(Pols,P[Pu[i]]) then
 								Pdelout[Pu[i]] = true 
 							end
 						end
+						--end
 					end
 
 					--prtable("Pu",Pu)
 					--prtable("Pl",Pl)
 				end
 				--]]
-			--else
+			else
 				--print(a,b,"intriangul")
 			end
 		end
+		end
 		
 		if delout then
+		--print"delout"
 			---[=[
+			--for ip,Polind in ipairs(Polinds) do
+			--do
+			--local ip,Polind = 1,Polinds[1]
+			--local Pol = Pols[ip]
+			--local Pdelout = Pdelouts[ip]
 			--move polygon points from Pdelout to Polv
 			local Polv = {}
+			for ip,Polind in ipairs(Polinds) do
 			for i=1,#Polind do
 				Polv[Polind[i]] = true
 				Pdelout[Polind[i]] = nil 
+			end
 			end
 
 			local fin
@@ -282,15 +330,22 @@ function CG.CDTinsertion(P,indexes,Polind,bridges,delout)
 						--if any point is from poly
 						if Polv[ka] or Polv[kb] or Polv[op] then
 							local bari = (P[ka] + P[kb] + P[op])/3
-							if not IsPointInPoly(Pol,bari) then
+							--print("bari",ka,kb,op)
+							--local is_in = false
+							--for ip,Pol in ipairs(Pols) do
+							if not IsPointInPolis(Pols,bari) then
 								deleteTriangle(Ed,ka,kb,op)
 							end
+								--is_in = IsPointInPoly(Pol,bari) or is_in
+							--end
+							--if not is_in then deleteTriangle(Ed,ka,kb,op) end
 						end
 						doneT[hash] = true
 					end
 				end
 			end
 			--]=]
+			--end
 		end
 		
 		--recreate triangulation
@@ -339,13 +394,19 @@ function CG.AddPoints2Mesh(poli,points,tr)
 		r = addtrian(tr,i,c,a) and r
 		return r
 	end
-	
+	local function degen()
+	end
 	for i=1,#poli do
 		local a = poli[i]
 		local added = false
 		local intri,l1,l2,l3
 		local testtable = {}
+		--print("tr---",#tr)
+		--for j=1,#tr,3 do print((j-1)/3 +1,tr[j]+1,tr[j+1]+1,tr[j+2]+1) end
+		local firstdegen=false
+		::REPEAT::
 		for j=1,#tr,3 do
+			--print("searchT",inipoints+i,j,#points+1,"inds",tr[j]+1,tr[j+1]+1,tr[j+2]+1)
 			local ptr1,ptr2,ptr3 = points[tr[j]+1],points[tr[j+1]+1],points[tr[j+2]+1]
 			if 	(ptr1.x > a.x and ptr2.x > a.x and ptr3.x > a.x) or
 				(ptr1.x < a.x and ptr2.x < a.x and ptr3.x < a.x) or
@@ -358,16 +419,21 @@ function CG.AddPoints2Mesh(poli,points,tr)
 			testtable[#testtable+1] = {intri=intri,l1=l1,l2=l2,l3=l3}
 			local weld = false
 			local goodins = true
+
 			
 			--degenerated cases pt over triangle edge
 			if (abs(l1)<=eps or abs(l2)<=eps or abs(l3)<=eps) then
-				points[#points+1] = a
+				firstdegen = not firstdegen
+				--print("degen",#points+1,intri,l1,l2,l3,tr[j]+1,tr[j+1]+1,tr[j+2]+1)
+				if firstdegen then points[#points+1] = a end
+				--points[#points+1] = a 
 				local added2 = false
 				if ((abs(l1)<=eps) and (l2*l3>=0)) then 
 				--ifl2*l3==0 es un vertice entonces generar poli con indice hacia antiguo punto
 				--y return en funcion
 					if (l2*l3>0) then
 						goodins =insert_2triangs(tr,#points-1,tr[j+1],tr[j+2],tr[j])
+						-- goodins =insert_3triangs(tr,#points-1,tr[j],tr[j+1],tr[j+2])
 					else --eq
 						weld = (abs(l2)<=eps) and tr[j+2] or tr[j+1]
 					end
@@ -376,6 +442,7 @@ function CG.AddPoints2Mesh(poli,points,tr)
 				elseif	((abs(l2)<=eps) and (l1*l3>=0)) then
 					if (l1*l3>0) then
 						goodins =insert_2triangs(tr,#points-1,tr[j+2],tr[j],tr[j+1])
+						-- goodins =insert_3triangs(tr,#points-1,tr[j],tr[j+1],tr[j+2])
 					else --eq
 						weld = (abs(l1)<=eps) and tr[j+2] or tr[j]
 					end
@@ -383,34 +450,62 @@ function CG.AddPoints2Mesh(poli,points,tr)
 				elseif	((abs(l3)<=eps) and (l2*l1>=0)) then
 					if (l2*l1>0) then
 						goodins =insert_2triangs(tr,#points-1,tr[j],tr[j+1],tr[j+2])
+						-- goodins =insert_3triangs(tr,#points-1,tr[j],tr[j+1],tr[j+2])
 					else --eq
 						weld = (abs(l2)<=eps) and tr[j] or tr[j+1]
 					end
 					added2 = true
 				end
 				if added2 then
+					--print"added2"
 					if not goodins then print("badins2",l1,l2,l3) end
 					if not weld then
-						polind[#polind + 1] = #points
+						--firstdegen = not firstdegen
+						--print"not weld"
+						if firstdegen then
+							polind[#polind + 1] = #points
+						--else
+							--points[#points] = nil --delete or second time
+						end
 						remove(tr,j)
 						remove(tr,j)
 						remove(tr,j)
+						--find the opposite triangle for adding
+						--for k=j,#tr
 					else --reuse vertex weld
+						--print"weld"
 						points[#points] = nil
 						polind[#polind+1] = weld + 1
+						assert(firstdegen,"weld after 1 degen point")
+						firstdegen = false
 					end
 					added = true
-					break
+					--firstdegen = not firstdegen
+					--print("firstdegen",firstdegen)
+					if firstdegen then goto REPEAT else break end
+					--break
 				else
 					points[#points] = nil
 				end
-			elseif intri then
+			-- elseif (abs(l1)<=eps or abs(l2)<=eps or abs(l3)<=eps) then
+				-- points[#points+1] = a
+				-- polind[#polind+1] = #points
+				----tr index is i-1
+				-- goodins = insert_4triangs(tr,#points-1,tr[j],tr[j+1],tr[j+2])
+				-- if not goodins then print("badins1",l1,l2,l3) end
+				----delete triangle j,j+1,j+2
+				-- remove(tr,j)
+				-- remove(tr,j)
+				-- remove(tr,j)
+				-- added = true
+				-- break
+			elseif intri then --or (abs(l1)<=eps or abs(l2)<=eps or abs(l3)<=eps) then
 				points[#points+1] = a
 				polind[#polind+1] = #points
 				--tr index is i-1
 				goodins = insert_3triangs(tr,#points-1,tr[j],tr[j+1],tr[j+2])
 				if not goodins then print("badins1",l1,l2,l3) end
-				--delete triangles
+				--delete triangle j,j+1,j+2
 				remove(tr,j)
 				remove(tr,j)
 				remove(tr,j)

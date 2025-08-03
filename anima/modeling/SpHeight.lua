@@ -46,5 +46,22 @@ local function Editor(GL,camera,updatefunc)
 	return M
 end
 
+--[=[
+local GL = GLcanvas{H=800,aspect=1,DEBUG=true,use_imgui_viewport=false}
+local function update(n) end --print("update spline",n) end
+local camera = Camera(GL, "tps")
+local edit = Editor(GL,camera,update,{region=true})--,doblend=true})
+local plugin = require"anima.plugins.plugin"
+edit.fb = plugin.serializer(edit)
+local DBox = GL:DialogBox("Spline demo",true)
+function GL.init()
+	DBox:add_dialog(edit.NM)
+end
+function GL.imgui()
+	--ig.ShowDemoWindow()
+	--edit.NM:draw()
+end
+GL:start()
+--]=]
 
 return Editor

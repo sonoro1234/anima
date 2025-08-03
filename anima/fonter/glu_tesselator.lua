@@ -18,7 +18,8 @@ function errorCallback(errorCode)
 	printD("errorCallback",errorCode)
    local estring = glu.gluErrorString(errorCode);
    print( "Tessellation Error: %s\n",ffi.string(estring));
-   exit(0);
+   --exit(0);
+   error"glu teseel error"
 end
 local cb_errorCallback = ffi.cast("void (*)()", ffi.cast("void (*)(GLenum)", errorCallback))
 
@@ -124,6 +125,8 @@ local function get_Meshes(meshes, get_indexes)
    return Meshes
 end
 --polygon with poly.holes
+local anchor = {}
+local insert = table.insert
 function M.tesselate(poly, winding, get_indexes)
 	meshes = {}
    local tobj = glu.gluNewTess();
@@ -141,6 +144,7 @@ function M.tesselate(poly, winding, get_indexes)
         glu.gluTessBeginContour(tobj);
 		for i,v in ipairs(poly) do
 			local vertex = ffi.new("GLdouble[3]",v.x,v.y,0)
+			insert(anchor, vertex)
             glu.gluTessVertex(tobj, vertex, vertex);
 		end
 		glu.gluTessEndContour(tobj);
@@ -149,6 +153,7 @@ function M.tesselate(poly, winding, get_indexes)
 			glu.gluTessBeginContour(tobj);
 			for ih,vh in ipairs(hole) do
 				local vertex = ffi.new("GLdouble[3]",vh.x,vh.y,0)
+				insert(anchor, vertex)
 				glu.gluTessVertex(tobj, vertex, vertex);
 			end
 			glu.gluTessEndContour(tobj);
@@ -165,7 +170,7 @@ function M.tesselate(poly, winding, get_indexes)
 		-- m.modedraw = meshes[i].mode
 		-- table.insert(Meshes, m)
    -- end
-
+    anchor = {}
    --return Meshes
       return get_Meshes(meshes, get_indexes)
 end
@@ -184,11 +189,12 @@ function M.tesselate_set(polyset,winding,get_indexes)
    glu.gluTessProperty(tobj, glc.GLU_TESS_WINDING_RULE, winding or glc.GLU_TESS_WINDING_POSITIVE);
    glu.gluTessNormal(tobj, 0,0,1)
 
-   glu.gluTessBeginPolygon(tobj, NULL);
+   glu.gluTessBeginPolygon(tobj, nil);
    for ii,poly in ipairs(polyset) do
         glu.gluTessBeginContour(tobj);
 		for i,v in ipairs(poly) do
 			local vertex = ffi.new("GLdouble[3]",v.x,v.y,0)
+			insert(anchor, vertex)
             glu.gluTessVertex(tobj, vertex, vertex);
 		end
 		glu.gluTessEndContour(tobj);
@@ -196,8 +202,8 @@ function M.tesselate_set(polyset,winding,get_indexes)
 		glu.gluTessEndPolygon(tobj);
   -- end
    glu.gluDeleteTess(tobj);
-   
 
+	anchor = {}
    return get_Meshes(meshes, get_indexes)
 end
 return M

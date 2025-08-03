@@ -247,7 +247,7 @@ local function IsPointInPoly(P, p)
 	P[#P] = nil
     return c;
 end
-
+M.IsPointInPolyX = IsPointInPoly
 --crossing number algo
 --http://geomalgorithms.com/a03-_inclusion.html
 local function IsPointInPolyCn(V,P)
@@ -291,6 +291,7 @@ local function IsPointInPolyWn(V,P)
 end
 
 M.IsPointInPoly = IsPointInPolyCn
+M.IsPointInPolyCn = IsPointInPolyCn
 M.IsPointInPolyWn = IsPointInPolyWn
 
 
@@ -381,9 +382,16 @@ function M.lexicografic_compare(a,b)
 	end
 	
 local algo = require"anima.algorithm.algorithm"
-function M.lexicografic_sort(P)
-	algo.quicksort(P,1,#P,M.lexicografic_compare)
+function M.lexicografic_sort(P,doindexes)
 	P.sorted = true
+	if doindexes then
+		local inds = {}
+		for i=1,#P do inds[i]=i end
+		algo.quicksort_mirror(P,inds,1,#P,M.lexicografic_compare)
+		return inds
+	else
+		algo.quicksort(P,1,#P,M.lexicografic_compare)
+	end
 end
 
 --helper binary search

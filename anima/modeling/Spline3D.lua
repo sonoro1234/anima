@@ -9,7 +9,7 @@ local function Spline3D(GL, camera,updatefunc)
 	local function sp_update(sp, cmd)
 		print("SPLINE",sp,cmd)
 		if not cmd then return end
-				if false then --self.calc_framecenter then
+			if false then --self.calc_framecenter then
 				local ii = SP3D.NM.curr_spline
 				print("calframecenter",ii)
 				print("center",SP3D.frames[ii].center)
@@ -213,7 +213,7 @@ local function Spline3D(GL, camera,updatefunc)
 	function SP3D:get_meshW(ii)
 		local MVinv = camera:MV().inv
 		local mm,fr = self:get_mesh(ii)
-		print(mm,fr, "is mesh")
+		--print(mm,fr, "is mesh")
 		return mm and mm:clone():M4(MVinv) or nil, mesh.move_frame(fr, MVinv)
 	end
 	function SP3D:resetmesh(ii,frame,pts)
@@ -266,16 +266,44 @@ local function Spline3D(GL, camera,updatefunc)
 end
 
 --[=[
-local GL = GLcanvas{H=1000,aspect=1,DEBUG=true}
-local function update(n) print("update spline",n) end
+local objects = {}
+local GL = GLcanvas{H=1000,aspect=1,DEBUG=false}
+local DboxO = GL:DialogBox("objects",true)
 local camera = Camera(GL,"tps")
-local edit = Spline3D(GL,camera,update)--,doblend=true})
+local edit
+local function update(a,i) 
+	print("update spline",a,i) 
+	local meshW,frame = edit:get_meshW(i)
+	print("meshW",meshW,frame)
+	local object = objects[i] 
+	if not object then
+		object = require"anima.Object3D"(GL,camera,{name="obj_"..i})
+		object:init()
+		objects[i] = object
+		DboxO:add_dialog(object.NM)
+	end
+	if meshW then
+		object:setMesh(meshW,gtex, frame)
+	end
+
+end
+
+edit = Spline3D(GL,camera,update)--,doblend=true})
 edit:newmesh()
 --edit:set_frame(nil,1)
 local plugin = require"anima.plugins.plugin"
 edit.fb = plugin.serializer(edit)
-function GL.imgui()
-	edit.NM:draw()
+local DBox = GL:DialogBox("Spline3D demo",true)
+function GL.init()
+	DBox:add_dialog(edit.NM)
+end
+function GL:draw(t,w,h)
+	--edit.NM:draw()
+	ut.Clear()
+	for im,o in pairs(objects) do
+		--print("draw",im,o)
+		o:draw()
+	end
 end
 GL:start()
 --]=]

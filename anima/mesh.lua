@@ -163,7 +163,7 @@ function M.gridB(divs,bounds,zval)
 		local xc = i/w
 		for j=0,h do
 			local y =  j==h and maxb.y or (minb.y + j*stepy)
-			local p = vec3(x,y,zval)
+			local p = zval and vec3(x,y,zval) or vec2(x, y)
 			points[#points+1] = p
 			tcoords[#tcoords+1] = vec2(xc,j/h)
 		end

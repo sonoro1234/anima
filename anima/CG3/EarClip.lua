@@ -2,7 +2,9 @@ local CG = require"anima.CG3.base"
 local M = CG
 
 local function mod(a,b)
-	return ((a-1)%b)+1
+	if a<1 or a>b then return ((a-1)%b)+1 end
+	--return ((a-1)%b)+1
+	return a
 end
 
 local Sign = CG.Sign
@@ -211,8 +213,8 @@ local function EarClipSimple(poly,CW)
 					table.insert(tr,a-1)
 					table.insert(tr,b-1)
 					table.insert(tr,c-1)
-					local co,bb = coroutine.running()
-					if not bb then coroutine.yield(tr, true) end
+					--local co,bb = coroutine.running()
+					--if not bb then coroutine.yield(tr, true) end
 					break
 				end
 			end
@@ -584,8 +586,8 @@ local function EarClipSimple2(poly, use_closed)
 			table.insert(tr,a-1)
 			table.insert(tr,b-1)
 			table.insert(tr,c-1)
-			local co,bb = coroutine.running()
-			if not bb then coroutine.yield(poly,tr,true,nil,nil,eartips, convex,angles,ind) end
+			--local co,bb = coroutine.running()
+			--if not bb then coroutine.yield(poly,tr,true,nil,nil,eartips, convex,angles,ind) end
 		end
 	end
 	--first bridges
@@ -753,6 +755,7 @@ function CG.triang_sweept(P)
 		tr = {0,2,1}
 		last = 2
 	else
+		print(P[1],P[2],P[3])
 		error("collinear points")
 	end
 
@@ -793,7 +796,7 @@ function CG.triang_sweept(P)
 	end
 	--testTODO
 	-- for i=1,#tr,3 do
-		--assert(Sign(P[tr[i]+1],P[tr[i+1]+1],P[tr[i+2]+1]) > 0)
+		-- assert(Sign(P[tr[i]+1],P[tr[i+1]+1],P[tr[i+2]+1]) > 0)
 		-- if Sign(P[tr[i]+1],P[tr[i+1]+1],P[tr[i+2]+1]) < 0 then
 			-- tr[i+1],tr[i+2] = tr[i+2],tr[i+1]
 		-- end
