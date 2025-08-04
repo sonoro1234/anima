@@ -644,7 +644,7 @@ local polyloader = gui.FileBrowser(nil,{filename="phfx",key="import",pattern="po
 		-- local CH,tr = CG.triang_sweept(polyh2)
 		-- local tr2 = {}
 		-- for i=1,#tr do tr2[i] = inds[tr[i]+1]-1 end
-		local epsv = mat.vec3(10,10,10)
+		local epsv = mat.vec3(10,10,10)*3
 		local minb,maxb = CG.bounds(polyh)
 		local grid = mesh.gridB(1,{minb-epsv,maxb+epsv})
 		local points_add = grid.points
@@ -699,14 +699,7 @@ local polyloader = gui.FileBrowser(nil,{filename="phfx",key="import",pattern="po
 			for j,v in ipairs(hole) do pts[#pts+1]=v end
 		end
 		end
-		local ptsOr = {}
-		for i=1,#pts do ptsOr[i]=pts[i] end
-		
-		local inds = CG.lexicografic_sort(pts, true)
-		local CH,tr = CG.triang_sweept(pts)
-		local tr2 = {}
-		for i=1,#tr do tr2[i] = inds[tr[i]+1]-1 end
-		
+
 		local contours = {}
 		local Polind = {}
 		for i=1,#ps do Polind[i]=i end
@@ -722,11 +715,15 @@ local polyloader = gui.FileBrowser(nil,{filename="phfx",key="import",pattern="po
 				sum = sum + #contours[#contours]
 			end
 		end
+		
+		local ptsOr = {}
+		for i=1,#pts do ptsOr[i]=pts[i] end
+		
+		local inds = CG.lexicografic_sort(pts, true)
+		local CH,tr = CG.triang_sweept(pts)
+		local tr2 = {}
+		for i=1,#tr do tr2[i] = inds[tr[i]+1]-1 end
 
-		-- local ok,indexes2 = pcall(CG.CDTinsertion,ptsOr,tr2,contours,{}, true)
-		-- if not ok then print(debug.traceback()) end
-		-- self.triangulation[ii].points, self.triangulation[ii].tr = ptsOr, ok and indexes2 or tr2
-		-- print("ok",ok,indexes2)
 		local indexes2 = CG.CDTinsertion(ptsOr,tr2,contours,{}, true)
 		self.triangulation[ii].points, self.triangulation[ii].tr = ptsOr, indexes2 
 		--]]

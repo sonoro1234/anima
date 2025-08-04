@@ -40,6 +40,7 @@ local function HeightEditor(GL,updatefunc)
 	{"curves",1,guitypes.slider_enum,{"line","circle","pow"},function() M:process() end},
 	{"grid",3,guitypes.valint,{min=1,max=30},function() M:process() end},
 	{"mirror",false,guitypes.toggle,function() M:process() end},
+	{"outpoly",true, guitypes.toggle,function() M:process() end},
 	})
 
 
@@ -243,9 +244,9 @@ local function HeightEditor(GL,updatefunc)
 		--prtable("bridges1",polyh)--.bridges)
 		local Polind = CG.AddPoints2Mesh(polyh,points_add,indexes)
 		---[[
-		indexes = CDTinsertion(points_add,indexes,Polind,polyh.bridges, true) --NM.outpoly)
+		indexes = CDTinsertion(points_add,indexes,Polind,polyh.bridges, NM.outpoly)
 		---------------------
-		---[=[
+		--[=[
 		--delete points not used
 		local map = mesh.clean_points(points_add, indexes)
 		--remap Polind

@@ -247,10 +247,12 @@ function CG.CDTinsertion(P,indexes,Polinds,bridges,delout)
 						-- end
 						-- else
 						--CCW poly
+						local PUi = Ed[b][a]
 						for i=1,#Pu do 
-							if not IsPointInPolis(Pols,P[Pu[i]]) then
-								Pdelout[Pu[i]] = true 
-							end
+							if PUi == Pu[i] then Pdelout[Pu[i]] = true; break end
+							-- if not IsPointInPolis(Pols,P[Pu[i]]) then
+								-- Pdelout[Pu[i]] = true 
+							-- end
 						end
 						--end
 					end
@@ -317,7 +319,7 @@ function CG.CDTinsertion(P,indexes,Polinds,bridges,delout)
 				end
 			until fin
 			--]=]
-			---[=[
+			--[=[
 			-- remove rests
 			local doneT = {}
 			local TriangleKey = CG.TriangleKey
@@ -341,6 +343,20 @@ function CG.CDTinsertion(P,indexes,Polinds,bridges,delout)
 							--if not is_in then deleteTriangle(Ed,ka,kb,op) end
 						end
 						doneT[hash] = true
+					end
+				end
+			end
+			--]=]
+			---[=[
+			--remove rests 2
+			local doneT = {}
+			local TriangleKey = CG.TriangleKey
+			for ip,Poli in ipairs(Polis) do
+				for i,e in ipairs(Poli) do
+					--search triangles oposed
+					local c = Ed[e[2]][e[1]]
+					if c then
+						deleteTriangle(Ed,e[2],e[1],c)
 					end
 				end
 			end
