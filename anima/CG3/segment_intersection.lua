@@ -284,6 +284,7 @@ local function iterateIntersector(Int)
 	end
 end
 
+------tests
 
 math.randomseed(3)
 local Poly = {}

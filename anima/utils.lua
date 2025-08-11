@@ -677,6 +677,15 @@ function serializeTable(name, value, saved)
 	return table.concat(string_table)
 end
 
+function SaveTable(params, filename)
+	local str = {}
+	table.insert(str,serializeTable("params",params))
+	table.insert(str,"\nreturn params")
+	local file,err = io.open(filename,"w")
+	if not file then print(err); return end
+	file:write(table.concat(str))
+	file:close()
+end
 -- local ff = ffi.new("float[3]")
 --local ff = ffi.new("float[?]",3)
 --loadstring(cdataSerialize(ff))()

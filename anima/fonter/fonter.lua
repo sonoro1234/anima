@@ -520,6 +520,33 @@ function M.char_to_trmeshes_glu(layer, orientation)
 
 	return meshes
 end
+function M.char_to_trmeshes_monotone(layer, orientation)
+	--print(orientation,"orientation")
+	--prtable(layer)
+	local monot = require"anima.CG3.TriangSweep"
+	--local meshes = {}
+	local pts = {}
+	local icontours = {}
+	for i,pol in ipairs(layer.polyset) do
+		--print(i,"signed area",CG3.signed_area(pol))
+		if orientation == 0 then reverse(pol) end
+		local icontour = {}
+		local sum = #pts
+		for j,v in ipairs(pol) do
+			pts[#pts + 1] = v
+			icontour[j] = sum + j
+		end
+		icontours[i] = icontour
+	end
+	--prtable(pts,icontours)
+	--local winding = (orientation==1) and glc.GLU_TESS_WINDING_POSITIVE or glc.GLU_TESS_WINDING_NEGATIVE
+	--print("winding",orientation,(orientation==1), winding, glc.GLU_TESS_WINDING_POSITIVE , glc.GLU_TESS_WINDING_NEGATIVE)
+	local points, tr = monot.monotone_tesselator(pts, icontours)
+	local m = mesh.mesh{points=points, triangles=tr}
+	--for j=1,#m do table.insert(meshes, m[j]) end
+
+	return {m}--meshes
+end
 
 
 function M.char_to_trmeshes(ch)
@@ -653,13 +680,13 @@ function M.new_face(filename,ranges,size,steps,outlinef)
 	for i,range in ipairs(T.ranges) do
 		for j=range[1],range[2] do
 			if T.visrng[j] then
-			--print("--------------getting cp",j)--,string.char(j))
+			print("--------------getting cp",j)--,string.char(j))
 			local ch = M.GetCodePointColor(T.face, j, T.size , T.steps, outlinef)
 			--M.GetCodePointColor(T.face, j)
 			--if not ch.name:match"ches" then ch.empty = true end --filter by name
 			printD("-----------ch.empty",ch.empty,j)
 			if not ch.empty then
-				if M.triangulator ~= "glu" then
+				if M.triangulator == "ear" then
 					M.repair_char1(ch)
 					M.repair_char2(ch)
 				end
@@ -676,7 +703,9 @@ function M.new_face(filename,ranges,size,steps,outlinef)
 					--prtable(ch.layers)
 					for ii,layer in ipairs(ch.layers) do
 						local meshes,rests
-						if M.triangulator == "glu" then
+						if M.triangulator == "monotone" then
+							meshes,rests = M.char_to_trmeshes_monotone(layer, ch.orientation)
+						elseif M.triangulator == "glu" then
 							meshes,rests = M.char_to_trmeshes_glu(layer, ch.orientation)
 						else
 							meshes,rests = M.char_to_trmeshes(layer)

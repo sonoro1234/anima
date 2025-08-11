@@ -280,6 +280,7 @@ local function update(a,i)
 		object = require"anima.Object3D"(GL,camera,{name="obj_"..i})
 		object:init()
 		objects[i] = object
+		object.NM.vars.mesh[0] = true
 		DboxO:add_dialog(object.NM)
 	end
 	if meshW then

@@ -529,14 +529,14 @@ local function InsertHoles(poly,skip_check)
 					if p1 > j then --first
 						--local a,b = poly[mod(j+1,#poly)], poly[mod(p1-1,#poly)]
 						local a,b,c = p,poly[mod(j+2,#poly)], poly[mod(j+1,#poly)]
-						if CG.PointInCone(minv, c, a, c, b) then
+						if CG.PointInQuadrant(minv, c, a, c, b) then
 							found = true
 							sortedp[#sortedp+1] = {j=j,dist=(minv-p):norm(),p=p}
 						end
 					elseif p1 < j then --second
 						--local a,b = poly[mod(j-1,#poly)], poly[mod(j+1,#poly)]
 						local a,b,c = poly[mod(j-1,#poly)],poly[mod(j+1,#poly)],p
-						if CG.PointInCone(minv, c, a, c, b) then
+						if CG.PointInQuadrant(minv, c, a, c, b) then
 							found = true
 							sortedp[#sortedp+1] = {j=j,dist=(minv-p):norm(),p=p}
 						end

@@ -3,9 +3,12 @@ require"anima"
 local mat = require"anima.matrixffi"
 local M = {}
 
+--to iterate an array circular way
+--a is index, b is polygon (array) len
 local function mod(a,b)
 	return ((a-1)%b)+1
 end
+M.mod = mod
 --CCW 1 CW -1
 local function rightturn_2det(a,b,c)
 	return (b.x*c.y - b.y*c.x - (a.x*c.y - a.y*c.x) + a.x*b.y - a.y*b.x) --< 0
@@ -53,11 +56,25 @@ end
 
 M.Angle = Angle
 
-function M.PointInCone(p,a,b,c,d)
+--p is right to ab and left to cd
+function M.PointInQuadrant(p,a,b,c,d)
 	local sab = Sign(a,b,p)
 	local scd = Sign(c,d,p)
 	return (sab < 0) and (scd > 0)
 end
+--p is left ab and left bc
+function M.PointInCone(p,a,b,c)
+	local sab = Sign(a,b,p)
+	local sbc = Sign(b,c,p)
+	return (sab > 0) and (sbc > 0)
+end
+
+-- local a = mat.vec2(0,0)
+-- local b = mat.vec2(2,0)
+-- local c = mat.vec2(3,1)
+-- local d = mat.vec2(1,-1)
+
+-- print("InCone",M.PointInCone(d,a,b,c))
 
 --say if interiors of segments a-b c-d overlap
 local function SegmentIntersect(a,b,c,d)
@@ -125,9 +142,9 @@ end
 M.SegmentBeginIntersect = SegmentBeginIntersect
 
 -- local a = mat.vec2(0,0)
--- local b = mat.vec2(0,1)
--- local c = mat.vec2(0,0)
--- local d = mat.vec2(0,1)
+-- local b = mat.vec2(2,0)
+-- local c = mat.vec2(1,1)
+-- local d = mat.vec2(1,2)
 -- returns the point where a SegmentIntersect happens
 local function IntersecPoint(a,b,c,d)
 	local den = (a.x - b.x)*(c.y - d.y) - (a.y - b.y)*(c.x - d.x)
@@ -155,7 +172,7 @@ end
 -- local c = mat.vec2(0.5,0)
 -- local d = mat.vec2(1.5,0)
 -- print(M.SegmentIntersectC(a,b,c,d))
--- print(M.IntersecPoint(a,b,c,d))
+--print(M.IntersecPoint2(a,b,c,d))
 --tries to get the same as calling IntersecPoint2 twice
 function M.IntersecPoint3(a,b,c,d)
 	local den = (a.x - b.x)*(c.y - d.y) - (a.y - b.y)*(c.x - d.x)

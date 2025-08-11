@@ -974,6 +974,7 @@ function GLcanvas(GL)
 		if not GL.DORENDER then
 		while (sdl.getTicks() < lasttimefps + 1000.0/GL.fps) do
         -- TODO: Put the thread to sleep, yield, or simply do nothing
+			sdl.Delay(10)
 		end
 		lasttimefps = lasttimefps + 1000.0/GL.fps;
 		end
@@ -1029,6 +1030,7 @@ function GLcanvas(GL)
 		if not GL.DORENDER then
 		while (glfw.glfwGetTime() < lasttimefps + 1.0/GL.fps) do
         -- TODO: Put the thread to sleep, yield, or simply do nothing
+		ig.lib.ImGui_ImplGlfw_Sleep(10);
 		end
 		lasttimefps = lasttimefps + 1.0/GL.fps;
 		end

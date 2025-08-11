@@ -1,5 +1,11 @@
 local CG = require"anima.CG3.base"
 
+-- Insertion taken from
+--Constrained Delaunay Triangulation using Plane Subdivision
+--Vid Domiter*
+-- Triangle deletion from outside polygon just invented
+-- error"collinear abc" still not found
+
 local SegmentIntersect = CG.SegmentIntersect
 --takes P: table of points, indexes: openGL tr over P (offset -1 for being 0-indexed)
 -- Polinds: table of poligon indexes over P 
@@ -47,6 +53,7 @@ function CG.CDTinsertion(P,indexes,Polinds,bridges,delout)
 				Pl[#Pl+1] = d
 			else
 				--assert(sd > 0)
+				assert(sc<0, "collinear abc")
 				Pu[#Pu+1] = d
 				Pl[#Pl+1] = c
 			end
@@ -54,11 +61,15 @@ function CG.CDTinsertion(P,indexes,Polinds,bridges,delout)
 				-- print("should not be Pl",Pl[#Pl],sc,sd,c,d,CG.IsPointInPoly(Pol,P[Pu[#Pu]]))
 			-- end
 		end
-		
+		local IsPointInSegment = CG.IsPointInSegment
 		local function InterClassify(P,a,b,c,d,Pu,Pl)
 			local inter,sc,sd = SegmentIntersect(P[a],P[b],P[c],P[d])
 			if inter then
 				ClasifyVerts(c,d,sc,sd,Pu,Pl)
+			else
+				if sc==0 or sd==0 then error"colinear2" end
+				if IsPointInSegment(P[c],P[a],P[b]) or
+				IsPointInSegment(P[d],P[a],P[b]) then error"collinear abc" end
 			end
 			return inter
 		end
@@ -75,6 +86,10 @@ function CG.CDTinsertion(P,indexes,Polinds,bridges,delout)
 					--print("\t",inter,sc,sd,sgabcd)
 					if inter then
 						return op2a,op2,sc,sd
+					else
+						if sc==0 or sd==0 then error"colinear2" end
+						if CG.IsPointInSegment(P[op2a],P[a],P[b]) or
+						CG.IsPointInSegment(P[op2],P[a],P[b]) then error"collinear abc" end
 					end
 					
 			end
@@ -121,14 +136,15 @@ function CG.CDTinsertion(P,indexes,Polinds,bridges,delout)
 				end
 			end
 		end
-		
+		local setTriangle = CG.setTriangle
+		local Circumcircle2 = CG.Circumcircle2
 		local function Tpseudo(E,P,Ps,a,b)
 			--print("Tpseudo",a,b)
 			--prtable(Ps)
 			local ci = 1
 			if #Ps > 1 then
 				for i=2,#Ps do
-					if CG.Circumcircle2(a,b,Ps[ci],Ps[i],P) then
+					if Circumcircle2(a,b,Ps[ci],Ps[i],P) then
 						ci = i
 					end
 				end
@@ -136,8 +152,11 @@ function CG.CDTinsertion(P,indexes,Polinds,bridges,delout)
 				for i=1,ci-1 do
 					Pe[i] = Ps[i]
 				end
+				local Pd_len = 0
 				for i=ci+1,#Ps do
-					Pd[#Pd + 1] = Ps[i]
+					Pd_len = Pd_len + 1
+					--Pd[#Pd + 1] = Ps[i]
+					Pd[Pd_len] = Ps[i]
 				end
 				Tpseudo(E,P,Pe,a,Ps[ci])
 				Tpseudo(E,P,Pd,Ps[ci],b)
@@ -147,7 +166,7 @@ function CG.CDTinsertion(P,indexes,Polinds,bridges,delout)
 				-- if math.abs(area)<1e-16 then 
 					-- print("area Tpseudozer0",area,a,Ps[ci],b) 
 				-- end
-				CG.setTriangle(E,a,Ps[ci],b)
+				setTriangle(E,a,Ps[ci],b)
 				--testCW(P,a,Ps[ci],b)
 			end
 		end
@@ -350,7 +369,6 @@ function CG.CDTinsertion(P,indexes,Polinds,bridges,delout)
 			---[=[
 			--remove rests 2
 			local doneT = {}
-			local TriangleKey = CG.TriangleKey
 			for ip,Poli in ipairs(Polis) do
 				for i,e in ipairs(Poli) do
 					--search triangles oposed
