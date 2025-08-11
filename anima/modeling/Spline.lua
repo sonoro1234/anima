@@ -891,7 +891,7 @@ local contours_loader = gui.FileBrowser(nil,{filename="phfx",key="importcont",pa
 	return M
 end
 
----[=[
+--[=[
 local GL = GLcanvas{H=900,aspect=1,DEBUG=true,use_imgui_viewport=false}
 local function update(n) end --print("update spline",n) end
 local edit = Editor(GL,update,{region=true})--,doblend=true})
