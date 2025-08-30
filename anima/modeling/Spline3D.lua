@@ -31,7 +31,7 @@ local function Spline3D(GL, camera,updatefunc)
 	------------Spline modifications for 3D
 	local HeightEditor = require"anima.modeling.HeightEditor"
 	SP3D = require"anima.modeling.Spline"(GL,sp_update)
-	
+	SP3D.NM.name = "spline3d"
 	local doheightupdate = true
 	local function updateheights(ii)
 		if doheightupdate then updatefunc(SP3D,ii) end
@@ -265,7 +265,8 @@ local function Spline3D(GL, camera,updatefunc)
 	return SP3D
 end
 
---[=[
+if not ... then
+---[=[
 local objects = {}
 local GL = GLcanvas{H=1000,aspect=1,DEBUG=false}
 local DboxO = GL:DialogBox("objects",true)
@@ -308,5 +309,6 @@ function GL:draw(t,w,h)
 end
 GL:start()
 --]=]
+end
 
 return Spline3D

@@ -137,7 +137,7 @@ function M.tesselate(poly, winding, get_indexes)
    glu.gluTessCallback(tobj, glc.GLU_TESS_ERROR, cb_errorCallback);
    glu.gluTessCallback(tobj, glc.GLU_TESS_COMBINE, cb_combineCallback);
 
-   glu.gluTessProperty(tobj, glc.GLU_TESS_WINDING_RULE,winding or glc.GLU_TESS_WINDING_POSITIVE);
+   glu.gluTessProperty(tobj, glc.GLU_TESS_WINDING_RULE,winding or glc.GLU_TESS_WINDING_ODD);
    glu.gluTessNormal(tobj, 0,0,1)
   -- for ii,poly in ipairs(polyset) do
    glu.gluTessBeginPolygon(tobj, NULL);
@@ -186,7 +186,7 @@ function M.tesselate_set(polyset,winding,get_indexes)
    glu.gluTessCallback(tobj, glc.GLU_TESS_ERROR, cb_errorCallback);
    glu.gluTessCallback(tobj, glc.GLU_TESS_COMBINE, cb_combineCallback);
 
-   glu.gluTessProperty(tobj, glc.GLU_TESS_WINDING_RULE, winding or glc.GLU_TESS_WINDING_POSITIVE);
+   glu.gluTessProperty(tobj, glc.GLU_TESS_WINDING_RULE, winding or glc.GLU_TESS_WINDING_ODD);
    glu.gluTessNormal(tobj, 0,0,1)
 
    glu.gluTessBeginPolygon(tobj, nil);

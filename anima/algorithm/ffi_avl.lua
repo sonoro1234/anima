@@ -532,7 +532,7 @@ end
 
 print("time1",secs_now()-init_t)
 
-local Tree = require"avl3"
+local Tree = require"avl_tree"
 
 local t = Tree:new()
 
