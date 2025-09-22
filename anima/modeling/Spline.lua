@@ -30,15 +30,11 @@ local function Editor(GL,updatefunc1,args)
 	local numsplines = 0
 	M.sccoors = {}
 	M.ps = {}
-	M.triangulation = {}
 	M.alpha = {}
 	M.divs = {}
 	local action = 1
 	--local updatefunc = updatefunc or function() end
 	local updatefunc = function(E,...)
-			if E.NM.curr_spline > 0 then
-				E:triangulate(E.NM.curr_spline);
-			end
 			if updatefunc1 then updatefunc1(E, ...) end
 	end
 	
@@ -54,12 +50,8 @@ local function Editor(GL,updatefunc1,args)
 	{"orientation",0,guitypes.button,function() M:change_orientation(); M:process_all() end},
 	{"rotate",0,guitypes.button,function() M:rotate(); M:process_all() end,{sameline=true}},
 	{"set_last",0,guitypes.toggle},
-	--{"triangs",1,guitypes.valint,{min=1,max=50}},
 	{"clear spline",0,guitypes.button,function(this) M:clearshape() end,{sameline=true}},
-	{"tesselator",4,guitypes.combo,{"EarClip2","glu","CDT1","CDT3","monotones","Tess2"},function() M:triangulate(1) end}
 	}
-	
-	if args.region then table.insert(vars,{"drawregion",false,guitypes.toggle,function() updatefunc(M) end}) end
 	
 	--for converting from window coordinates to GL.fbo coordinates
 	--from imgui inverted Y
@@ -95,20 +87,6 @@ local function Editor(GL,updatefunc1,args)
 		local vecb = ig.ImVec2(-vec.y,vec.x)*lena
 		dl:AddTriangleFilled(points[0], points[0] + vec + veca, points[0] + vec + vecb, color)
 	end
-	local function DrawTriangulation(dl, trian,color,i)
-		if i~=1 then return end
-		--print"DrawTriangulation"
-		local pointsI = {}
-		for i=1,#trian.points do local p = trian.points[i];pointsI[i-1] = ViewportToScreen(p.x, p.y) end
-		local tr = trian.tr
-		--for i=1,math.min(#tr,3*NM.triangs),3 do
-		for i=1,#tr,3 do 
-			dl:AddTriangleFilled(pointsI[tr[i]], pointsI[tr[i+1]], pointsI[tr[i+2]],color) 
-		end
-		--for i=1,#tr do dl:AddText(pointsI[tr[i]]+ig.ImVec2(0,-16),ig.U32(1,1,1,1),tostring(tr[i]+1)) end
-		--for i=1,#tr,3 do dl:AddTriangle(pointsI[tr[i]], pointsI[tr[i+1]], pointsI[tr[i+2]],color) end
-		for i=0,#pointsI do dl:AddText(pointsI[i]+ig.ImVec2(0,-16),ig.U32(1,1,1,1),tostring(i+1)) end
-	end
 	local function ShowSplines(NM)
 		--if numsplines==0 then return end
 		--if NM.curr_spline == 0 then return end
@@ -117,22 +95,6 @@ local function Editor(GL,updatefunc1,args)
 		local dl = ig.GetBackgroundDrawList(ig.GetMainViewport())
 		local keepflags = dl.Flags
 		dl.Flags = bit.band(dl.Flags,bit.bnot(ig.lib.ImDrawListFlags_AntiAliasedLines))
-		--points in curr_spline
-		if NM.curr_spline > 0 then
-		if curr_hole[0]>0 then
-			for i,v in ipairs(M.sccoors[NM.curr_spline].holes[curr_hole[0]]) do
-				local scpoint = ViewportToScreen(v.x,v.y)
-				local color = i==1 and ig.U32(1,1,0,1) or ig.U32(1,0,0,1)
-				dl:AddCircleFilled(scpoint, 4, color)
-			end
-		else
-			for i,v in ipairs(M.sccoors[NM.curr_spline]) do
-				local scpoint = ViewportToScreen(v.x,v.y)
-				local color = i==1 and ig.U32(1,1,0,1) or ig.U32(1,0,0,1)
-				dl:AddCircleFilled(scpoint, 4, color)
-			end
-		end
-		end
 		--polylines
 		for i=1,numsplines do
 			if #M.ps[i] < 2 then goto ENDPOLYLINES end
@@ -143,14 +105,6 @@ local function Editor(GL,updatefunc1,args)
 			for j,p in ipairs(M.ps[i]) do
 				local scpoint = ViewportToScreen(p.x,p.y)
 				pointsI[j-1] = scpoint
-			end
-			if NM.drawregion then
-				--print"drawregion"
-				if not M.triangulation[i] then M:triangulate(i) end
-				if not M.triangulation[i].error then
-					DrawTriangulation(dl,M.triangulation[i],color2,i)
-				end
-				--dl:AddConcavePolyFilled(pointsI,#M.ps[i],color2)
 			end
 			--dl:AddPolyline(pointsI, #M.ps[i], color, ig.lib.ImDrawFlags_Closed, 1)
 			PolyArrow(dl, pointsI, #M.ps[i], color)
@@ -167,6 +121,29 @@ local function Editor(GL,updatefunc1,args)
 			end
 			::ENDPOLYLINES::
 		end
+		--points in curr_spline
+		if NM.curr_spline > 0 then
+		if curr_hole[0]>0 then
+			for i,v in ipairs(M.sccoors[NM.curr_spline].holes[curr_hole[0]]) do
+				local scpoint = ViewportToScreen(v.x,v.y)
+				local color = i==1 and ig.U32(1,1,0,1) or ig.U32(1,0,0,1)
+				dl:AddCircleFilled(scpoint, 4, color)
+			end
+		else
+			for i,v in ipairs(M.sccoors[NM.curr_spline]) do
+				local scpoint = ViewportToScreen(v.x,v.y)
+				local color = i==1 and ig.U32(1,1,0,1) or ig.U32(1,0,0,1)
+				dl:AddCircleFilled(scpoint, 4, color)
+			end
+			--repeat 1 for alway above
+			if #M.sccoors[NM.curr_spline] > 0 then
+			local v1 = M.sccoors[NM.curr_spline][1]
+			local scpoint1 = ViewportToScreen(v1.x,v1.y)
+			dl:AddCircleFilled(scpoint1, 4, ig.U32(1,1,0,1))
+			end
+		end
+		end
+		------------
 		if NM.curr_spline > 0 then
 		if action == 3 or action == 4 then --edit or clear
 			local mposvp = vec2(ScreenToViewport(mpos.x, mpos.y))
@@ -227,7 +204,6 @@ local function load_polyset( filename)
 		M.divs = {}
 		for i=1,numsplines do M.divs[i] = ffi.new("int[1]",1) end
 		M.ps = {}
-		M.triangulation = {}
 		NM.defs.curr_spline.args.max=numsplines
 		action=1 --no edit acction
 		NM.vars.curr_spline[0] = 1
@@ -264,7 +240,6 @@ local function load_contours( filename)
 		M.divs = {}
 		for i=1,numsplines do M.divs[i] = ffi.new("int[1]",1) end
 		M.ps = {}
-		M.triangulation = {}
 		NM.defs.curr_spline.args.max=numsplines
 		action=1 --no edit acction
 		NM.vars.curr_spline[0] = 1
@@ -275,7 +250,7 @@ end
 
 local contours_loader = gui.FileBrowser(nil,{filename="phfx",key="importcont",pattern="contours"},load_contours)
 	-----------------
-	
+
 	local doingedit = false
 	NM = gui.Dialog("spline",vars,function(this)
 		local NM = this
@@ -492,7 +467,9 @@ local contours_loader = gui.FileBrowser(nil,{filename="phfx",key="importcont",pa
 		--M:process_all()
 		return numsplines
 	end
-	
+	function M:get_numsplines()
+		return numsplines
+	end
 	function M:newhole(pts)
 		if NM.curr_spline==0 then return end
 		self.sccoors[NM.curr_spline].holes = self.sccoors[NM.curr_spline].holes or {}
@@ -681,170 +658,6 @@ local contours_loader = gui.FileBrowser(nil,{filename="phfx",key="importcont",pa
 		end
 		return pts, contours
 	end
-	function M:triangulate(ii)
-		print("triangulate",ii)
-		
-		if not NM.drawregion then return end
-		if #self.ps[ii] < 3 then return end
-		self.triangulation[ii] = {}
-		if ii~=1 then return end
-		if NM.tesselator == 0 then
-			--- EarClip2
-			local good, OK
-			OK, self.triangulation[ii].points, self.triangulation[ii].tr, good = pcall(CG.EarClipSimple2, self.ps[ii], true)
-			if not OK then
-				print("EarClip error:", self.triangulation[ii].points)
-				print(debug.traceback())
-				self.triangulation[ii].error = true
-				action = 1
-				doingedit = false
-			end
-			if not good then print"bad EarClip" end
-		elseif NM.tesselator == 1 then
-			--winding positive and get tr
-			--- glu_tesselator
-			local glu_tesselator = require"anima.Fonter.glu_tesselator"
-			local meshes = glu_tesselator.tesselate(self.ps[ii],nil,true)
-			meshes[1].triangles = CG.Delaunay( meshes[1].points,meshes[1].triangles)
-			self.triangulation[ii].points, self.triangulation[ii].tr = meshes[1].points, meshes[1].triangles
-		elseif NM.tesselator == 5 then --Tess2
-			local insert = table.insert
-			local Tess2 = require"anima.Fonter.tess2b3" 
-			local contours = {}
-			local contour = {}
-			for i,v in ipairs(self.ps[ii]) do
-				insert(contour,v.x)
-				insert(contour,v.y)
-			end
-			contours[#contours+1] = contour
-			if self.ps[ii].holes then
-			for i,hole in ipairs(self.ps[ii].holes) do
-				local contour = {}
-				for j,v in ipairs(hole) do
-					insert(contour,v.x)
-					insert(contour,v.y)
-				end
-				contours[#contours+1] = contour
-			end
-			end
-			local polisiz = 3
-			local tess = Tess2.tesselate({
-				contours= contours,
-				windingRule=Tess2.WINDING_ODD,
-				elementType=Tess2.POLYGONS,
-				polySize=polisiz,
-				vertexSize= 2
-			});
-			local points = {}
-			local tr = {}
-			for i = 0,tess.elements.length-1,polisiz do
-				--print" begin path"
-				for j = 0, polisiz-1 do
-					local idx = tess.elements[i+j];
-					if (idx == -1) then goto continue end
-					if (j == 0) then
-						--ctx.moveTo(tess.vertices[idx*2+0], tess.vertices[idx*2+1]);
-						--print(tess.vertices[idx*2+0], tess.vertices[idx*2+1]);
-						points[#points+1] = mat.vec2(tess.vertices[idx*2+0], tess.vertices[idx*2+1])
-						insert(tr,#points-1)
-					else
-						--ctx.lineTo(tess.vertices[idx*2+0], tess.vertices[idx*2+1]);
-						--print(tess.vertices[idx*2+0], tess.vertices[idx*2+1]);
-						points[#points+1] = mat.vec2(tess.vertices[idx*2+0], tess.vertices[idx*2+1])
-						insert(tr,#points-1)
-					end
-					::continue::
-				end
-				--print"end path"
-			end
-			prtable("result",points,tr)
-			self.triangulation[ii].points, self.triangulation[ii].tr = points, tr
-		elseif NM.tesselator == 2 then
-			---[[ CDTins whith grid
-			--clone ps
-			local ps = self.ps[ii]
-			local pts = {holes={}}
-			for i=1,#ps do pts[i] = ps[i] end
-			if ps.holes then
-			for i,hole in ipairs(ps.holes) do
-				pts.holes[i]= {}
-				for j,v in ipairs(hole) do pts.holes[i][j]=v end
-			end
-			end
-			local polyh = CG.InsertHoles(pts)
-			--local Polind = {}
-			--for i=1,#polyh do Polind[i]=i end
-			--local polyh2 = {}
-			--for i,v in ipairs(polyh) do polyh2[i]=v end
-			--prtable(polyh.bridges)
-			-- local inds = CG.lexicografic_sort(polyh2, true)
-			-- local CH,tr = CG.triang_sweept(polyh2)
-			-- local tr2 = {}
-			-- for i=1,#tr do tr2[i] = inds[tr[i]+1]-1 end
-			local epsv = mat.vec3(10,10,10)*3
-			local minb,maxb = CG.bounds(polyh)
-			local grid = mesh.gridB(1,{minb-epsv,maxb+epsv})
-			local points_add = grid.points
-			local indexes = grid.triangles
-			local Polind = CG.AddPoints2Mesh(polyh,points_add,indexes)
-			local ok,indexes2 = pcall(CG.CDTinsertion,points_add,indexes,Polind,polyh.bridges, true)
-			self.triangulation[ii].points, self.triangulation[ii].tr = points_add, ok and indexes2 or indexes
-			--]]
-		--[[ CDTins 2
-		--clone ps
-		local ps = self.ps[ii]
-		local pts = {holes={}}
-		for i=1,#ps do pts[i] = ps[i] end
-		if ps.holes then
-		for i,hole in ipairs(ps.holes) do
-			pts.holes[i]= {}
-			for j,v in ipairs(hole) do pts.holes[i][j]=v end
-		end
-		end
-
-		local inds = CG.lexicografic_sort(pts, true)
-		local CH,tr = CG.triang_sweept(pts)
-		local tr2 = {}
-		for i=1,#tr do tr2[i] = inds[tr[i]+1]-1 end
-		local Polind = {}
-		for i=1,#ps do Polind[i]=i end
-
-		local ok,indexes2 = pcall(CG.CDTinsertion,ps,tr2,Polind,{}, true)
-		self.triangulation[ii].points, self.triangulation[ii].tr = ps, ok and indexes2 or tr2
-		print("ok",ok,indexes2)
-		--]]
-		elseif NM.tesselator == 3 then
-			---[=[ CDTins 3
-			--clone ps
-			local pts, contours = clone_ps(self.ps[ii])
-			local ptsOr = {}
-			for i=1,#pts do ptsOr[i]=pts[i] end
-			local inds = CG.lexicografic_sort(pts, true)
-			local CH,tr = CG.triang_sweept(pts)
-			local tr2 = {}
-			for i=1,#tr do tr2[i] = inds[tr[i]+1]-1 end
-	
-			local indexes2 = CG.CDTinsertion(ptsOr,tr2,contours,{}, true)
-			self.triangulation[ii].points, self.triangulation[ii].tr = ptsOr, indexes2 
-			--]==]
-		
-		elseif NM.tesselator ==  4 then
-			---[=[ Dave mount
-			local pts, contours = clone_ps(self.ps[ii])
-			local points, tr = CG.monotone_tesselator(pts, contours)
-			--NM.vars.drawregion[0] = false
-			-- for i,pol in pairs(polis) do
-				-- print("newspline",i)
-				-- local poly = {}
-				-- for j=1,#pol do poly[j] = pts[pol[j]] end
-				-- local a = self:newspline(poly)
-				-- self.triangulation[a] = {}
-				-- self.triangulation[a].points, self.triangulation[a].tr = poly, {}
-			-- end
-			self.triangulation[ii].points, self.triangulation[ii].tr = points, tr
-			--]=]
-		end
-	end
 	
 	function M:save()
 		local pars = {sccoors=self.sccoors,VP={GL.W,GL.H}}
@@ -873,7 +686,6 @@ local contours_loader = gui.FileBrowser(nil,{filename="phfx",key="importcont",pa
 		M.alpha = params.alpha
 		M.divs = params.divs
 		M.ps = {}
-		M.triangulation = {}
 		-- for j,sc in ipairs(params.sccoors) do
 			-- NM.vars.curr_spline[0] = j
 			-- self:process_all()
@@ -891,7 +703,8 @@ local contours_loader = gui.FileBrowser(nil,{filename="phfx",key="importcont",pa
 	return M
 end
 
---[=[
+---[=[
+if not ... then
 local GL = GLcanvas{H=900,aspect=1,DEBUG=true,use_imgui_viewport=false}
 local function update(n) end --print("update spline",n) end
 local edit = Editor(GL,update,{region=true})--,doblend=true})
@@ -906,6 +719,7 @@ function GL.imgui()
 	--edit.NM:draw()
 end
 GL:start()
+end
 --]=]
 
 return Editor

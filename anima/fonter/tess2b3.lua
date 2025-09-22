@@ -1517,7 +1517,7 @@
 			return min;
 		end,
 
-		delete= function( hCurr ) 
+		delete= function(this, hCurr ) 
 			local n = this.nodes;
 			local h = this.handles;
 			local curr;
@@ -1995,7 +1995,7 @@
 
 			elseif( eUp.Org ~= eLo.Org ) then
 				--/* merge the two vertices, discarding eUp->Org */
-				tess.pq.delete( eUp.Org.pqHandle );
+				tess.pq:delete( eUp.Org.pqHandle );
 				Sweep.spliceMergeVertices( tess, eLo:Oprev(), eUp );
 			end
 		else 
@@ -3226,6 +3226,7 @@
 				--/* Make sure we don''t try to tessellate the new triangles. */
 				next = f.next;
 				if( f.inside ) then
+					print"face"
 					if ( not this.tessellateMonoRegion_( mesh, f ) ) then return false; end
 				end
 				f = next
@@ -3450,7 +3451,7 @@
 		end,
 
 	--//	void OutputContours( TESStesselator *tess, TESSmesh *mesh, int vertexSize )
-		outputContours_= function( mesh, vertexSize ) 
+		outputContours_= function(this, mesh, vertexSize ) 
 			local f;
 			local edge;
 			local start;
@@ -3668,7 +3669,7 @@
 			mesh:check();
 
 			if (elementType == Tess2.BOUNDARY_CONTOURS) then
-				this.outputContours_( mesh, vertexSize );     --/* output contours */
+				this:outputContours_( mesh, vertexSize );     --/* output contours */
 			else
 				this:outputPolymesh_( mesh, elementType, polySize, vertexSize );     --/* output polygons */
 			end

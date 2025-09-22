@@ -7,5 +7,4 @@ require"anima.CG3.Delaunay"
 require"anima.CG3.convex_hull"
 require"anima.CG3.CDTinsertion"
 require"anima.CG3.Spline"
-require"anima.CG3.TriangSweep"
 return CG

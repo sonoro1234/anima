@@ -212,6 +212,21 @@ function copyiTable(a)
 	return res
 end
 
+-- not recursive working use deepcopy
+function copyTable(a)
+	--assert(a~=REST)
+	local res ={}
+	for k,v in pairs(a) do
+		if type(v) == "table" then
+			res[k] = copyTable(v)
+		else
+			res[k]=v
+		end
+	end
+	return res
+end
+
+
 --accepts several tables or items
 function concatTables(...)
 	local res={}
@@ -456,7 +471,7 @@ function tbl_compare(t1,t2)
         return eq
     end
     if not _comp(t1,t2) then return false end
-	print"inverse compare"
+	--print"inverse compare"
 	lookup_table = {}
 	seen = {}
 	return _comp(t2,t1)

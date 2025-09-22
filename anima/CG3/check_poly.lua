@@ -97,6 +97,8 @@ local function check2poly_crossings(poly1,poly2,crossings)
 	return crossings
 end
 
+
+
 function M.repair_self_crossingsBAK(poly,cross)
 
 	if #cross == 0 then return {poly} end
@@ -251,8 +253,48 @@ local function check_self_crossings(poly,crossings)
 	return crossings
 end
 ----------------------------------
+local function merge_on_cross(cr)
+	local pt,poly1,ai,poly2,ci = unpack(cr)
+	local bi,di = mod(ai + 1, #poly1), mod(ci + 1, #poly2)
+	local Pol = {poly1[ai],pt}
+	local i=di
+	while(i~=ci) do
+		table.insert(Pol,poly2[i])
+		i = mod(i+1,#poly2)
+	end
+	table.insert(Pol,poly2[ci])
+	table.insert(Pol,pt)
+	i = bi
+	while(i~=ai) do
+		table.insert(Pol,poly1[i])
+		i = mod(i+1,#poly1)
+	end
+	return Pol
+end
+--only interior crossing (not shared points)
+local function check2poly_crossingsInt(poly1,poly2,crossings)
+	crossings = crossings or {}
+	for i=1,#poly1 do
+		local ai,bi = i,mod(i+1,#poly1)
+		local a,b = poly1[ai],poly1[bi]
+		for j=1,#poly2 do
+			local ci,di = j,mod(j+1,#poly2)
+			local c,d = poly2[ci],poly2[di]
+			if CG.SegmentIntersect(a,b,c,d) 
+			then
+				--print("poly1-poly2 crossing",ai,bi,ci,di)
+				--error"self crossing"
+				local pt = CG.IntersecPoint(a,b,c,d)
+				table.insert(crossings,{pt,poly1,ai,poly2,ci})
+				return crossings
+			end
+		end
+	end
+	return crossings
+end
 --receives poly and 1 cross and returns 2 polys in a polyset
 local function  split_on_cross(poly, cr)
+	prtable("split_on_cross",cr)
 	local printD = function() end
 	local typ = ffi.typeof(poly[1]) --could be vec3 or vec2
 	local pt, a, c = typ(cr[1]), cr[3], cr[5]
@@ -296,9 +338,9 @@ local function check_repair_self_crossings(poly)
 		for j=i+2,lim do
 			local ci,di = j,mod(j+1,#poly)
 			local c,d = poly[ci],poly[di]
-			local ok,err = pcall(CG.SegmentIntersectC,a,b,c,d)
-			if not ok then prtable(ai,bi,ci,di,poly) end
-			if CG.SegmentIntersectC(a,b,c,d) then
+			--local ok,err = pcall(CG.SegmentIntersectC,a,b,c,d)
+			--if not ok then prtable(ai,bi,ci,di,poly) end
+			if CG.SegmentIntersect(a,b,c,d) then
 				local pt,good,t = CG.IntersecPoint2(a,b,c,d)
 				if good then 
 					table.insert(crossings,{pt,poly,ai,poly,ci})
@@ -318,6 +360,7 @@ local function check_repair_self_crossings(poly)
 		end
 	end
 	::REPAIR::
+	--print("#crossings",#crossings)
 	if #crossings > 0 then
 		local BI = split_on_cross(poly,crossings[1])
 		local res1, res2 = {}, {}
@@ -326,6 +369,21 @@ local function check_repair_self_crossings(poly)
 		for i,v in ipairs(res2) do
 			table.insert(res1, v)
 		end
+		--------------
+		--[[
+		local cross = {}
+		for i=1,#res1-1 do
+			for j=i+1,#res1 do
+				local cross = check2poly_crossingsInt(res1[i],res1[j],cross)
+				--print(#cross ,"after check_repair_self_crossings")
+				--prtable(cross)
+				for k,cr in ipairs(cross) do
+					local pol = merge_on_cross(cr)
+				end
+			end
+		end
+		--]]
+		--------------
 		return res1
 	end
 	return {poly}
@@ -395,6 +453,37 @@ local function check_collinear(poly)
 		end
 	end
 
+end
+
+local insert = table.insert
+function M.check_repair_contours_crossings(contours)
+	local times = 0
+	::RESTART::
+	--if times == 1 then return contours end
+	print"begin check_repair_contours_crossings"
+	for i=1,#contours do
+		local cont = contours[i]
+		local cont2 = check_repair_self_crossings(cont)
+		if #cont2> 1 then
+			prtable("selfcros",cont2)
+			table.remove(contours,i)
+			for j,pol in ipairs(cont2) do insert(contours, i,pol) end
+			times = times + 1
+			goto RESTART
+		end
+		for j=i+1,#contours do
+			local cross = check2poly_crossingsInt(cont,contours[j])
+			if #cross>0 then 
+				prtable("2poly cross",cross)
+				local Pol = merge_on_cross(cross[1]) 
+				table.remove(contours,j)
+				contours[i] = Pol
+				times = times + 1
+				goto RESTART
+			end
+		end
+	end
+	return contours
 end
 
 M.CHECKPOLY=CHECKPOLY
