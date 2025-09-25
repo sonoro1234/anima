@@ -5,7 +5,11 @@ local CG = require"anima.CG3.base"
 local Sign = CG.Sign
 local M = {edges = {}}
 local use_added_lines --= true
+local use_common_point = true
+local use_collapse_faces = true --true
+local use_prioL = false --true
 local search_cross = true
+
 function prtableDDr(...)
 	for i=1, select('#', ...) do
 		local t = select(i, ...)
@@ -18,9 +22,9 @@ local printD = function() end
 local prtableD = function() end
 local prtableDD = function() end
 if not ... then
--- printD = print --function() end
--- prtableD = prtable --function() end
--- prtableDD = prtableDDr
+printD = print --function() end
+prtableD = prtable --function() end
+prtableDD = prtableDDr
 end
 
 function M:new()
@@ -71,7 +75,7 @@ local function str_inf(inf)
 	return table.concat{"a:",inf.a," b:",inf.b," face:",inf.face," prev:",inf.prev}
 end
 function M:printEdge(inf)
-	printD(self:getPstr(inf.a),self:getPstr(inf.b),str_inf(inf))
+	print(self:getPstr(inf.a),self:getPstr(inf.b),str_inf(inf))
 end
 function M:strEdge(i)
 	local inf = self.edges[i]
@@ -208,6 +212,7 @@ function M:merge_faces(a,b,commonpoint)
 	return anew,bnew,"merge"
 end
 function M:add_line(a,b,commonpoint)
+	--do return end
 	local edges = self.edges
 	local infa = edges[a]
 	local infb = edges[b]
@@ -264,14 +269,15 @@ function M:reverse(ii)
 		a = inf.prev
 	until a==ii --or counter>15
 end
+local printF = printD
 function M:faces_print(txt)
-	if printD==print then
-	printD("---------------------------------------------------",txt)
+	if printF==print then
+	printF("---------------------------------------------------",txt)
 	for i,v in pairs(self.faces) do
-		printD("----face",i,"------------------------------------------")
+		printF("----face",i,"-------------------------------------collapsed:",self.collapsed_faces[i])
 		self:walk(v,self.printEdge)
 	end
-	printD"---------------------------------------------------"
+	printF"---------------------------------------------------"
 	end
 end
 function M:faces_walk(f)
@@ -324,7 +330,7 @@ function M:mark_collapsed(a)
 	self.collapsed_faces[self.edges[a].face] = true
 end
 function M:not_collapsed(a)
-	printD("not_collapsed",a)
+	--printD("not_collapsed",a)
 	if not self.edges[a] then return false end
 	-- printD(self.edges[a])
 	-- printD(self.edges[a].face)
@@ -526,7 +532,7 @@ local function triang_sweept_monotone(P,polind,sinds,Ptoind)
 	local tr = {}
 	
 	local is_lower, OK = getChains(P, polind,sinds2,Ptoind)
-	--assert(OK, "not monotone")
+	assert(OK, "not monotone")
 	if not OK then print"not monotone" ;return {} end
 	------
 	local function same_chain(a,b)
@@ -710,6 +716,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 	prtableD("inds",inds)
 	-------------Status
 	local AddedLines = {}
+	local AddedLines2 = {} --with Alias
 	local function EdgeHash(a,b)
 		return table.concat{tostring(a),">",tostring(b)}
 	end
@@ -757,6 +764,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 		end
 	end
 	local function StatusCross(e,e1,pt)
+		printD("StatusCross",e,e1,pt)
 		local k = e1[1] 
 		prtableD(e,e1)
 		insert(P,pt)
@@ -777,16 +785,17 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 		local maxeind = e1ind>eind and e1ind or eind
 		--Ptoind[#P] = maxeind+0.5
 		--search priority for pt
+		local toinsert 
 		for i=maxeind,#inds do
 			if CG.lexicografic_compare(pt,P[inds[i]]) then
-				insert(inds,i,#P)
-				insert(inds,i,#P-1)
-				--Ptoind[#P] = i
-				for j=1,#P do Ptoind[inds[j]]=j end
-				--prtable("reindexed P",P,"inds",inds,"Ptoind",Ptoind)
+				toinsert = i
 				break
 			end
 		end
+		insert(inds,toinsert,#P)
+		insert(inds,toinsert,#P-1)
+		for j=1,#P do Ptoind[inds[j]]=j end
+		-----------
 		local e1second = e1.first==1 and 2 or 1
 		assert(e1.second==e1second)
 		local esecond = e.first==1 and 2 or 1
@@ -818,7 +827,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 		Status.sorted[e.order] = e[1]
 		prtableD("-----NEW EDGE e1",e1)
 		prtableD("-----NEW EDGE e",e)
-		E:faces_print()
+		E:faces_print("in statuscross")
 		 --#P
 		--e[e.first] = #P
 		printD("intersec inds","inds",e[1],e[2],e1[1],e1[2])
@@ -839,6 +848,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 		end
 		local crossing 
 		local tmin = math.huge
+		if search_cross then
 		for k,e1 in pairs(Status.edges) do
 			--printStatus()
 			--local va,vb = P[E:getP(e[1])],P[E:getP(e[2])]
@@ -860,6 +870,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 		end
 		if crossing then
 			StatusCross(e,crossing.e1,crossing.pt)
+		end
 		end
 		Status.edges[e[1]] = e
 		--printStatus("end StatusAdd",e[1],e[2])
@@ -903,7 +914,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 		local succ = inf.b
 		prev = NoCollapsedWalk(i,prev,"prev")
 		succ = NoCollapsedWalk(i,succ,"b")
-		printD("getStartPoints",E:getPstr(i),E:getPstr(prev),E:getPstr(succ))
+		--printD("getStartPoints",E:getPstr(i),E:getPstr(prev),E:getPstr(succ))
 		local canspike = false
 		if Pequal(P,prev,succ) then 
 			printD"can be spike-------------------" 
@@ -955,6 +966,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 		elseif (s1>0)==(s2>0) then --same signs
 			return s1>0
 		else --different signs
+			print(s1,s2)
 			error"crossing"
 		end
 		-- if (s1>0)==(s2>0) then
@@ -984,7 +996,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 			local polind = E:get_polind(a)
 			local sigA = signed_area(P,polind)
 			print(#polind,sigA)
-			error"checking"
+			error"SpikeResolve bad checking"
 		end
 		return a,b,Pequal(P,a,b)
 	end
@@ -1013,7 +1025,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 			::REDO::
 			local s1 = E:Sign(P,e1first,e1second,a)
 			if cs and s1==0 then a,b,cs = SpikeResolve(a,b);goto REDO end
-			printD(E:getPstr(e1first),E:getPstr(e1second),a,"sign",s1)
+			--printD(E:getPstr(e1first),E:getPstr(e1second),a,"sign",s1)
 			local s2 = E:Sign(P,e1first,e1second,b)
 			printD(e1first,e1second,b,"sign",s2)
 			return checkStartSigns(s1,s2)
@@ -1038,7 +1050,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 	local function IsBelow(e1,i)
 		local e1first, e1second = e1[e1.first],e1[e1.second]
 		local sign = E:Sign(P,e1first,e1second,i)
-		printD("IsBelow",E:getPstr(e1first), E:getPstr(e1second),"point:",E:getPstr(i))
+		--printD("IsBelow",E:getPstr(e1first), E:getPstr(e1second),"point:",E:getPstr(i))
 		if sign > 0 then
 			return true
 		elseif sign < 0 then
@@ -1048,7 +1060,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 		--E:faces_print()
 		--sign==0 collinear
 		local inf = E.edges[i]
-		printD("checking",E:getPstr(inf.b) , E:getPstr(inf.prev))
+		--printD("checking",E:getPstr(inf.b) , E:getPstr(inf.prev))
 		local ss = E:Sign(P,i,inf.prev,inf.b)
 		if ss==0 then
 			printD(E:getP(i),E:getP(inf.prev),E:getP(inf.b),getTipo(i))
@@ -1102,7 +1114,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 	local function StatusPointAdd(i)--,tipo)
 		--tipo = tipo or getTipo(i)
 		local tipo = getTipo(i)
-		printD("StatusPointAdd",E:getPstr(i),tipo)
+		--printD("StatusPointAdd",E:getPstr(i),tipo)
 		local sorted = Status.sorted
 		local edges = Status.edges
 		-- if edges[i] then
@@ -1145,7 +1157,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 			end
 		elseif tipo=="end" then
 			local inf = E.edges[i]
-			printD("StatusPointAdd end search edges",E:getPstr(inf.prev),E:getPstr(i),E:getPstr(inf.b))
+			--printD("StatusPointAdd end search edges",E:getPstr(inf.prev),E:getPstr(i),E:getPstr(inf.b))
 			local e1 = edges[inf.prev]
 			local e2 = edges[i]
 			edges[inf.prev] = nil
@@ -1225,7 +1237,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 			end
 		elseif tipo=="start" then
 			local inf = E.edges[i]
-			printD("StatusPointAdd end search edges",E:getPstr(inf.prev),E:getPstr(i),E:getPstr(inf.b))
+			--printD("StatusPointAdd end search edges",E:getPstr(inf.prev),E:getPstr(i),E:getPstr(inf.b))
 			local e1 = edges[inf.prev]
 			local e2 = edges[i]
 			edges[inf.prev] = nil
@@ -1317,7 +1329,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 		return Regions
 	end
 	local function SignRegions(ii)
-		printD("SignRegions",E:getPstr(ii),"edges",E.edges[ii].prev,E.edges[ii].b)
+		--printD("SignRegions",E:getPstr(ii),"edges",E.edges[ii].prev,E.edges[ii].b)
 		local iir = E:getP(ii)
 		local edges = Status.edges
 		local sorted = Status.sorted
@@ -1447,7 +1459,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 	local function ListPrioDeleteStatusBAK(p1,p2)
 		for j=p1,p2 do
 			local v = inds[j]
-			printD("do",E:getPstr(v),"prio",j,E:not_collapsed(v))
+			--printD("do",E:getPstr(v),"prio",j,E:not_collapsed(v))
 			DeleteStatus(v)
 			if E.invAlias[v] then
 				for k,w in ipairs(E.invAlias[v]) do
@@ -1462,11 +1474,11 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 		p2 = p2 < 1 and 1 or p2
 		for j=p2,p1,-1 do
 			local v = inds[j]
-			printD("do",E:getPstr(v),"prio",j,E:not_collapsed(v))
+			--printD("do",E:getPstr(v),"prio",j,E:not_collapsed(v))
 			StatusPointRemove(v)
 			if E.invAlias[v] then
 				for k,w in ipairs(E.invAlias[v]) do
-					printD("do",E:getPstr(w),"prio",j,E:not_collapsed(w))
+					--printD("do",E:getPstr(w),"prio",j,E:not_collapsed(w))
 					StatusPointRemove(w)
 				end
 			end
@@ -1492,7 +1504,8 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 			for i=1,#candidates do
 				local v = candidates[i]
 				local tipo = getTipo(v)
-				printL(i,E:getPstr(v),tipo)
+				--printL(i,E:getPstr(v),tipo)
+				printL(i,v,tipo)
 				if tipo=="end" then
 					local inf = E.edges[v]
 					local e1 = Status.edges[inf.prev]
@@ -1503,11 +1516,12 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 					ends[v] = math.huge
 				end
 			end
+			prtableD(candidates,ends)
 			algo.quicksort(candidates,1,#candidates,function(a,b) return ends[a]<ends[b] end)
 		end
 		return candidates
 	end
-	local function ListPrio(p1,p2,f)
+	local function ListPrioBAK2(p1,p2,f)
 		f = f or function(i) printD(getTipo(i),E:strEdge(i)) end
 		printL("ListPrio",p1,p2)
 		for j=p1,p2 do
@@ -1516,10 +1530,11 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 			for i=1,#candidates do
 				local v = candidates[i]
 				printL("doing",v)
-				f(v)
+				SearchStatus(v)
 			end
 		end
 	end
+	local ListPrio
 	local function ListPrioBAK(p1,p2,f)
 		f = f or function(i) printD(getTipo(i),E:strEdge(i)) end
 		printL("ListPrio",p1,p2)
@@ -1527,14 +1542,14 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 			printL("--ListPrio",j)
 			local candidates = {}
 			local v = inds[j]
-			printL("do",E:getPstr(v),"prio",j,E:not_collapsed(v))
+			--printL("do",E:getPstr(v),"prio",j,E:not_collapsed(v))
 			if E:not_collapsed(v) then
 				insert(candidates,v)
 				--f(v)
 			end
 			if E.invAlias[v] then
 				for k,w in ipairs(E.invAlias[v]) do
-					printL("do",E:getPstr(w),"prio",j,E:not_collapsed(w))
+					--printL("do",E:getPstr(w),"prio",j,E:not_collapsed(w))
 					if E:not_collapsed(w) then
 					insert(candidates,w)
 					--f(w)
@@ -1594,7 +1609,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 		local inf = E.edges[ii]
 		local succ = inf.b
 		local prev = inf.prev
-		printD("----SearchStatus",E:getPstr(ii),prioi,"-------")
+		--printD("----SearchStatus",E:getPstr(ii),prioi,"-------")
 		--local Regions2 = SearchAbove(ii,tipo)
 		local Regions,iregion = SearchRegions(ii,tipo)
 		-- print("compare Regions",#Regions,#Regions2)
@@ -1603,7 +1618,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 			-- prtable(Regions[j],Regions2[j])
 		-- end
 		--assert(#Regions==#Regions2)
-		--prtableD("Regions",Regions)
+		prtableD("Regions",Regions)
 		for i=1,#Regions-1 do
 			local eH = Regions[i]
 			local eL = Regions[i+1]
@@ -1621,14 +1636,15 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 			assert(eH.windL==eL.windU,"bad windL")
 			--if eH.windL~=0 then --fill non-zero rule
 			--if eH.windL%2==1 then --fill odd rule
-			if windingrule(eH.windL) then
+			if windingrule(eH.windL) and (not search_cross or not use_added_lines) then
 			if eH.lastprioL or eL.lastprioU then
 				local lpri = eH.lastprioL or eL.lastprioU
-				printD("preadd line",eH.lastprioL, eL.lastprioU,"b and prev",E.edges[ii].b, E.edges[ii].prev)
+				printD("preadd line",ii,eH.lastprioL, eL.lastprioU,"b and prev",E.edges[ii].b, E.edges[ii].prev)
 				--if E.edges[ii].b~=lpri and E.edges[ii].prev~=lpri then --and not INADDLINES then
 				if E:getP(E.edges[ii].b)~=E:getP(lpri) and E:getP(E.edges[ii].prev)~=E:getP(lpri) and not INADDLINES then
 					printD(i,"Add line",E:getPstr(ii),E:getPstr(lpri),"options",eH.lastprioL, eL.lastprioU,"b and prev",E.edges[ii].b, E.edges[ii].prev)
 					insert(AddedLines,{E:getP(ii),E:getP(lpri),tipo,pointTipos[lpri]})
+					insert(AddedLines2,{ii,lpri,tipo,pointTipos[lpri]})
 					insert(added_lines,{ii,lpri,tipo,pointTipos[lpri]})
 					-- printD("Tipos",ii,getTipo(ii),lpri,getTipo(lpri))
 					-- local anew,bnew,kind = E:add_line(ii,lpri,commonpoint)
@@ -1658,12 +1674,13 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 		--printStatus("before StatusPointAdd added_lines")
 		--StatusPointAdd(ii,tipo)
 		if use_added_lines and not search_cross and #added_lines > 0 then
-		--assert(not INADDLINES)
+		--assert(#added_lines==1,"more than one line")
 		INADDLINES = true
 		printStatus("before added_lines")
 		for i=1,#added_lines do
 			local l = added_lines[i]
-			prioL,pointmin = getPrioL(l[1],l[2])
+			--using 1 does not fail but it is much slower TODO
+			prioL,pointmin = use_prioL and getPrioL(l[1],l[2]) or 1
 			local sameface = E.edges[l[1]].face == E.edges[l[2]].face
 			printD("----do_added_lines",i,"from",#added_lines)
 			printD(l[1],l[2],"sameface",sameface,"prios",getPrio(l[1]),getPrio(l[2]),"tipo",getTipo(l[1]),getTipo(l[2]))
@@ -1679,7 +1696,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 			printStatus("after delete")
 			--StatusPrint(Status,"after delete","prio",prioL-1)
 			--error"mmmmmmmmmmm"
-			local commonpoint = Pequal(P,l[1],l[2])
+			local commonpoint = use_common_point and Pequal(P,l[1],l[2])
 			if sameface then
 				local ok,tests = check_pair1(l[1],l[2])
 				--assert(tests.t1==tests.t2,"sameface opposite tests")
@@ -1688,7 +1705,8 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 				local anew,bnew,kind = E:add_line(l[1],l[2],commonpoint)
 				E:check()
 				--if commonpoint then E:faces_print();error"commonpoint" end
-				-------------check zero area
+				-------------check zero are
+				if use_collapse_faces then
 				local polinda = E:get_polind(anew)
 				local polindb = E:get_polind(bnew)
 				local sigAa = signed_area(P,polinda)
@@ -1699,6 +1717,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 				end
 				if sigAb==0 then
 					E:mark_collapsed(bnew)
+				end
 				end
 				------------------------------
 				-- assert(E.edges[anew])
@@ -1722,12 +1741,12 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 				end
 				local anew,bnew,kind = E:add_line(l[1],l[2],commonpoint)
 				--if commonpoint then E:faces_print();error"commonpoint" end
-				assert(E.edges[anew])
-				assert(E.edges[bnew])
+				--assert(E.edges[anew])
+				--assert(E.edges[bnew])
 				E:check()
 				printD"postcheck"
 				--prtable(E.collapsed_faces)
-				E:faces_print()
+				--E:faces_print()
 				--printD("added line otherface",l[1],getTipo(l[1]),l[2],getTipo(l[2]),anew,getTipo(anew),bnew,getTipo(bnew))
 				-- printD("--after l[1]",E:strEdge(l[1]))
 				-- printD("--after anew",E:strEdge(anew))
@@ -1741,7 +1760,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 			end
 			--tipo = getTipo(ii)
 			printD("---- end_do_added_lines",i,l[1],l[2],"sameface",sameface)
-			E:faces_print("after add_line")
+			--E:faces_print("after add_line")
 		end
 		INADDLINES = false
 		else
@@ -1770,15 +1789,25 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 				end
 			end
 			--]]
-			if use_added_lines then TakeSnapP(Status,getPrio(ii),ii) end
+			if use_added_lines and use_prioL and (not search_cross) then TakeSnapP(Status,getPrio(ii),ii) end
+		end
+	end
+	
+	ListPrio = function(p1,p2)
+		printL("ListPrio",p1,p2)
+		for j=p1,p2 do
+			printL("--ListPrio",j)
+			local candidates = getCandidates(j)
+			for i=1,#candidates do
+				local v = candidates[i]
+				printL("doing",v)
+				SearchStatus(v)
+			end
 		end
 	end
 	-----------
 
 	-----------------
-	local function printface(a,b,inf)
-		printD(a,P[a],b,str_inf(inf))
-	end
 
 	--E:faces_walk()
 	--for prio=1,#inds do
@@ -2216,6 +2245,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 				local sucsuc = rev and a or b
 				local a,b,cs = getStartPoints(prev)
 				local prepre = rev and b or a
+				printD("prepre,sucsuc",prepre,sucsuc)
 				local scone2 = E:Sign(P,prepre,prev,sucsuc)
 				local sab2 = E:Sign(P,prepre,prev,v2)
 				local sbc2 = E:Sign(P,prev,sucsuc,v2)
@@ -2355,16 +2385,16 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 		printDC"----------"
 		--assert(t2==InCone(v2,v1),"InCone2 not InCone")
 		printDC"t1r----------"
-		local t1r,A1r = InCone2(v1,v2,true)
+		--local t1r,A1r = InCone2(v1,v2,true)
 		printDC"----------"
 		--assert(t1r==InCone(v1,v2,true),"InCone2 not InCone")
 		printDC"t2r----------"
-		local t2r,A2r = InCone2(v2,v1,true)
+		--local t2r,A2r = InCone2(v2,v1,true)
 		printDC"----------"
 		--assert(t2r==InCone(v2,v1,true),"InCone2 not InCone")
 		prtableD{t1=t1,t2=t2,t1r=t1r,t2r=t2r}
 		prtableD{A1=A1,A1r=A1r,A2=A2,A2r=A2r}
-		assert(((A1 or A1r) or (t1==(not t1r))) and ((A2 or A2r) or (t2==(not t2r))),"tests")
+		--assert(((A1 or A1r) or (t1==(not t1r))) and ((A2 or A2r) or (t2==(not t2r))),"tests")
 		--assert( (t1==(not t1r)) and  (t2==(not t2r)),"tests")
 		return t1 and t2,{t1=t1,t2=t2,t1r=t1r,t2r=t2r,A0=A1 or A1r or A2 or A2r}
 	end
@@ -2407,7 +2437,6 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 		assert(t1==(not t1r) and t2==(not t2r))
 		return t1 and t2,{t1=t1,t2=t2,t1r=t1r,t2r=t2r}
 	end
-	
 	local function CreatePairs(aa,bb)
 		local pairss = {}
 		for i,v1 in ipairs(aa) do
@@ -2425,68 +2454,93 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 		end
 		return pairss
 	end
+	local function preCreatePairs(l)
+		local aa = {l[1]}
+		if E.invAlias[l[1]] then
+			for j,v in ipairs(E.invAlias[l[1]]) do
+				insert(aa,v)
+			end
+		end
+		local bb = {l[2]}
+		if E.invAlias[l[2]] then
+			for j,v in ipairs(E.invAlias[l[2]]) do
+				insert(bb,v)
+			end
+		end
+		return CreatePairs(aa,bb)
+	end
+	local printDO = printD
+	local prtableDO = prtableDD
+	local function CreateGoodPairs(pairss)
+		printD"----------------tests------------------------"
+		local good = {}
+		for j,dd in ipairs(pairss) do 
+			printD("tests",dd[1],dd[2],dd[3])
+			local v1,v2,sameface = dd[1],dd[2],dd[3]
+			local ok,tests,ptest = check_pair1(v1,v2)
+			dd[4] = tests
+			if sameface then
+				if tests.t1==tests.t2 then
+					local infv1 = E.edges[v1]
+					local infv2 = E.edges[v2]
+					if (infv1.b == v2 or infv1.prev == v2) then
+						printDO("SKIP addline: already edge",v1,v2)
+					else
+						insert(good,dd)
+					end
+				end
+			else
+				insert(good,dd)
+			end
+		end
+		
+		printD"---------------- end tests------------------------"
+		return good
+	end
+	local function num_good_test(t)
+		if t.t1 and t.t2 then
+			return 2
+		elseif t.t1 or t.t2 then
+			return 1
+		else
+			return 0
+		end
+	end
 	local usedLines = {}
 	local function doAddLines3(Lines, recall)
+		printDO("doAddLines3",recall)
 		Lines = Lines or AddedLines
 		local dorev --= true
 		local not_found = {}
 		for i,l in ipairs(Lines) do
-			printD("===========add line",i,"from",#Lines,l[1],l[2],E:getPstr(l[1]),E:getPstr(l[2]),Bridges[E:getP(l[1])],Bridges[E:getP(l[2])])
+			printDO("===========add line",i,"from",#Lines,l[1],l[2],E:getPstr(l[1]),E:getPstr(l[2]),Bridges[E:getP(l[1])],Bridges[E:getP(l[2])])
 			--printD("==faces",E.edges[l[1]].face,E.edges[l[2]].face)
-			local aa = {l[1]}
-			if E.invAlias[l[1]] then
-				for j,v in ipairs(E.invAlias[l[1]]) do
-					insert(aa,v)
-				end
-			end
-			local bb = {l[2]}
-			if E.invAlias[l[2]] then
-				for j,v in ipairs(E.invAlias[l[2]]) do
-					insert(bb,v)
-				end
-			end
-			local pairss = CreatePairs(aa,bb)
-			prtableD("--------pairss",pairss)
-			::REPEAT::
-			--assert(#aa==1 and #bb==1)
-			-- if #aa>1 or #bb>1 then
-				-- prtable("multi points",aa,bb)
-			-- end
-			-------------all tests
-			printD"----------------tests------------------------"
-			local good = {}
-			for j,dd in ipairs(pairss) do 
-				printD("tests",dd[1],dd[2],dd[3])
-				local v1,v2,sameface = dd[1],dd[2],dd[3]
-				local ok,tests,ptest = check_pair1(v1,v2)
-				if sameface then
-					if tests.t1==tests.t2 then
-						insert(good,dd)
-					end
-				else
-					insert(good,dd)
-				end
-				
-				-- if ok then insert(good,dd) end
-				-- printD("test",v1,v2,sameface)
-				-- prtableD(tests)
-			end
-			--assert(#good<2)
-			if #good > 1 and not good[1][3] then
-				prtableD(good)
-				printD"mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
+			
+			local pairss = preCreatePairs(l)
+			prtableDO("--------pairss",pairss)
+			pairss = CreateGoodPairs(pairss)
+			if #pairss > 1 and not pairss[1][3] then
+				prtableDD(pairss)
+				--heuristic ????????????
+				algo.quicksort(pairss,1,#pairss,function(a,b) return num_good_test(a[4])> num_good_test(b[4]) end)
+				prtableDD(pairss)
+				printD"ambiguous mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
+				--pairss = {} --to retry
 				--error"goddmmmmmmmmmmmm"
 			end
-			printD"---------------- end tests------------------------"
+			prtableDO("good",pairss)
+			::REPEAT::
 			local ia,ib,facesame
 			for j,dd in ipairs(pairss) do 
 				local v1,v2,sameface = dd[1],dd[2],dd[3] 
 				--if sameface then ia,ib = v1,v2; goto FOUND end
 					printD("search",v1,v2,E.edges[v1],E.edges[v2])
-					if not(E.edges[v1] and E.edges[v2]) then printD("deleted point SKIP"); goto SKIP end
+					if not(E.edges[v1] and E.edges[v2]) then printDO("deleted point SKIP"); goto SKIP end
 					local sameface = E.edges[v1].face==E.edges[v2].face
 					printD("search",v1,v2,"sameface",sameface)
-					local ok,tests,ptest = check_pair1(v1,v2)
+					--local ok,tests,ptest = check_pair1(v1,v2)
+					local tests = dd[4]
+					local ok = tests.t1 and tests.t2
 					prtableD(tests)
 					if ok then
 						ia,ib,facesame = v1,v2,sameface
@@ -2527,7 +2581,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 			::FOUND::
 			--assert(ia,"not found")
 			if not ia then
-				printD("not found",l[1],l[2])
+				printD("line not found",l[1],l[2],dorev)
 				--insert(not_found,l)
 				--assert(not dorev)
 				if dorev then
@@ -2539,8 +2593,8 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 				end
 			else
 				dorev = false
-				local commonpoint = Pequal(P,ia,ib)
-				printD("==== using",E:getPstr(ia),E:getPstr(ib),"commonpoint",commonpoint,"sameface",facesame)
+				local commonpoint = use_common_point and Pequal(P,ia,ib)
+				printDO("==== using",E:getPstr(ia),E:getPstr(ib),"commonpoint",commonpoint,"sameface",facesame)
 				insert(usedLines, {ia,ib,commonpoint})
 				--E:check()
 				--E:faces_print()
@@ -2556,10 +2610,10 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 					local sigAa = signed_area(P,polinda)
 					local sigAb = signed_area(P,polindb)
 					printD("check zero area",#polinda,sigAa,#polindb,sigAb)
-					if sigAa==0 then
+					if sigAa==0 and use_collapse_faces then
 						E:mark_collapsed(anew)
 					end
-					if sigAb==0 then
+					if sigAb==0 and use_collapse_faces then
 						E:mark_collapsed(bnew)
 					end
 				end
@@ -2569,7 +2623,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 				-- E:walk(anew,E.printEdge)
 				-- printD("walk----",bnew)
 				-- E:walk(bnew,E.printEdge)
-				E:faces_print()
+				E:faces_print("after line add")
 				printD"check----"
 				E:check()
 				local anew2,bnew2 = E:getP(anew),E:getP(bnew)
@@ -2591,38 +2645,56 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 			end
 		end
 		if #not_found > 0 then
-			printD"----REPEAT doAddLines"
+			
 			if recall then
-				assert((#Lines > #not_found))
-				if (#Lines == #not_found) then return end
+				--assert((#Lines > #not_found),"not_found lines")
+				if (#Lines == #not_found) then 
+					--E:faces_print()
+					-- for ii,ll in ipairs(not_found) do
+						-- local v1,v2 = ll[1],ll[2]
+						-- local infv1 = E.edges[ll[1]]
+						-- if (infv1.b == v2 or infv1.prev == v2) then
+							-- print("SKIP addline: already edge",v1,v2)
+						-- elseif not (E:not_collapsed(v1) and E:not_collapsed(v2)) then
+							-- print("SKIP addline: collapsed",v1,v2)
+						-- else
+							-- error"not_found2"
+						-- end
+					-- end
+					--error"not_found lines"
+					return 
+				end
 			end
-			doAddLines3(not_found,true)
+			printD"----REPEAT doAddLines"
+			prtableD("not_found",not_found)
+			--doAddLines3(not_found,true)
 		end
 	end
-	--printD = print
+	printT = print
 	if use_added_lines then
 		search_cross= true
 		local t1 = os.clock()
 		Sweep()
-		print("search_cross done in",os.clock()-t1)
+		printT("search_cross done in",os.clock()-t1)
 		search_cross= false
 		local t1 = os.clock()
 		Sweep()
-		print("addlines",os.clock()-t1)
+		printT("addlines",os.clock()-t1)
 	else
+		search_cross= true
 		local t1 = os.clock()
 		Sweep()
-		print("search_cross and lines",os.clock()-t1)
+		printT("search_cross and lines",os.clock()-t1)
 	end
 	printD"---------beforr add lines--------------------"
 	local plin = E:get_polinds()
 	prtableD(plin)
 	--doAddLines()--AddedLines,P,E)
 	if not use_added_lines then 
-		E:faces_print("before doAddLines3");
+		--E:faces_print("before doAddLines3");
 		local t1 = os.clock()
 		doAddLines3()
-		print("doaddlines3",os.clock()-t1)		
+		printT("doaddlines3",os.clock()-t1)		
 	end
 	--local polindsr = E:get_polinds()
 	--do return {},{},AddedLines,polindsr end
@@ -2761,8 +2833,9 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 	--local trs = mono_triangulate()--P,E,inds)
 	local t1 = os.clock()
 	local trs = mono_triangulate2()
-	print("mono_triangulate2",os.clock()-t1)
+	printT("mono_triangulate2",os.clock()-t1)
 	prtableD("AddedLines",AddedLines)
+	prtableD("AddedLines2",AddedLines2)
 	prtableD("usedLines",usedLines)
 	prtableD("collapsed_faces",E.collapsed_faces)
 	prtableD("inds",inds)
@@ -2819,36 +2892,44 @@ local function clone_ps(ps)
 --local params = loadfile("../spline_files/tomonotone.spline")()
 --local params = loadfile("../spline_files/atest_rev.spline")()
 --local params = loadfile("../spline_files/calc_1a5.spline")()
-local params = loadfile("../spline_files/calculator.spline")()
+--local params = loadfile("../spline_files/calculator.spline")()
 --local params = loadfile("../spline_files/example2_inv.spline")()
---local params = loadfile("../spline_files/example2-2holesb.spline")()
+--local params = loadfile("../spline_files/example2-2holes.spline")()
 --local params = loadfile("../spline_files/example2.spline")()
 --local params = loadfile("../spline_files/aacrossed4.spline")()
---local params = loadfile("../spline_files/aaedgecommon4.spline")()
+local params = loadfile("../spline_files/aaex_inv.spline")()
+--local params = loadfile("../spline_files/corona4.spline")()
+--local params = loadfile("../spline_files/aaedgecommon3.spline")()
 --local params = loadfile("../spline_files/aatouchedpoint.spline")()
 --local params = loadfile("../spline_files/star_crossed2.spline")()
 --prtable(params)
 
 local function test(f)
-	print("---------------",f)
+	--print("---------------",f)
 	local params = loadfile(f)()
 	local pts,icontours = clone_ps(params.sccoors[1])
 	local ok,P,trs = pcall(CG.edges_monotone_tesselator,pts,icontours,0,true)
 	if not ok then 
+		print("---------------",f)
 		print(P)
-		print(debug.traceback(3));
+		--print(debug.traceback(3));
 		--error"vvvvv" 
 	end
 end
+
 -- funcdir("../spline_files",test,"spline")
 
+local lpt = require"luapower.time"
 local pts,icontours = clone_ps(params.sccoors[1])
 prtable(pts,icontours)
 ProfileStart()
-local t1 = os.clock()
+for i=1,1 do
+local t1 = lpt.clock()
 local P,trs = CG.edges_monotone_tesselator(pts,icontours,0,true)
+print("done in",lpt.clock()-t1)
+end
 ProfileStop()
-print("done in",os.clock()-t1)
+
 
 
 

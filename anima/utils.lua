@@ -829,7 +829,8 @@ function GlobalsChecker()
 end
 
 function ProfileStart(prstr,filename)
-	require("jit.p").start(prstr or "3vfsi4m1", filename or 'profReport.txt')
+	--require("jit.p").start(prstr or "3vfsi4m1", filename or 'profReport.txt')
+	require("jit.p").start(prstr or "-3vfsm1", filename or 'profReport.txt')
 end
 function ProfileStop()
 	require("jit.p").stop()
