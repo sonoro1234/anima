@@ -29,6 +29,7 @@ M.TArea = TArea
 
 local acos = math.acos
 --CW means CW polygons so that internal angles are measured CCW and viceversa
+--CW false is angle to the left of p1,p2,p3. CW true is to the right
 local function Angle(p1,p2,p3,CW)
 	if not CW then p1,p3 = p3,p1 end
 	--if CW then p1,p3 = p3,p1 end
@@ -72,6 +73,10 @@ local function tanAngle(p1,p2,p3,CW)
 end
 
 --test Angle
+-- local v0 = mat.vec2(0,0)
+-- local v1 = mat.vec2(1,0)
+-- local v2 = mat.vec2(1,1)
+-- print(Angle(v0,v1,v2,false)*180/math.pi)
 --[[
 local p2 = mat.vec2(0,0)
 for i=1,1000 do

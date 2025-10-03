@@ -335,7 +335,7 @@ local function Editor(GL,updatefunc1)
 			if OK then
 				self.triangulation[ii].points, self.triangulation[ii].tr = points, tr
 			else
-				print(points,debug.traceback())
+				print("error:",points,debug.traceback())
 				self.triangulation[ii].points, self.triangulation[ii].tr = pts,{}
 			end
 			--]=]

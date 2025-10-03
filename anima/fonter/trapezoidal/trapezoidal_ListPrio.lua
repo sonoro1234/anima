@@ -23,9 +23,9 @@ local printD = function() end
 local prtableD = function() end
 local prtableDD = function() end
 if not ... then
--- DOprint = print
+DOprint = print
 -- printD = print --function() end
--- prtableD = prtable --function() end
+-- prtableD = prtableDDr --function() end
 -- prtableDD = prtableDDr
 end
 
@@ -273,17 +273,6 @@ function M:reverse(ii)
 end
 local printF = printD
 function M:faces_print(txt)
-	if printF==print then
-	printF("---------------------------------------------------",txt)
-	for i,v in pairs(self.faces) do
-		printF("----face",i,"-------------------------------------collapsed:",self.collapsed_faces[i])
-		self:walk(v,self.printEdge)
-	end
-	printF"---------------------------------------------------"
-	end
-end
-function M:DOfaces_print(txt)
-	--local printF = print
 	if printF==print then
 	printF("---------------------------------------------------",txt)
 	for i,v in pairs(self.faces) do
@@ -730,7 +719,6 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 	end
 	local Bridges = {}
 	local Status = {edges={},sorted={}}
-	
 	local function StatusWindCalc()
 		local windL = 0
 		for i=1,#Status.sorted do
@@ -742,10 +730,8 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 			--print(e[1],e[2],wind,e.windL)
 		end
 	end
-	
-
 	local function DOprintStatus(...)
-		--local printD=print
+		local printD=print
 		if printD==print then
 
 		printD("----Status sorted----------",...)
@@ -764,9 +750,10 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 		--E:faces_print()
 		end
 	end
-	
 	local function printStatus(...)
+
 		if printD==print then
+
 		printD("----Status sorted----------",...)
 		for i,k in ipairs(Status.sorted) do
 			local v = Status.edges[k]
@@ -774,12 +761,11 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 				printD(i,k,"not edges")
 			else
 				--printD(i,k,E:getPstr(v[1]),E:getPstr(v[2]),"prios",Ptoind[v[1]],Ptoind[v[2]],"lastprio",v.lastprioL,v.lastprioU,"wind",v.windL,v.windU)
-				printD(string.format("%d %-8s %-8s last %-5d %-5d wind %3d %3d first: %d",i,E:getPstr(v[1]),E:getPstr(v[2]),v.lastprioL,v.lastprioU,v.windL or 999,v.windU or 999,v.first))
+				printD(string.format("%d %-8s %-8s last %-5d %-5d wind %3d %3d",i,E:getPstr(v[1]),E:getPstr(v[2]),v.lastprioL,v.lastprioU,v.windL or 999,v.windU or 999))
 			end
 		end
-		-- prtableD(Status.sorted)
-		--prtableD(Status.edges)
-		prtable(Status)
+		prtableD(Status.sorted)
+		prtableDD(Status.edges)
 		printD"--------------------"
 		--E:faces_print()
 		end
@@ -808,17 +794,6 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 			return prio
 		end
 	end
-	
-	local function StatusFirstCalc()
-		for k,e in pairs(Status.edges) do
-			if getPrio(e[1]) < getPrio(e[2]) then
-				e.first = 1;e.second = 2
-			else
-				e.first = 2;e.second = 1
-			end
-		end
-	end
-	
 	local function StatusCross(e,e1,pt)
 		printD("StatusCross",e,e1,pt)
 		local k = e1[1] 
@@ -960,18 +935,6 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 		printD("intersec inds","inds",e[1],e[2],e1[1],e1[2])
 		printD("intersec",pt,"points",P[e[1]],P[e[2]],P[e1[1]],P[e1[2]])
 		--assert(false,"intersec")
-	end
-	local function StatusCheck(...)
-		printD("----Status check----------",...)
-		for i=1,#Status.sorted-1 do --k in ipairs(Status.sorted) do
-			local vu = Status.edges[Status.sorted[i]]
-			local vl = Status.edges[Status.sorted[i+1]]
-			assert(vu and vl,"not edge")
-			assert(vu.lastprioL==vl.lastprioU,"last dont match")
-		end
-		--prtable(_Status.sorted)
-		--prtable(_Status.edges)
-		printD"--------------------"
 	end
 	local function StatusAdd(e)
 		printD("---StatusAdd",e[1],e[2])
@@ -1280,17 +1243,15 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 				local edgs = edges[s]
 				if edgs then edgs.order = j end
 			end
-			--printStatus("after statuspointadd in start1")
 			StatusAdd{above,above==i and inf.b or i,order=eorder,lastprioU=i,lastprioL=i,first=above==i and 1 or 2 ,second=above==i and 2 or 1}
-			--printStatus("after statuspointadd in start2")
 			StatusAdd{below,below==i and inf.b or i,order=eorder+1,lastprioU=i,lastprioL=i,first=below==i and 1 or 2 ,second=below==i and 2 or 1}
-			--printStatus("after statuspointadd in start3")
+			--printStatus("after statuspointadd in start")
 			for j=eorder,#sorted do
 				local s = sorted[j]
 				local edgs = edges[s]
 				local sup = sorted[j-1]
 				local edgsup = edges[sup] or {windL=0}
-				--prtable(edgs,edgsup,j,j-1)
+				--print(edgs,edgsup,j,j-1)
 				edgs.order = j
 				edgs.windU = edgsup.windL
 				local wind = edgs.first == 1 and -1 or 1
@@ -1487,7 +1448,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 		end
 	end
 	local function SearchRegions(ii,tipo)
-		printD("SearchRegions",ii,E:getPstr(ii),tipo)
+		printD("SearchRegions",E:getPstr(ii),tipo)
 		local iir = E:getP(ii)
 		local Regions = {}
 		local iregion
@@ -1550,7 +1511,6 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 			assert(tipo=="lower")
 			local inf = E.edges[ii]
 			local e = edges[inf.prev]
-			printD("lower search",inf.prev)
 			insert(Regions,edges[sorted[e.order-1]])
 			insert(Regions,e)
 			iregion = {#Regions,#Regions}
@@ -1560,6 +1520,8 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 		return Regions,iregion
 	end
 
+	
+	local pointTipos = {}
 	local check_pair1
 	local function StatusSortedRepair()
 		for i,v in ipairs(Status.sorted) do
@@ -1584,367 +1546,46 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 			StatusSortedRepair()
 		end
 	end
-
-	local function ChangeLastPrio(e,a,anew)
-		--prtable(e)
-		if a==anew then return end
-		printD("ChangeLastPrio",a,anew)
-		if e.lastprioL == a then e.lastprioL = anew end
-		if e.lastprioU == a then e.lastprioU = anew end
+	local function CorrectStatus(a,anew)
+		printD("CorrectStatus",a,anew)
+		local e = Status.edges[anew]
+		if e then
+			error"not done"
+		end
+		e = Status.edges[E.edges[anew].prev]
+		if e then
+			printD("correct",e[1],e[2],"to",e[1],anew)
+			e[2] = anew
+		end
 	end
-	local function reverseSedge(k,e,oldk)
-		e[1],e[2] = e[2],e[1]
-		Status.sorted[e.order] = e[1]
-		oldk[k] = e[1]
-	end
-	local function deleteSedge(k,e)
-		remove(Status.sorted,e.order)
-		Status.edges[k] = nil
-	end
-	local function CScopoint2(a,b)
-		local oldk = {}
-		for k,e in pairs(Status.edges) do
-			if e[1]==a or e[2]==a or e[1]==b or e[2]==b then
-				local acollap = not E:not_collapsed(a)
-				local bcollap = not E:not_collapsed(b)
-			--print("edge",e[1],e[2])
-				if e[1] == b then
-					if bcollap then
-						deleteSedge(k,e)
-					else
-						local infb = E.edges[b]
-						if e[2] == infb.b then
-						elseif e[2] == infb.prev then
-							reverseSedge(k,e,oldk)
-						else
-							e[2] = inf.b --TODO rev
-						end
-					end
-				elseif e[2] == b then
-					if bcollap then
-						deleteSedge(k,e)
-					else
-						local infb =  E.edges[b]
-						if e[1] == infb.prev then
-						elseif e[1] == infb.b then
-							reverseSedge(k,e,oldk)
-						else
-							--TODO rev
-							e[1] = infb.prev
-							Status.sorted[e.order] = e[1]
-							oldk[k] = e[1]
-						end
-					end
-				elseif e[1] == a then
-					if acollap then
-						deleteSedge(k,e)
-					else
-						local inf = E.edges[e[1]]
-						--if inf.b==e[2] --bien
-						if inf.prev == e[2] then
-							reverseSedge(k,e,oldk)
-						elseif not inf.b == e[2] then
-							--TODO reverse?
-							e[2] = inf.b
-						end
-					end
-				else --e[2]==a
-					if acollap then
-						deleteSedge(k,e)
-					else
-						local inf = E.edges[a]
-						if inf.prev==e[1] then
-						elseif inf.b == e[1] then
-							reverseSedge(k,e,oldk)
-						else --TODO reverse
-							e[1] = inf.prev
-							Status.sorted[e.order] = e[1]
-							oldk[k] = e[1]
-						end
-					end
-				end
-			else --not a or b but could be reversed
-				local inf = E.edges[e[1]]
-				if inf.prev == e[2] then
-					reverseSedge(k,e,oldk)
-					--error"reverse in CScopoint"
+	local function ListPrioDeleteStatusBAK(p1,p2)
+		for j=p1,p2 do
+			local v = inds[j]
+			--printD("do",E:getPstr(v),"prio",j,E:not_collapsed(v))
+			DeleteStatus(v)
+			if E.invAlias[v] then
+				for k,w in ipairs(E.invAlias[v]) do
+					DeleteStatus(w)
 				end
 			end
 		end
-		--prtable(Status)
-		for ok,nk in pairs(oldk) do
-			if ok~=nk then --whe using commonpoint anew and bnew are a and b
-			Status.edges[nk]= Status.edges[ok]
-			Status.edges[ok]=nil
-			end
-		end
-		StatusSortedRepair()
-		--check b new edges
-
-		if false and not bcollap then
-			local inf = E.edges[b]
-			--if Status.edges[b] and Status.edges[inf.prev] then
-			--else
-			if Status.edges[b] then
-				deleteSedge(b,Status.edges[b])
-			end
-			if Status.edges[inf.prev] then
-				deleteSedge(inf.prev,Status.edges[inf.prev])
-			end
-			StatusSortedRepair()
-			
-				-- local reg,ireg = SearchRegions(b,getTipo(b))
-				-- SetRegionsLastprio(ireg,reg,b)
-				StatusPointAdd(b)
-		end
-		
-		if false and not acollap then
-			local inf = E.edges[a]
-			if getPrio(inf.prev)<getPrio(a) then
-				local infpr = E.edges[inf.prev]
-				if Status.edges[infpr.prev] then
-					deleteSedge(infpr.prev,Status.edges[infpr.prev])
-				end
-				if Status.edges[infpr.b] then
-					deleteSedge(infpr.b,Status.edges[infpr.b])
-				end
-				StatusSortedRepair()
-				StatusPointAdd(inf.prev)
-				-- error"mnmgggggggnfgh"
-			end
-		end
-		
-
-		--prtable(Status)
 	end
-	-------------------------------------
-	local function CorrectLastPrio()
-		--correct lastprio
-			for i=1,#Status.sorted do
-				local ee = Status.edges[Status.sorted[i]]
-				local el = Status.edges[Status.sorted[i+1]]
-				local eu = Status.edges[Status.sorted[i-1]]
-				if el then
-					if getPrio(ee.lastprioL) < getPrio(el[el.first]) then
-						ee.lastprioL = el[el.first] 
-					elseif getPrio(ee.lastprioL) == getPrio(el[el.first]) then
-						if ee.lastprioL~=ee[ee.first] then
-							ee.lastprioL = el[el.first] 
-						end
-					end
-				end
-				if eu then 
-					if getPrio(ee.lastprioU) < getPrio(eu[eu.first]) then
-						ee.lastprioU = eu[eu.first] 
-					elseif getPrio(ee.lastprioU) == getPrio(eu[eu.first]) then
-						-- if ee.lastprioU~=ee[ee.first] then
-							-- ee.lastprioU = eu[eu.first] 
-						-- end
-						if getPrio(ee.lastprioU) <= getPrio(eu.lastprioL) then
-							ee.lastprioU = eu.lastprioL
-						end
-					end
-				end
-			end
-	end
-	local function Searche2(v)
-		for k,e in pairs(Status.edges) do
-			if e[2]==v then return e end
-		end
-	end
-
-	local function repairEdge(e,p,i,inf)
-		assert(e[1]==i or e[2]==i)
-		if inf.b == p then
-			if e[1]==i then
-				e[2] = p
-			else --e[2]==i
-				Status.edges[e[1]] = nil
-				e[1] = i
-				e[2] = p
-				Status.sorted[e.order] = e[1]
-				Status.edges[e[1]] = e
-			end
-		elseif inf.prev == p then
-			if e[2] == i then
-				Status.edges[e[1]] = nil
-				e[1] = p
-				Status.sorted[e.order] = e[1]
-				Status.edges[e[1]] = e
-			else --e[1] == i
-				Status.edges[e[1]] = nil
-				e[1] = p
-				e[2] = i
-				Status.sorted[e.order] = e[1]
-				Status.edges[e[1]] = e
-			end
-		else
-			error"reapairEdge"
-		end
-	end
-	local function CScopoint(a,b,l,Regions)
-		local ta,tb = l[3],l[4]
-		local tanw,tbnw = getTipo(a),getTipo(b)
-		local infa = E.edges[a]
-		local infb = E.edges[b]
-		if ta=="start" and tb=="start" then
-			--go to start start
-			local e = Status.edges[b]
-			local e2 = Searche2(b)
-			--corregir
-			local eabove = e.order < e2.order and e or e2
-			local ebelow = eabove == e and e2 or e
-			local pabove = P[E:getP(infb.b)].y > P[E:getP(infb.prev)].y and infb.b or infb.prev
-			local pbelow = pabove == infb.b and infb.prev or infb.b
-			repairEdge(eabove,pabove,b,infb)
-			repairEdge(ebelow,pbelow,b,infb)
-			return
-		elseif tb=="end" and ta=="start" then
-			assert(tbnw=="upper" and tanw=="lower")
-			local eorder = Regions[l.region].order + 1
-			
-			local eb = {infb.prev,b,order=eorder,lastprioL=b,lastprioU=b,first=2,second=1}
-			local ea = {infa.prev,a,order=eorder+1,lastprioL=infa.prev,lastprioU=infa.prev,first=1,second=2}
-			insert(Status.sorted,eorder,eb[1])
-			insert(Status.sorted,eorder,ea[1])
-			Status.edges[ea[1]] = ea
-			Status.edges[eb[1]] = eb
-			--CorrectLastPrio()
-			return
-		end
-		return CScopoint2(a,b)
-		--elseif ta=="start" and tb=="end" then
-		
-	end
-	local function CorrectStatus(a,b,anew,bnew, copoint,l,Regions)
-		--assert((a==anew)==(b==bnew))
-		--local commonpoint = (a==anew)
-		printD("CorrectStatus",a,b,anew,bnew)
-		if copoint then 
-			assert((a==anew) and (b==bnew))
-			print("copoint tipes",l[4],l[3],"to",getTipo(b),getTipo(a))
-			return CScopoint(a,b,l,Regions)
-		end
-		local oldk = {}
-		for k,e in pairs(Status.edges) do
-			if e[1]==a or e[2]==a or e[1]==b or e[2]==b then
-				if e[1]==a then
-					printD("found e[1]==a",a,e[2],"to",E.edges[e[2]].prev)
-					prtableD(E.edges[e[2]])
-					local inf = E.edges[e[2]]
-					local infa = E.edges[a]
-					if infa.b == e[2] then
-						--bien
-					elseif infa.prev == e[2] then
-						--rev
-						e[1],e[2] = e[2],e[1]
-						Status.sorted[e.order] = e[1]
-						oldk[k] = e[1]
-						--ChangeLastPrio(e,a,inf.b)
-						
-					elseif inf.prev == anew then
-						e[1] = anew
-						Status.sorted[e.order] = e[1]
-						oldk[a] = e[1]
-						ChangeLastPrio(e,a,anew)
-					elseif inf.b == anew or inf.b == a then
-						--rev
-						e[1],e[2] = e[2],inf.b
-						Status.sorted[e.order] = e[1]
-						oldk[a] = e[1]
-						ChangeLastPrio(e,a,inf.b)
-					else
-						error"ccccccccccccc"
-					end
-				elseif e[2] ==a then
-					printD("found e[2]==a",a,e[1],"to",E.edges[e[1]].b)
-					prtableD(E.edges[e[1]])
-					local inf = E.edges[e[1]]
-					if inf.prev == anew or inf.prev == a then
-						--rev
-						oldk[e[1]] = e[2]
-						e[1],e[2] = e[2],inf.prev
-						Status.sorted[e.order] = e[1]
-						ChangeLastPrio(e,a,inf.prev)
-					elseif inf.b == anew then
-						e[2] = anew
-						ChangeLastPrio(e,a,anew)
-					else
-						error"ccccccccccccc"
-					end
-				elseif e[1] == b then
-					printD("found e[1]==b",b,e[2],"to",E.edges[e[2]].prev)
-					prtableD(E.edges[e[2]])
-					local inf = E.edges[e[2]]
-					local infb = E.edges[b]
-					if e[2] == infb.b then
-						--bien
-					elseif e[2] == infb.prev then
-						--rev
-						oldk[k] = e[2]
-						e[1],e[2] = e[2],e[1]
-						Status.sorted[e.order] = e[1]
-						ChangeLastPrio(e,b,e[1])
-					elseif inf.prev == bnew then
-						e[1] = bnew
-						Status.sorted[e.order] = e[1]
-						oldk[b] = bnew
-						ChangeLastPrio(e,b,bnew)
-					elseif inf.b == bnew or inf.b == b then
-						--rev
-						oldk[b] = e[2]
-						e[1],e[2] = e[2],inf.b
-						Status.sorted[e.order] = e[1]
-						ChangeLastPrio(e,b,inf.b)
-					else
-						error"ccccccccccccc"
-					end
-				elseif e[2] ==b then
-					printD("found e[2]==b",b,"edge",e[1],e[2])
-					prtableD(E.edges[e[1]])
-					local inf = E.edges[e[1]]
-					if inf.prev == bnew or inf.prev == b then
-						--rev
-						--print"--rev"
-						--e[1],e[2] = e[2],inf.prev
-						e[1],e[2] = inf.prev,e[1]
-						oldk[k] = e[1]
-						Status.sorted[e.order] = e[1]
-						ChangeLastPrio(e,b,inf.prev)
-					elseif inf.b == bnew then
-						--print"no rev"
-						e[2] = bnew
-						ChangeLastPrio(e,b,bnew)
-					else					
-						error"ccccccccccccc"
-					end
-				end
-			else--not a or b but could be reversed
-				local inf = E.edges[e[1]]
-				if inf.prev == e[2] then
-					reverseSedge(k,e,oldk)
-					--error"reverse in CorrectStatus"
+	local function ListPrioDeleteStatus(p1,p2)
+		printD("ListPrioDeleteStatus",p1,p2)
+		p1 = p1 < 1 and 1 or p1
+		p2 = p2 < 1 and 1 or p2
+		for j=p2,p1,-1 do
+			local v = inds[j]
+			--printD("do",E:getPstr(v),"prio",j,E:not_collapsed(v))
+			StatusPointRemove(v)
+			if E.invAlias[v] then
+				for k,w in ipairs(E.invAlias[v]) do
+					--printD("do",E:getPstr(w),"prio",j,E:not_collapsed(w))
+					StatusPointRemove(w)
 				end
 			end
 		end
-		for ok,nk in pairs(oldk) do
-			if ok~=nk then --whe using commonpoint anew and bnew are a and b
-			Status.edges[nk]= Status.edges[ok]
-			Status.edges[ok]=nil
-			end
-		end
-		-- prtable(oldk)
-		-- printStatus("in correct")
-		for i=1,#Status.sorted do --k in ipairs(Status.sorted) do
-			local vu = Status.edges[Status.sorted[i]]
-			--local vl = Status.edges[Status.sorted[i+1]]
-			--assert(vu.lastprioL==vl.lastprioU)
-			if vu.lastprioL==b or vu.lastprioU==b then
-				printD(i,vu[1],"have last b",vu.lastprioL, vu.lastprioU)
-			end
-		end
 	end
-	
 	local printL = printD
 	local function getCandidates(prio)
 		local candidates = {}
@@ -1960,6 +1601,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 			end
 		end
 		if #candidates > 1 then
+			--assert(#candidates<4,"tomany"..tostring(#candidates))
 			printL("-----candidates:")
 			local  ends = {}
 			for i=1,#candidates do
@@ -1982,9 +1624,68 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 		end
 		return candidates
 	end
-
+	local function ListPrioBAK2(p1,p2,f)
+		f = f or function(i) printD(getTipo(i),E:strEdge(i)) end
+		printL("ListPrio",p1,p2)
+		for j=p1,p2 do
+			printL("--ListPrio",j)
+			local candidates = getCandidates(j)
+			for i=1,#candidates do
+				local v = candidates[i]
+				printL("doing",v)
+				SearchStatus(v)
+			end
+		end
+	end
 	local ListPrio
-	
+	local function ListPrioBAK(p1,p2,f)
+		f = f or function(i) printD(getTipo(i),E:strEdge(i)) end
+		printL("ListPrio",p1,p2)
+		for j=p1,p2 do
+			printL("--ListPrio",j)
+			local candidates = {}
+			local v = inds[j]
+			--printL("do",E:getPstr(v),"prio",j,E:not_collapsed(v))
+			if E:not_collapsed(v) then
+				insert(candidates,v)
+				--f(v)
+			end
+			if E.invAlias[v] then
+				for k,w in ipairs(E.invAlias[v]) do
+					--printL("do",E:getPstr(w),"prio",j,E:not_collapsed(w))
+					if E:not_collapsed(w) then
+					insert(candidates,w)
+					--f(w)
+					end
+				end
+			end
+			-------
+			if #candidates > 1 then
+				printL("-----candidates:")
+				local  ends = {}
+				for i=1,#candidates do
+					local v = candidates[i]
+					local tipo = getTipo(v)
+					printL(i,E:getPstr(v),tipo)
+					if tipo=="end" then
+						local inf = E.edges[v]
+						local e1 = Status.edges[inf.prev]
+						local e2 = Status.edges[v]
+						local dist = math.abs(e1.order-e2.order)
+						ends[v] = dist
+					else
+						ends[v] = math.huge
+					end
+				end
+				algo.quicksort(candidates,1,#candidates,function(a,b) return ends[a]<ends[b] end)
+			end
+			for i=1,#candidates do
+				local v = candidates[i]
+				printL("doing",v)
+				f(v)
+			end
+		end
+	end
 	local INADDLINES = false
 	local function getPrioL(a,b,reva,revb)
 		local infa,infb = E.edges[a],E.edges[b]
@@ -2032,27 +1733,11 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 		return priomin,pointmin
 	end
 	--local prioL
-	local function SetRegionsLastprio(iregion,Regions,ii)
-		--set lastprio
-		if iregion then printD("----iregion",iregion[1],iregion[2],"ii",ii) end
-		for i=1,#Regions do
-			local v = Regions[i]
-			printD("Region",i,v[1],v[2],"prios",Ptoind[v[1]],Ptoind[v[2]],"lastprio",v.lastprioL,v.lastprioU,"pty",v.pty)
-			
-			if i<iregion[1] then
-				v.lastprioL = ii
-			elseif i>iregion[2] then
-				v.lastprioU = ii
-			else
-				v.lastprioL = ii
-				v.lastprioU = ii
-			end
-		end
-	end
 	local function SearchStatus(ii,dotakesnap)
 		--dotakesnap = true
 		local added_lines = {}
 		local tipo = getTipo(ii)
+		pointTipos[ii] = tipo
 		local vec2 = mat.vec2
 		local prioi = Ptoind[ii]
 		--local y = P[ii].y
@@ -2091,13 +1776,11 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 				local lpri = eH.lastprioL or eL.lastprioU
 				printD("preadd line",ii,eH.lastprioL, eL.lastprioU,"b and prev",E.edges[ii].b, E.edges[ii].prev,"wind",eH.windL)
 				--if E.edges[ii].b~=lpri and E.edges[ii].prev~=lpri then --and not INADDLINES then
-				if E:getP(E.edges[ii].b)~=E:getP(lpri) and E:getP(E.edges[ii].prev)~=E:getP(lpri)  then --and not Pequal(P,ii,lpri) then --and not INADDLINES then
-					--print(getPrio(ii),getPrio(lpri))
-					--if (getPrio(ii)-getPrio(lpri)) > 1 then print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<") end
+				if E:getP(E.edges[ii].b)~=E:getP(lpri) and E:getP(E.edges[ii].prev)~=E:getP(lpri) then --and not Pequal(P,ii,lpri) then --and not INADDLINES then
 					printD(i,"Add line",E:getPstr(ii),E:getPstr(lpri),"options",eH.lastprioL, eL.lastprioU,"b and prev",E.edges[ii].b, E.edges[ii].prev)
-					insert(AddedLines,{E:getP(ii),E:getP(lpri),tipo,getTipo(lpri)})
-					insert(AddedLines2,{ii,lpri,tipo,getTipo(lpri)})
-					insert(added_lines,{ii,lpri,tipo,getTipo(lpri),region=i})
+					insert(AddedLines,{E:getP(ii),E:getP(lpri),tipo,pointTipos[lpri]})
+					insert(AddedLines2,{ii,lpri,tipo,pointTipos[lpri]})
+					insert(added_lines,{ii,lpri,tipo,pointTipos[lpri]})
 					-- printD("Tipos",ii,getTipo(ii),lpri,getTipo(lpri))
 					-- local anew,bnew,kind = E:add_line(ii,lpri,commonpoint)
 					-- printD("Tipos",ii,getTipo(ii),lpri,getTipo(lpri),anew,getTipo(anew),bnew,getTipo(bnew))
@@ -2106,31 +1789,26 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 			end
 			--end
 		end
-
 		
 		
 		--printStatus("before StatusPointAdd added_lines")
-		--StatusPointAdd(ii)
+		--StatusPointAdd(ii,tipo)
 		if use_added_lines and not search_cross and #added_lines > 0 then
 		--assert(#added_lines==1,"more than one line")
 		INADDLINES = true
-		--printStatus("before added_lines")
-		
-		
-		if #added_lines > 1 then print("added_lines",#added_lines);error"more lines" end
-		--for i=1,#added_lines do
+		printStatus("before added_lines")
 		for i=1,math.min(#added_lines,1) do
-			local anew,bnew
 			local l = added_lines[i]
 			--using 1 does not fail but it is much slower TODO
 			--prioL,pointmin = use_prioL and getPrioL(l[1],l[2]) or 1
-			--local tprioL = getPrioL1(l[1],l[2])
+			local tprioL = getPrioL1(l[1],l[2])
 			local sameface = E.edges[l[1]].face == E.edges[l[2]].face
-			printD("----do_added_lines",i,"from",#added_lines)
-			printD(l[1],l[2],"sameface",sameface,"prios",getPrio(l[1]),getPrio(l[2]),"tipo",l[3],l[4])
+			local commonpoint = use_common_point and Pequal(P,l[1],l[2])
+			DOprint("----do_added_lines",i,"from",#added_lines)
+			DOprint(l[1],l[2],"sameface",sameface,"commonpoint",commonpoint,"prios",getPrio(l[1]),getPrio(l[2]),"tipo",getTipo(l[1]),getTipo(l[2]))
 			-- print("preva,prevb",E.edges[l[1]].prev,E.edges[l[2]].prev,"prios",getPrio(E.edges[l[1]].prev),getPrio(E.edges[l[2]].prev))
-			--printD("prioL",prioL,pointmin)
-			--printD("--todelete")
+			printD("prioL",prioL,pointmin)
+			printD("--todelete")
 			--ListPrioDeleteStatus(getPrio(l[2])-1,getPrio(l[1])-1)
 			--ListPrioDeleteStatusBAK(1,getPrio(l[1]))
 			--Status = deepcopy(SnapsP[prioL-1] or {edges={},sorted={}})
@@ -2140,8 +1818,8 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 			--printStatus("after delete")
 			--StatusPrint(Status,"after delete","prio",prioL-1)
 			--error"mmmmmmmmmmm"
-			local commonpoint = use_common_point and Pequal(P,l[1],l[2])
-			--if commonpoint then assert((getPrio(l[1])-getPrio(l[2]))==1) end
+			
+			--if commonpoint then print("commonpoint") end
 			local Reva,Revb = false,false
 			local prioL
 			if sameface then
@@ -2149,23 +1827,31 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 				assert(tests.t1==tests.t2,"sameface opposite tests")
 				prtableD("tests",ok,tests)
 				
-				anew,bnew = E:add_line(l[1],l[2],commonpoint)
+				local anew,bnew,kind = E:add_line(l[1],l[2],commonpoint)
 				E:check()
 				--if commonpoint then E:faces_print();error"commonpoint" end
 				-------------check zero are
 				if use_collapse_faces then
-					local polinda = E:get_polind(anew)
-					local polindb = E:get_polind(bnew)
-					local sigAa = signed_area(P,polinda)
-					local sigAb = signed_area(P,polindb)
-					printD("check zero area",#polinda,sigAa,#polindb,sigAb)
-					if sigAa==0 then
-						E:mark_collapsed(anew)
-					end
-					if sigAb==0 then
-						E:mark_collapsed(bnew)
-					end
+				local polinda = E:get_polind(anew)
+				local polindb = E:get_polind(bnew)
+				local sigAa = signed_area(P,polinda)
+				local sigAb = signed_area(P,polindb)
+				printD("check zero area",#polinda,sigAa,#polindb,sigAb)
+				if sigAa==0 then
+					E:mark_collapsed(anew)
 				end
+				if sigAb==0 then
+					E:mark_collapsed(bnew)
+				end
+				end
+				
+				------------------------------
+				-- assert(E.edges[anew])
+				-- assert(E.edges[bnew])
+				--printD("added line sameface",l[1],getTipo(l[1]),l[2],getTipo(l[2]),anew,getTipo(anew),bnew,getTipo(bnew))
+				--ListPrio(prioL,getPrio(l[1]))
+				 -- ListPrio(1,getPrio(l[1]),SearchStatus)
+				--E:faces_print()
 			else
 				local ok,tests = check_pair1(l[1],l[2])
 				if not ok then
@@ -2181,226 +1867,42 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 						Revb = true
 					end
 				end
-				anew,bnew = E:add_line(l[1],l[2],commonpoint)
+				local anew,bnew,kind = E:add_line(l[1],l[2],commonpoint)
 				E:check()
 				printD"postcheck"
 				--ListPrio(prioL,getPrio(l[1]))
 				--CorrectStatus(l[2],bnew)
 			end
-			--prioL = use_prioL and getPrioL2(tprioL,Reva,Revb) or 1
-			--printD("prioL",prioL)
-			--Status = copyTable(SnapsP[prioL-1] or {edges={},sorted={}})
-			--printStatus("after snap restore")
-			--ListPrio(prioL,getPrio(l[1]))
+			prioL = use_prioL and getPrioL2(tprioL,Reva,Revb) or 1
+			printD("prioL",prioL)
+			Status = copyTable(SnapsP[prioL-1] or {edges={},sorted={}})
+			printStatus("after snap restore")
+			ListPrio(prioL,getPrio(l[1]))
 			--tipo = getTipo(ii)
 			printD("---- end_do_added_lines",i,l[1],l[2],"sameface",sameface)
-			printD("tipos",l[3],l[4],getTipo(anew),getTipo(bnew))
-			E:faces_print("after do added lines")
-			printStatus("after do added lines")
-			CorrectStatus(l[1],l[2],anew,bnew,commonpoint,l,Regions)
-			--print("line",l[1],l[2],anew,bnew)
-			DOprintStatus("after correct1")
-			--error"DEBUG"
-			-- local ok,reg,ireg = pcall(SearchRegions,bnew,getTipo(bnew))
-			-- if ok then SetRegionsLastprio(ireg,reg,bnew) end
-			-- local reg,ireg = SearchRegions(bnew,getTipo(bnew))
-			-- SetRegionsLastprio(ireg,reg,bnew)
-			--printStatus("after correct2")
-
-			--prtableD(iregion,Regions,"l.region",l.region)
-			--assert(#Regions==2)
-			--if #Regions>2 then print("Regions#",#Regions) end
-			------------------------
-			--anew-b
-			local function makeLineEdge(anew,b)
-				printD("makeLineEdge",anew,b)
-				local eanew
-				local infanew = E.edges[anew]
-				if infanew.b==b then
-					eanew = {anew,b}
-				elseif infanew.prev==b then
-					eanew = {b,anew}
-				else
-					prtableD(infanew)
-					error"???????"
-				end
-				eanew.first = getPrio(eanew[1])<getPrio(eanew[2]) and 1 or 2
-				eanew.second = eanew.first == 1 and 2 or 1
-				eanew.lastprioL = eanew[eanew.first]
-				eanew.lastprioU = eanew.lastprioL
-				return eanew
-			end
-			local function NoCollapsedEdgeifneeded(e)
-				local es1,es2
-				if e.second==1 then
-					es1 = E.edges[e[e.second]].prev
-					es2 = E.edges[e[e.first]].b
-				else --second==2
-					es1 = E.edges[e[e.second]].b
-					es2 = E.edges[e[e.first]].prev
-				end
-				--if Pequal(P,es[1],es[2]) then return NoCollapsedEdge(es) end
-				return es1,es2
-			end
-			local function Angle(a,b,c)
-				local ang = CG.Angle(P[E:getP(a)],P[E:getP(b)],P[E:getP(c)])*180/math.pi
-				return ang --==0 and 360 or ang
-			end
-			local function IsBelowLE(e1,e2)
-
-				printD("IsBelowLE",e1[1],e2[1])
-				assert(Pequal(P,e1[e1.second],e2[e2.second]))
-				local e1e1,e1e2 = NoCollapsedEdgeifneeded(e1)
-				local e2e1,e2e2 = NoCollapsedEdgeifneeded(e2)
-				printD("start",e1e1,e1e2,e2e1,e2e2)
-				assert(not Pequal(P,e1[e1.first],e1[e1.second]),"collapsed edge")
-				local ang1 = Angle(e1[e1.first],e1[e1.second],e1e1)
-				local ang2 = Angle(e1[e1.second],e1[e1.first],e1e2)
-				local ang3 = Angle(e1[e1.first],e1[e1.second],e2e1)
-				local ang4 = Angle(e1[e1.second],e1[e1.first],e2e2)
-				printD(ang1,ang2,ang3,ang4)
-				--assert((ang1>ang3)==(ang2<ang4),"angles cross")
-				if not (ang1>ang3)==(ang2<ang4) then 
-					ang1 = ang1==0 and 360 or ang1
-					ang2 = ang2==0 and 360 or ang2
-					ang3 = ang3==0 and 360 or ang3
-					ang4 = ang4==0 and 360 or ang4
-					assert((ang1>ang3)==(ang2<ang4),"angles cross")
-				end
-				
-				return ang1>ang3
-			end
-			E:DOfaces_print("before IsBelow")
-			if not commonpoint then
-			local eanew = makeLineEdge(anew,l[2])
-			local ebnew = makeLineEdge(bnew,l[1])
-			local below = IsBelowLE(eanew,ebnew) and eanew or ebnew
-			local above = below == eanew and ebnew or eanew
-			local eorder = Regions[l.region].order + 1
-			insert(Status.sorted,eorder,below[1])
-			insert(Status.sorted,eorder,above[1])
-			Status.edges[below[1]] = below
-			Status.edges[above[1]] = above
-			-- for j=eorder,#Status.sorted do
-				-- local s = Status.sorted[j]
-				-- local edgs = Status.edges[s]
-				-- if edgs then edgs.order = j end
-			-- end
-			for j=eorder,#Status.sorted do
-				local s = Status.sorted[j]
-				local edgs = Status.edges[s]
-				local sup = Status.sorted[j-1]
-				local edgsup = Status.edges[sup] or {windL=0}
-				--prtable(edgs,edgsup,j,j-1)
-				edgs.order = j
-				edgs.windU = edgsup.windL
-				local wind = edgs.first == 1 and -1 or 1
-				edgs.windL = wind + edgs.windU
-			end
-			StatusFirstCalc()
-			DOprintStatus("after add bridges")
-			--correct lastprio
-			for i=1,#Status.sorted do
-				local ee = Status.edges[Status.sorted[i]]
-				local el = Status.edges[Status.sorted[i+1]]
-				local eu = Status.edges[Status.sorted[i-1]]
-				printD("corect last",ee[1],ee[2],"pr",getPrio(ee[1]) ,getPrio(ee[2]),"f",ee[ee.first],ee[ee.second])
-				if el then
-					printD("priosL",getPrio(ee.lastprioL), getPrio(el[el.first]),"bb",ee.lastprioL, el[el.first])
-					if getPrio(ee.lastprioL) < getPrio(el[el.first]) then
-						ee.lastprioL = el[el.first] 
-					elseif getPrio(ee.lastprioL) == getPrio(el[el.first]) then
-						if ee.lastprioL~=ee[ee.first] then
-							ee.lastprioL = el[el.first] 
-						end
-					end
-				end
-				if eu then 
-					printD("priosU",getPrio(ee.lastprioU) ,getPrio(eu[eu.first]),"bb",ee.lastprioU, eu[eu.first]  )
-					if getPrio(ee.lastprioU) < getPrio(eu[eu.first]) then
-						ee.lastprioU = eu[eu.first] 
-					elseif getPrio(ee.lastprioU) == getPrio(eu[eu.first]) then
-						--print("do change?",ee.lastprioU~=ee[ee.first],ee.lastprioU,ee[ee.first])
-						--if ee.lastprioU~=ee[ee.first] then
-							--print"change"
-							--ee.lastprioU = eu[eu.first] 
-						--end
-						if getPrio(ee.lastprioU) <= getPrio(eu.lastprioL) then
-							ee.lastprioU = eu.lastprioL
-						end
-					end
-				end
-			end
-			end --commonpoint
-			----------------------
-			StatusSortedRepair()
-			StatusWindCalc()
-			DOprintStatus("after correct last")
-			StatusCheck()
-			--podria ser mas de una linea: evitar repetir y getCandidates
-			--bnew no se ha usado arriba deberia estar completo
-			-- local reg,ireg = SearchRegions(ii,getTipo(ii))
-			-- SetRegionsLastprio(ireg,reg,ii)
-			-- StatusPointAdd(ii)
-			--DOprintStatus("after",ii)
-			
-			
-			
-			-- local reg,ireg = SearchRegions(anew,getTipo(anew))
-			-- SetRegionsLastprio(ireg,reg,anew)
-			-- StatusPointAdd(anew)
-			--DOprintStatus("after anew",anew)
-			
-
-			--error"DEBUG"
-			--E:faces_print("after add_line")
+			E:faces_print("after add_line")
 		end
-			-- local reg,ireg = SearchRegions(ii,getTipo(ii))
-			-- SetRegionsLastprio(ireg,reg,ii)
-			-- StatusPointAdd(ii)
-			-- printStatus("after",ii)
-			--StatusCheck("after",ii)
-			
-			local candidates = getCandidates(getPrio(ii))
-			for i=1,#candidates do
-				local v = candidates[i]
-				--print("cand",v)
-				-- SearchStatus(v)
-				if false and v==ii then
-					local reg,ireg = SearchRegions(v,getTipo(v))
-					SetRegionsLastprio(ireg,reg,v)
-					StatusPointAdd(v)
-					StatusSortedRepair()
-					StatusWindCalc()
-				else
-					SearchStatus(v)
-				end
-			end
-			--StatusCheck("after",ii)
 		INADDLINES = false
 		else
-		
-		SetRegionsLastprio(iregion,Regions,ii)
-		--set lastprio
-		-- if iregion then printD("----iregion",iregion[1],iregion[2],"ii",ii) end
-		-- for i=1,#Regions do
-			-- local v = Regions[i]
-			-- printD("Region",i,v[1],v[2],"prios",Ptoind[v[1]],Ptoind[v[2]],"lastprio",v.lastprioL,v.lastprioU,"pty",v.pty)
+			--set lastprio
+		if iregion then printD("----iregion",iregion[1],iregion[2]) end
+		for i=1,#Regions do
+			local v = Regions[i]
+			printD("Region",i,v[1],v[2],"prios",Ptoind[v[1]],Ptoind[v[2]],"lastprio",v.lastprioL,v.lastprioU,"pty",v.pty)
 			
-			-- if i<iregion[1] then
-				-- v.lastprioL = ii
-			-- elseif i>iregion[2] then
-				-- v.lastprioU = ii
-			-- else
-				-- v.lastprioL = ii
-				-- v.lastprioU = ii
-			-- end
-		-- end
+			if i<iregion[1] then
+				v.lastprioL = ii
+			elseif i>iregion[2] then
+				v.lastprioU = ii
+			else
+				v.lastprioL = ii
+				v.lastprioU = ii
+			end
+		end
 		
-		
-		StatusPointAdd(ii)
-		StatusWindCalc()
-		printStatus("after StatusPointAdd",ii,"prio",getPrio(ii))
+			StatusPointAdd(ii)
+			StatusWindCalc()
+			DOprintStatus("after StatusPointAdd",ii,"prio",getPrio(ii))
 
 			--[[
 			if INADDLINES then
@@ -2463,7 +1965,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 		printD(vi,"Pprev,Psucc",Pprev,Psucc)
 		DOprintStatus("normal",i)
 		assert(E:not_collapsed(i))
-		assert(not E.invAlias[i],"invAlias in Sweep")
+		--assert(not E.invAlias[i],"invAlias in Sweep")
 		-- if E.invAlias[i] then
 			-- local candidates = getCandidates(prio)
 			-- for i=1,#candidates do
@@ -2477,8 +1979,8 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 		prio = prio + 1
 	end
 	printD"done AddLines"
-	printD("#AddedLines2",#AddedLines2)
-	for i,l in ipairs(AddedLines2) do
+	printD("#AddedLines",#AddedLines)
+	for i,l in ipairs(AddedLines) do
 		printD("line",i,"points",l[1],l[2],l[3],l[4],"prios",Ptoind[l[1]],Ptoind[l[2]])
 	end
 	-- local polindsr = E:get_polinds()
@@ -3481,7 +2983,7 @@ function CG.edges_monotone_tesselator(P, contours,wrule,alg1)
 	end
 	--local trs = mono_triangulate()--P,E,inds)
 	local t1 = os.clock()
-	local trs = mono_triangulate2()
+	local trs = {}-- mono_triangulate2()
 	printT("mono_triangulate2",os.clock()-t1)
 	prtableD("trs",trs)
 	prtableD("AddedLines",AddedLines)
@@ -3543,28 +3045,24 @@ local function clone_ps(ps)
 --local params = loadfile("../spline_files/atest_rev.spline")()
 --local params = loadfile("../spline_files/calc_1a5.spline")()
 --local params = loadfile("../spline_files/calculator1e.spline")()
---local params = loadfile("../spline_files/example2.spline")()
---local params = loadfile("../spline_files/split.spline")()
-local params = loadfile("../spline_files/example2-2holes.spline")()
 --local params = loadfile("../spline_files/example2_inv.spline")()
+local params = loadfile("../spline_files/example2-2holes.spline")()
+--local params = loadfile("../spline_files/example3.spline")()
 --local params = loadfile("../spline_files/aacrossed1.spline")()
 --local params = loadfile("../spline_files/concentric.spline")()
---local params = loadfile("../spline_files/aaex.spline")()
+--local params = loadfile("../spline_files/aaex_inv.spline")()
 --local params = loadfile("../spline_files/corona4.spline")()
 --local params = loadfile("../spline_files/aaedgecommon4.spline")()
 --local params = loadfile("../spline_files/aatouchedpoint.spline")()
 --local params = loadfile("../spline_files/star_crossed2.spline")()
 --prtable(params)
-local bad_count = 0
-local count = 0
+
 local function test(f)
 	print("---------------",f)
-	count = count + 1
 	local params = loadfile(f)()
 	local pts,icontours = clone_ps(params.sccoors[1])
 	local ok,P,trs = pcall(CG.edges_monotone_tesselator,pts,icontours,0,true)
 	if not ok then 
-		bad_count = bad_count + 1
 		--print("---------------",f)
 		print(P)
 		--print(debug.traceback(3));
@@ -3572,18 +3070,18 @@ local function test(f)
 	end
 end
 
-funcdir("../spline_files",test,"spline")
-print("bad_count",bad_count,"from ",count)
--- local lpt = require"luapower.time"
--- local pts,icontours = clone_ps(params.sccoors[1])
+-- funcdir("../spline_files",test,"spline")
 
--- ProfileStart()
--- for i=1,1 do
--- local t1 = lpt.clock()
--- local P,trs = CG.edges_monotone_tesselator(pts,icontours,0,true)
--- print("done in",lpt.clock()-t1)
--- end
--- ProfileStop()
+local lpt = require"luapower.time"
+local pts,icontours = clone_ps(params.sccoors[1])
+
+ProfileStart()
+for i=1,1 do
+local t1 = lpt.clock()
+local P,trs = CG.edges_monotone_tesselator(pts,icontours,0,true)
+print("done in",lpt.clock()-t1)
+end
+ProfileStop()
 
 
 
