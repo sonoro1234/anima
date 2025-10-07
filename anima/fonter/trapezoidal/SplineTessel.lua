@@ -301,7 +301,7 @@ local function Editor(GL,updatefunc1)
 		
 		elseif NM.tesselator ==  4 then
 			
-			CG = require"anima.fonter.trapezoidal.trapezoidal"
+			CG = require"anima.fonter.trapezoidal.trapezoidal_ListPrio"
 			---[=[ Dave mount for trapezoidal as seidel
 			local pts, contours = clone_ps(self.sccoors[ii])--self.ps[ii])
 			prtable(pts,contours)
