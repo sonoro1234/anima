@@ -1,0 +1,26 @@
+local params = {}
+params["alpha"] = {}
+params["alpha"][1] = ffi.new("float [1]",{0.5})
+params["divs"] = {}
+params["divs"][1] = ffi.new("int [1]",{1})
+params["dial"] = {}
+params["dial"]["curr_spline"] = 1
+params["dial"]["set_last"] = false
+params["dial"]["triangs"] = 50
+params["dial"]["drawregion"] = true
+params["VP"] = {}
+params["VP"][1] = 800
+params["VP"][2] = 800
+params["numsplines"] = 1
+params["sccoors"] = {}
+params["sccoors"][1] = {}
+params["sccoors"][1][1] = ffi.new("struct dvec2",{229.26337033299697,326.13521695257316})
+params["sccoors"][1][2] = ffi.new("struct dvec2",{387.48738647830476,110.59535822401615})
+params["sccoors"][1][3] = ffi.new("struct dvec2",{459,387})
+params["sccoors"][1]["holes"] = {}
+params["sccoors"][1]["holes"][1] = {}
+params["sccoors"][1]["holes"][1][1] = ffi.new("struct dvec2",{375,292})
+params["sccoors"][1]["holes"][1][2] = ffi.new("struct dvec2",{312.41170534813318,278.50655903128154})
+params["sccoors"][1]["holes"][1][3] = ffi.new("struct dvec2",{345,334})
+
+return params

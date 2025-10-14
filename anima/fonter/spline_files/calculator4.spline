@@ -1,0 +1,31 @@
+local params = {}
+params["divs"] = {}
+params["divs"][1] = ffi.new("int [1]",{1})
+params["VP"] = {}
+params["VP"][1] = 800
+params["VP"][2] = 800
+params["sccoors"] = {}
+params["sccoors"][1] = {}
+params["sccoors"][1][1] = ffi.new("struct dvec2",{228.45610494450051,494.04641775983856})
+params["sccoors"][1][2] = ffi.new("struct dvec2",{238.14328960645813,242.17961654894046})
+params["sccoors"][1][3] = ffi.new("struct dvec2",{564.27850655903126,238.14328960645813})
+params["sccoors"][1][4] = ffi.new("struct dvec2",{527.95156407669026,502.92633703329972})
+params["sccoors"][1]["holes"] = {}
+params["sccoors"][1]["holes"][1] = {}
+params["sccoors"][1]["holes"][1][1] = ffi.new("struct dvec2",{294.65186680121087,391.52371342078709})
+params["sccoors"][1]["holes"][1][2] = ffi.new("struct dvec2",{385.87285570131178,457.71947527749745})
+params["sccoors"][1]["holes"][1][3] = ffi.new("struct dvec2",{490.81735620585266,385.87285570131178})
+params["sccoors"][1]["holes"][2] = {}
+params["sccoors"][1]["holes"][2][1] = ffi.new("struct dvec2",{351.96770938446014,312.41170534813318})
+params["sccoors"][1]["holes"][2][2] = ffi.new("struct dvec2",{456.10494450050453,316.44803229061552})
+params["sccoors"][1]["holes"][2][3] = ffi.new("struct dvec2",{409.2835519677094,274.47023208879921})
+params["numsplines"] = 1
+params["dial"] = {}
+params["dial"]["triangs"] = 50
+params["dial"]["set_last"] = false
+params["dial"]["curr_spline"] = 1
+params["dial"]["drawregion"] = false
+params["alpha"] = {}
+params["alpha"][1] = ffi.new("float [1]",{0.5})
+
+return params

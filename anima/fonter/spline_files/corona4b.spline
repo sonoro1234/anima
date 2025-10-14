@@ -1,0 +1,29 @@
+local params = {}
+params["numsplines"] = 1
+params["dial"] = {}
+params["dial"]["set_last"] = false
+params["dial"]["curr_spline"] = 1
+params["alpha"] = {}
+params["alpha"][1] = ffi.new("float [1]",{0.5})
+params["sccoors"] = {}
+params["sccoors"][1] = {}
+params["sccoors"][1][1] = ffi.new("struct dvec2",{299.25,375.75})
+params["sccoors"][1][2] = ffi.new("struct dvec2",{347.625,194.625})
+params["sccoors"][1][3] = ffi.new("struct dvec2",{704.25,250.875})
+params["sccoors"][1][4] = ffi.new("struct dvec2",{662.625,419.625})
+params["sccoors"][1][5] = ffi.new("struct dvec2",{599.625,320.625})
+params["sccoors"][1][6] = ffi.new("struct dvec2",{608.625,289.125})
+params["sccoors"][1][7] = ffi.new("struct dvec2",{652.5,300.375})
+params["sccoors"][1][8] = ffi.new("struct dvec2",{641.25,270})
+params["sccoors"][1][9] = ffi.new("struct dvec2",{608.625,289.125})
+params["sccoors"][1][10] = ffi.new("struct dvec2",{599.625,320.625})
+params["sccoors"][1][11] = ffi.new("struct dvec2",{501.75,403.875})
+params["sccoors"][1][12] = ffi.new("struct dvec2",{437.625,235.125})
+params["sccoors"][1][13] = ffi.new("struct dvec2",{437.625,235.125})
+params["VP"] = {}
+params["VP"][1] = 900
+params["VP"][2] = 900
+params["divs"] = {}
+params["divs"][1] = ffi.new("int [1]",{1})
+
+return params
