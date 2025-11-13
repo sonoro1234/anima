@@ -407,12 +407,74 @@ local contours_loader = gui.FileBrowser(nil,{filename="phfx",key="importcont",pa
 		end
 	end
 	
+	local function Tess2tesselate(points1)
+		local insert = table.insert
+			local Tess2 = require"anima.Fonter.tess2b3" 
+			local contours = {}
+			local contour = {}
+			for i,v in ipairs(points1) do
+				insert(contour,v.x)
+				insert(contour,v.y)
+			end
+			contours[#contours+1] = contour
+			if points1.holes then
+			for i,hole in ipairs(points1.holes) do
+				local contour = {}
+				for j,v in ipairs(hole) do
+					insert(contour,v.x)
+					insert(contour,v.y)
+				end
+				contours[#contours+1] = contour
+			end
+			end
+			local polisiz = 3
+			local tess = Tess2.tesselate({
+				contours= contours,
+				windingRule=Tess2.WINDING_ODD,
+				elementType=Tess2.POLYGONS,
+				polySize=polisiz,
+				vertexSize= 2
+			});
+			local points = {}
+			local tr = {}
+			for i = 0,tess.elements.length-1,polisiz do
+				--print" begin path"
+				for j = 0, polisiz-1 do
+					local idx = tess.elements[i+j];
+					if (idx == -1) then goto continue end
+					if (j == 0) then
+						--ctx.moveTo(tess.vertices[idx*2+0], tess.vertices[idx*2+1]);
+						--print(tess.vertices[idx*2+0], tess.vertices[idx*2+1]);
+						points[#points+1] = mat.vec2(tess.vertices[idx*2+0], tess.vertices[idx*2+1])
+						insert(tr,#points-1)
+					else
+						--ctx.lineTo(tess.vertices[idx*2+0], tess.vertices[idx*2+1]);
+						--print(tess.vertices[idx*2+0], tess.vertices[idx*2+1]);
+						points[#points+1] = mat.vec2(tess.vertices[idx*2+0], tess.vertices[idx*2+1])
+						insert(tr,#points-1)
+					end
+					::continue::
+				end
+				--print"end path"
+			end
+			--prtable("result",points,tr)
+			return points, tr
+	end
 	function M:spline2mask(fbo, front_color, ii)
 		ii = ii or NM.curr_spline
 		
 		local points = self.ps[ii]
 		if not points then print"No Spline:select spline" return end
-		local points,indexes = CG.EarClipSimple2(points, true)
+		
+		--local points,indexes = CG.EarClipSimple2(points, true)
+		
+		local glu_tesselator = require"anima.Fonter.glu_tesselator"
+		local meshes = glu_tesselator.tesselate(points,glc.GLU_TESS_WINDING_ODD,true)
+		--meshes[1].triangles = CG.Delaunay( meshes[1].points,meshes[1].triangles)
+		local points, indexes = meshes[1].points, meshes[1].triangles
+		
+		--local points,indexes = Tess2tesselate(points)
+		
 		local ndc = {}
 		for i=1,#points do
 			ndc[i] =  (points[i] + mat.vec2(0.5,0.5))*2/mat.vec2(GL.W,GL.H) - mat.vec2(1,1)
@@ -426,7 +488,7 @@ local contours_loader = gui.FileBrowser(nil,{filename="phfx",key="importcont",pa
 		gl.glDisable(glc.GL_DEPTH_TEST)
 		fbo:viewport()
 		vaoT:draw_elm()
-		vaoT:draw(glc.GL_LINE_LOOP)
+		--vaoT:draw(glc.GL_LINE_LOOP)
 		vaoT:draw(glc.GL_POINTS)
 		fbo:UnBind()
 	end
@@ -722,4 +784,33 @@ GL:start()
 end
 --]=]
 
+--[=[
+if not ... then
+local GL = GLcanvas{H=900,aspect=1,DEBUG=true,use_imgui_viewport=false}
+local function update(n) end --print("update spline",n) end
+local edit = Editor(GL,update,{region=true})--,doblend=true})
+local plugin = require"anima.plugins.plugin"
+edit.fb = plugin.serializer(edit)
+local DBox = GL:DialogBox("Spline demo",true)
+local maskfbo
+function GL.init()
+	DBox:add_dialog(edit.NM)
+	maskfbo = GL:initFBO({no_depth=true})
+end
+function GL.imgui()
+	--ig.ShowDemoWindow()
+	--edit.NM:draw()
+end
+function GL.draw()
+	maskfbo:Bind()
+	gl.glClearColor(0,0,1,0)
+	ut.Clear()
+	maskfbo:UnBind()
+	edit:spline2mask(maskfbo,{1,0,0,0},1)
+	ut.Clear()
+	maskfbo:tex():drawcenter()
+end
+GL:start()
+end
+--]=]
 return Editor
