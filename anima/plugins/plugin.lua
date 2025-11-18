@@ -1,6 +1,7 @@
 local plugin = {}
-function plugin.serializer(M)
+function plugin.serializer(M,args)
 	assert(M)
+	args = args or {}
 	if M.NM then
 		M.load = M.load or function(self,pars) 
 				M.NM:SetValues(pars)
@@ -27,7 +28,7 @@ function plugin.serializer(M)
 		file:write(table.concat(str))
 		file:close()
 	end
-	fb.loader = gui.FileBrowser(nil,{filename="phfx",key="loadps",pattern=M.NM and M.NM.name},fb.load)
+	fb.loader = gui.FileBrowser(nil,{filename="phfx",key="loadps",pattern=M.NM and M.NM.name,curr_dir=args.curr_dir},fb.load)
 	fb.saver = gui.FileBrowser(nil,{check_existence=true,filename="phfx",key="saveps",pattern=M.NM and M.NM.name,addext=true},fb.save)
 	function fb.draw()
 		if ig.SmallButton("save") then
