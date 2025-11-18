@@ -1,7 +1,7 @@
 local W = {}
 
 local function IM_COL32(a,b,c,d)
-	return ig.U32(a/255,b/255,c/255,d/255)
+    return ig.U32(a/255,b/255,c/255,d/255)
 end
 function W.ToggleButton(str_id, v)
     local p = ig.GetCursorScreenPos();
@@ -10,23 +10,23 @@ function W.ToggleButton(str_id, v)
     local height = ig.GetFrameHeight();
     local width = height * 1.55;
     local radius = height * 0.50;
-	
-	local ret = false
+    
+    local ret = false
     if (ig.InvisibleButton(str_id, ig.ImVec2(width, height))) then
         v[0] = not v[0]
-		ret = true
-	end
+        ret = true
+    end
     local col_bg;
     if (ig.IsItemHovered()) then
         col_bg = v[0] and ig.GetColorU32(ig.lib.ImGuiCol_ButtonHovered) or IM_COL32(218-20, 218-20, 218-20, 255);
     else
         col_bg = v[0] and ig.GetColorU32(ig.lib.ImGuiCol_Button) or IM_COL32(218, 218, 218, 255);
-	end
-	
+    end
+    
     draw_list:AddRectFilled(p, ig.ImVec2(p.x + width, p.y + height), col_bg, height * 0.5);
     draw_list:AddCircleFilled(ig.ImVec2(v[0] and (p.x + width - radius) or (p.x + radius), p.y + radius), radius - 1.5, IM_COL32(255, 255, 255, 255));
-	ig.SameLine();ig.Text(str_id)
-	return ret
+    ig.SameLine();ig.Text(str_id)
+    return ret
 end
 
 function W.SingleValueEdit()
@@ -37,21 +37,21 @@ function W.SingleValueEdit()
             StartedTextInput=2,
             TextInput=3,
         }
-		
-		local function IsNaN(v) return v~=v end		
-		--local InputEditStateFlags = {ResetToDefault=0,Finished=1,Started=2,Modified=3,Nothing=4}
+        
+        local function IsNaN(v) return v~=v end     
+        --local InputEditStateFlags = {ResetToDefault=0,Finished=1,Started=2,Modified=3,Nothing=4}
         local InputEditStateFlags = {ResetToDefault=false,Finished=false,Started=false,Modified=true,Nothing=false}
 
-		local SVE = {_state = JogDialStates.Inactive, _jogDialText = "", _numberFormat = "%.3f"}
-		
-		function SVE:FormatValueForButton(value)
+        local SVE = {_state = JogDialStates.Inactive, _jogDialText = "", _numberFormat = "%.3f"}
+        
+        function SVE:FormatValueForButton(value)
             return string.format(self._numberFormat, value);
-		end
+        end
 
-		function SVE:SetState(newState)
+        function SVE:SetState(newState)
             if newState == JogDialStates.Inactive then
                     self._activeJogDialId = 0;
-			elseif newState == JogDialStates.Dialing then
+            elseif newState == JogDialStates.Dialing then
                     self._center = ig.GetMousePos();
             -- elseif newState == JogDialStates.StartedTextInput then
                     --break;
@@ -60,33 +60,33 @@ function W.SingleValueEdit()
             end
             self._state = newState;
         end
-		
-		--- A horrible ImGui work around to have button that stays active while its label changes.  
+        
+        --- A horrible ImGui work around to have button that stays active while its label changes.  
         function SVE:DrawButtonWithDynamicLabel(label, size)
             --local color1 = ig.GetColorU32(ig.lib.ImGuiCol_Text);
             --local keepPos = ig.GetCursorScreenPos();
             --ig.Button("##dial"..tostring(self), size);
             --ig.GetWindowDrawList():AddText(keepPos + ig.ImVec2(4, 4), color1, label);
-			ig.SetNextItemWidth(size.x)
-			local ttt = ffi.new("char[20]",label)
-			ig.InputText("##dial"..tostring(self),ttt,20,ig.lib.ImGuiInputTextFlags_ReadOnly)
+            ig.SetNextItemWidth(size.x)
+            local ttt = ffi.new("char[20]",label)
+            ig.InputText("##dial"..tostring(self),ttt,20,ig.lib.ImGuiInputTextFlags_ReadOnly)
         end
-		
-		function SVE:DrawInt(value, min, max, scale, size)
-			local doubleValue = ffi.new("int[1]",value[0])
+        
+        function SVE:DrawInt(value, min, max, scale, size)
+            local doubleValue = ffi.new("int[1]",value[0])
             local result = self:Draw(doubleValue, min, max, scale, "%.0f", size);
             value[0] = doubleValue[0];
             return result;
-		end
+        end
         function SVE:Draw(value, min, max, scale, format, size)
-			size = size or ig.CalcTextSize("xxx.xxx") + ig.GetStyle().FramePadding*2
+            size = size or ig.CalcTextSize("xxx.xxx") + ig.GetStyle().FramePadding*2
             min = min or (- ig.FLT_MAX)
-			max = max or (ig.FLT_MAX)
-			scale = scale or 1
-			format = format or "%.3f" 
-			self._numberFormat = format;
-			
-			local iog = ig.GetIO();
+            max = max or (ig.FLT_MAX)
+            scale = scale or 1
+            format = format or "%.3f" 
+            self._numberFormat = format;
+            
+            local iog = ig.GetIO();
             local id = ig.GetID("jog"..tostring(self));
             if (id == self._activeJogDialId) then
 
@@ -112,39 +112,39 @@ function W.SingleValueEdit()
                         elseif (ig.IsItemDeactivated()) then
                             self:SetState(JogDialStates.Inactive);
                         else
-							self:JogDialOverlayDraw(iog, min, max, scale);
+                            self:JogDialOverlayDraw(iog, min, max, scale);
                         end
 
                 elseif self._state == JogDialStates.TextInput or self._state ==  JogDialStates.StartedTextInput then
-						if self._state ==  JogDialStates.StartedTextInput then
-							ig.SetKeyboardFocusHere();
-							self:SetState(JogDialStates.TextInput);
-						end
+                        if self._state ==  JogDialStates.StartedTextInput then
+                            ig.SetKeyboardFocusHere();
+                            self:SetState(JogDialStates.TextInput);
+                        end
                         ig.PushStyleColor(ig.lib.ImGuiCol_Text, IsNaN(self._editValue)
                                                                 and ig.U32(1,0,0,1)
                                                                 or ig.U32(1,1,1,1));
                         ig.SetNextItemWidth(size.x);
-						local ttt = ffi.new("char[20]",self._jogDialText or "")
-						local tinput = false
+                        local ttt = ffi.new("char[20]",self._jogDialText or "")
+                        local tinput = false
                         if ig.InputText("##dialInput"..tostring(self), ttt, 20) then
-							self._jogDialText = ffi.string(ttt)
-							tinput = true
-						end
+                            self._jogDialText = ffi.string(ttt)
+                            tinput = true
+                        end
                         ig.PopStyleColor();
 
                         if (ig.IsItemDeactivated()) then
                             self:SetState(JogDialStates.Inactive);
                             if (IsNaN(self._editValue)) then
                                 self._editValue = self._startValue;
-							end
+                            end
                         end
 
                         self._editValue = tonumber(self._jogDialText) or 0;
-						if tinput then
-							self._startValue = self._editValue
-							value[0] = self._editValue;
-							return true
-						end
+                        if tinput then
+                            self._startValue = self._editValue
+                            value[0] = self._editValue;
+                            return true
+                        end
                 end
 
                 value[0] = self._editValue;
@@ -158,7 +158,7 @@ function W.SingleValueEdit()
 
             self:DrawButtonWithDynamicLabel(self:FormatValueForButton(value[0]), size);
             --if (ig.IsItemActivated()) then
-			 if (ig.IsItemClicked()) then
+             if (ig.IsItemClicked()) then
                 self._activeJogDialId = id;
                 self._editValue = value[0];
                 self._startValue = value[0];
@@ -171,7 +171,7 @@ function W.SingleValueEdit()
 
         -- Draws a circular dial to manipulate values with various speeds
         function SVE:JogDialOverlayDraw(iog, min, max, scale)
-			local SegmentWidth = 90;
+            local SegmentWidth = 90;
             local NeutralRadius = 10;
             local RadialIndicatorSpeed = (2 * math.pi / 20);
             local Padding = 2;
@@ -196,7 +196,7 @@ function W.SingleValueEdit()
 
                 local rot = math.fmod((self._editValue - self._startValue) * RadialIndicatorSpeed, 2 * math.pi);
 
-				for index, segmentSpeed in ipairs(SegmentSpeeds) do
+                for index, segmentSpeed in ipairs(SegmentSpeeds) do
                     local isLastSegment = (index == #SegmentSpeeds)
                     local isActive =
                         (distanceToCenter > r and distanceToCenter < r + SegmentWidth) or
@@ -236,29 +236,29 @@ function W.SingleValueEdit()
                 end
 
                 --delta = math.floor((delta * 50)+0.5) / 50;
-				if iog.KeyCtrl then activeSpeed = activeSpeed*0.1 end
+                if iog.KeyCtrl then activeSpeed = activeSpeed*0.1 end
                 self._editValue = self._editValue + delta * activeSpeed * scale * 100;
                 self._editValue = math.min(max, math.max(min,self._editValue))
             end
        
         
-	return SVE
+    return SVE
 end
 
 function W.MultiValueEdit(label,n)
-	local MVE = {}
-	for i=1,n do MVE[i] = W.SingleValueEdit() end
-	
-	function MVE:Draw(val,...)
-		local ret = false
-		for i=1,n do 
-			local ret1 = MVE[i]:Draw(val + (i-1),...); ig.SameLine() 
-			ret = ret or ret1
-		end
-		ig.Text(label)		
-		return ret
-	end
-	return MVE
+    local MVE = {}
+    for i=1,n do MVE[i] = W.SingleValueEdit() end
+    
+    function MVE:Draw(val,...)
+        local ret = false
+        for i=1,n do 
+            local ret1 = MVE[i]:Draw(val + (i-1),...); ig.SameLine() 
+            ret = ret or ret1
+        end
+        ig.Text(label)      
+        return ret
+    end
+    return MVE
 end
 
 return W
