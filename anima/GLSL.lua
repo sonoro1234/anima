@@ -397,6 +397,8 @@ function GLSL:compile(vert,frag,geom,tfvar)
 		print("GL_MAX_COMPUTE_WORK_GROUP_COUNT", wgs[0],wgs[1],wgs[2])
 		gl.glGetIntegerv(glc.GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS,wgs)
 		print("GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS", wgs[0])
+		gl.glGetIntegerv(glc.GL_MAX_COMPUTE_SHARED_MEMORY_SIZE,wgs)
+		print("GL_MAX_COMPUTE_SHARED_MEMORY_SIZE", wgs[0])
 	end
 	self:setShaders(vert, frag,geom,tfvar,comp)
 	if comp then
@@ -709,7 +711,7 @@ function initFBO(wFBO,hFBO,args)
 		--------------------------- alternative in gl 4_5
 		-- local tex = self:tex(whichbuf)
 		-- glext.glGetTextureSubImage(tex.tex,0,iniX,iniY,0,w,h,1,format,type,ffi.sizeof(pixelsUserData),pixelsUserData)
-		------------------------------
+		--------------------------
 		local oldfbo = self:BindRead()
 		gl.glReadBuffer(glc.GL_COLOR_ATTACHMENT0 + whichbuf);
 		gl.glPixelStorei(glc.GL_PACK_ALIGNMENT, 1)
@@ -940,6 +942,9 @@ function VBOk(kind)
 		kind2 = kind2 or kind
 		glext.glBindBuffer(kind2, self.vbo[0]);
 	end
+	function tVbo:UnBind()
+		glext.glBindBuffer(kind, 0);
+	end
 	function tVbo:BufferData(values,usage,size)
 		usage = usage or glc.GL_DYNAMIC_DRAW
 		self:Bind(kind)
@@ -952,9 +957,9 @@ function VBOk(kind)
 		self.b_size = size or ffi.sizeof(values)
 		glext.glBufferStorage(kind,self.b_size,values, usage);
 	end
-	function tVbo:BindBufferBase(bind)
+	function tVbo:BindBufferBase(bind, kind2)
 		--kind = GL_ATOMIC_COUNTER_BUFFER, GL_TRANSFORM_FEEDBACK_BUFFER, GL_UNIFORM_BUFFER or GL_SHADER_STORAGE_BUFFER.
-		glext.glBindBufferBase(kind, bind, tVbo.vbo[0]);
+		glext.glBindBufferBase(kind2 or kind, bind, tVbo.vbo[0]);
 	end
 	function tVbo:MapW(func,off,size,flags)
 		off = off or 0
@@ -1115,6 +1120,7 @@ function VAO(t,program,indices,tsize,isize)
 	--check program info
 	local allcount
 	for i,v in ipairs(attribs) do
+		--print("searching",v.name)
 		local attr = program.attr[v.name]
 		--assert(attr,v.name.." attribute not found in program")
 		if attr then 
@@ -1130,6 +1136,7 @@ function VAO(t,program,indices,tsize,isize)
 			if GLSL.uniform_error then error[[attribute not found]] end
 		end
 	end
+	assert(allcount, "no present attributes found")
 	tVao.count = allcount
 	
 	--bind vaos that are in program
@@ -1230,6 +1237,7 @@ function VAO(t,program,indices,tsize,isize)
 	end
 	--only set floats
 	function tVao:set_buffer(name,data,size)
+		--print("set_buffer",name,data,size)
 		local b_size
 		if type(data)=="table" then
 			size = #data
@@ -1251,7 +1259,7 @@ function VAO(t,program,indices,tsize,isize)
 		
 		--cuidado TODO controlar diferentes medidas
 		self.count = thisvbo.count
-		--self:check_counts() -- aqui controlamos
+		self:check_counts() -- aqui controlamos
 		
 		thisvbo:Bind(glc.GL_ARRAY_BUFFER);
 		--to orphan buffer
