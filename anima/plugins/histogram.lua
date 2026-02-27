@@ -412,11 +412,12 @@ local function Histogram(GL,nbins)
 	return hist
 end
 
---[=[
+---[=[
+if not ... then
 require"anima"
 local GL = GLcanvas{H=800,aspect=1}
 local Histogram1 = Histogram(GL,400)
-archivo = [[D:\VICTOR\pelis\pelipino\master1080\azulpi1\frame-0001.tif]]
+archivo = [[c:\LuaGL\pelis\pelipino\master1080\azulpi1\frame-0001.tif]]
 local NM = GL:Dialog("hist",{
 {"fac",0.1,guitypes.val,{min=0,max=0.1}},
 {"scale",10,guitypes.val,{min=0,max=10}}
@@ -427,7 +428,7 @@ function GL.imgui()
 --Hist()
 end
 function GL.init()
-	textura1 = GL:Texture():Load(archivo,srgb)
+	local textura1 = GL:Texture():Load(archivo,srgb)
 	Histogram1:set_texture(textura1)
 	Histogram1:calc()
 end
@@ -437,5 +438,6 @@ function GL.draw(t,w,h)
 	--Histogram1:Show(w,h,NM.scale)
 end
 GL:start()
+end
 --]=]			  
 return Histogram

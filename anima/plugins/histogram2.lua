@@ -189,7 +189,7 @@ local function SetSRGB(srgb)
 		gl.glEnable(glc.GL_FRAMEBUFFER_SRGB)
 	end
 end
-local function Histogram(nbins)
+local function Histogram(GL, nbins)
 	local hist = {}
 
 	local fbohist, programfx,programhistoshow,programtexshow,pr_cum,pr_he
@@ -363,13 +363,14 @@ local function Histogram(nbins)
 	return hist
 end
 
---[=[
+---[=[
+if not ... then
 require"anima"
 local GL = GLcanvas{H=800,aspect=1}
-local Histogram1 = Histogram(400)
-archivo = [[G:\VICTOR\pelis\pelipino\master1080\azulpi1\frame-0001.tif]]
+local Histogram1 = Histogram(GL, 400)
+local archivo = [[c:\LuaGL\pelis\pelipino\master1080\azulpi1\frame-0001.tif]]
 function GL.init()
-	textura1 = Texture():Load(archivo,srgb)
+	local textura1 = GL:Texture():Load(archivo,srgb)
 	Histogram1:set_texture(textura1)
 	Histogram1:calc()
 end
@@ -378,6 +379,7 @@ function GL.draw(t,w,h)
 	Histogram1:ShowTex(w,h,0.1)
 end
 GL:start()
+end
 --]=]
 
 

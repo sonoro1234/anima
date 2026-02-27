@@ -40,7 +40,8 @@ local function make(GL)
 	return M
 end
 
---[=[
+---[=[
+if not ... then
 GL = GLcanvas{H=800,aspect=1.5}
 local tex,um
 function GL:init()
@@ -59,5 +60,6 @@ function GL.draw(t,w,h)
 	um:process(tex)
 end
 GL:start()
+end
 --]=]
 return make

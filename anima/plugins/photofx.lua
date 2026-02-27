@@ -295,7 +295,8 @@ end
 --alias
 M.make = M.photofx
 
---[=[
+---[=[
+if not ... then
 require"anima"
 local GL = GLcanvas{H=800,aspect=3/2}
 local tex,slab,lch
@@ -315,6 +316,7 @@ function GL.draw(t,w,h)
 	lch:draw(t,w,h,{clip={tex}})
 end
 GL:start()
+end
 --]=]
 
 return M

@@ -241,6 +241,29 @@ function M.photofx(GL,args)
 end
 --alias
 M.make = M.photofx
+---[=[
+if not ... then
+require"anima"
+local GL = GLcanvas{H=800,aspect=3/2}
+local tex,slab,lch
+function GL.init()
+	tex = GL:Texture():Load[[c:\luagl\media\estanque3.jpg]]
+	--tex = GL:Texture():Load[[c:\luagl\media\piscina.tif]]
+	slab = tex:make_slab()
+	--GL:set_WH(tex.width,tex.height)
+	lch = M.photofx(GL)
+end
+local enadt = ffi.new("GLboolean[1]")
+function GL.draw(t,w,h)
+	-- lch:process(slab,tex)
+	-- slab.ping:GetTexture():draw(t,w,h)
+	gl.glGetBooleanv(glc.GL_DEPTH_TEST,enadt)
+	--print("DT",enadt[0])
+	lch:draw(t,w,h,{clip={tex}})
+end
+GL:start()
+end
+--]=]
 return M
 
 
