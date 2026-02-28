@@ -1018,8 +1018,11 @@ function gui.FontIcons(GL,source,ranges,size)
 					end
 				end
 				local hs = hotspots[k] or {0,0}
-				cursors[k] = sdl.createColorCursor(surface, hs[1]*width, hs[2]*height)
+				cursors[k] = sdl.createColorCursor(surface, hs[1]*(width-1), hs[2]*(height-1))
 				sdl.freeSurface(surface)
+				if cursors[k] == nil then
+					print("sdl.getError",ffi.string(sdl.getError()))
+				end
 				assert(cursors[k]~=nil,"sdl.createColorCursor failed")
 			end
 		end
