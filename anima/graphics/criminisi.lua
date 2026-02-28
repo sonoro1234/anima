@@ -98,7 +98,7 @@ void main(){
 ]]
 
 local frag_upd_canvas = [[
-#version 430
+#version 400
 uniform sampler2D canvas;
 uniform sampler2D mask;
 uniform sampler2D contour;
