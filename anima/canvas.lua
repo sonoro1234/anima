@@ -1324,7 +1324,8 @@ function GLcanvas(GL)
 			sdl.getWindowSize(self.window,w,h)
 			return w[0],h[0]
 		end
-		function self:SetCursor(c) return sdl.setCursor(c) end
+		local nilcursor = sdl.getCursor()
+		function self:SetCursor(c) return sdl.setCursor(c or nilcursor) end
 		function self:checkcontext() return sdl.gL_GetCurrentContext()==self.gl_context end
 		OnResize(self.window,self:getWindowSize()) --it is not called fist time
 		sdl.gL_MakeCurrent(window, gl_context);
