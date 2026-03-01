@@ -238,6 +238,7 @@ local function reducer(GL, SIZE, kind)
 			
 			dispatchNum = dispatchNum/ workersX
             s = s + 1
+			GPUwait() --NVIDIA needs that INTEL not
         end
 		--]]
 		--[[
