@@ -313,7 +313,8 @@ local function Editor(GL,updatefunc,args)
 	return M
 end
 
---[=[
+if not ... then
+---[=[
 local GL = GLcanvas{H=900,aspect=1,DEBUG=true}
 --local camara = newCamera(GL,"ident")
 local function update(n) print("update spline",n) end
@@ -398,4 +399,6 @@ function GL.draw(t,w,h)
 end
 GL:start()
 --]=]
+end
+
 return Editor

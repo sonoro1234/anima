@@ -362,7 +362,8 @@ end},
 	return M
 end
 ---------------------
---[=[
+---[=[
+if not ... then
 local GL = GLcanvas{H=700,aspect=1,DEBUG=false,fbo_nearest=false}
 
 
@@ -372,7 +373,8 @@ fileName = [[C:\luaGL\frames_anima\im_test\Cosmos_original.jpg]]
 --fileName = path.this_script_path()..[[\imagenes\unnamed0.jpg]]
 --fileName=[[C:\luagl\animacion\resonator6\resonator-038.jpg]]
 --fileName = [[C:\LuaGL\frames_anima\flood_fill\dummy.png]]
-fileName = [[C:\LuaGL\frames_anima\edges_detection\flowers2.png]]
+--fileName = [[C:\LuaGL\frames_anima\edges_detection\flowers2.png]]
+fileName = [[C:/anima64/examples/inpaint/twozones.png]]
 local texture
 local FF,mixer,fbo
 function GL.init()
@@ -383,15 +385,15 @@ function GL.init()
 	FF = FloodF(GL)
 	--mixer = require"anima.plugins.mixer"(GL,2)
 	fbo = GL:initFBO{no_depth=true}
-	GL:DirtyWrap()
+	--GL:DirtyWrap()
 end
 
 function GL.draw(t,w,h)
 --gl.glClearColor(0,0,0,0)
 	ut.Clear()
-	FF:process_fbo(fbo,texture)
-	fbo:tex():drawcenter()
-	
+	--FF:process_fbo(fbo,texture)
+	--fbo:tex():drawcenter()
+	FF:process(texture)
 	
 	-- mixer.NM.dirty = true
 	-- ut.Clear()
@@ -401,5 +403,6 @@ end
 
 
 GL:start()
+end
 --]=]
 return FloodF

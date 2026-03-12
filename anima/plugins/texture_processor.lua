@@ -92,14 +92,16 @@ function mixer(GL,ntex,NM)
 	return M
 end
 
---[=[
-GL = GLcanvas{H=1080,aspect=1.5}
+---[=[
+if not ... then
+GL = GLcanvas{H=900,aspect=1.5,SDL=true}
 NM = GL:Dialog("pp",{
 {"alpha",0,guitypes.val,{min=0,max=1}},
 })
 pp = mixer(GL,2,NM)
 
 function GL.init()
+	print_glinfo(GL)
 	tex = GL:Texture():Load[[c:\luagl/media/estanque-001.jpg]]
 	tex2 = GL:Texture():Load[[c:\luagl/media/estanque-002.jpg]]
 	pp:set_process[[vec4 process(vec2 pos){
@@ -113,6 +115,7 @@ function GL.draw(t,w,h)
 end
 
 GL:start()
+end
 --]=]
 
 

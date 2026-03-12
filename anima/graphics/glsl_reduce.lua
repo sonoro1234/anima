@@ -238,7 +238,7 @@ local function reducer(GL, SIZE, kind)
 			
 			dispatchNum = dispatchNum/ workersX
             s = s + 1
-			GPUwait() --NVIDIA needs that INTEL not
+			GPUwait()
         end
 		--]]
 		--[[
@@ -308,7 +308,7 @@ local function CPUmax(fbo,offX, offY, W, H)
 	return prios[maxind]
 end
 -----------------------
-local pointX, pointY = 15,0
+local pointX, pointY = 40,12
 local vert_sh=[[
 in vec3 position;
 void main(){
@@ -346,7 +346,7 @@ local test_sideX, test_sideY = 200,200
 local test_size = test_sideX*test_sideY
 local try_workers = {}
 -- for i=2,64 do
-for i=15,15 do
+for i=16,16 do
 	--local DW,pot = CalcWorkers3(290*290, i)
 	local DW, pot = i, PotForSize(i,test_size)
 	--GL_MAX_COMPUTE_WORK_GROUP_COUNT = 65535

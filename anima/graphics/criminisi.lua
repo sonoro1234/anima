@@ -4,6 +4,22 @@
 --updateCanvasGPU
 -- get subimage
 ----------------------
+local vert_sh_p = [[
+	in vec2 position;
+	void main()
+	{
+		gl_Position = vec4(position,-1,1);
+	
+	}
+	]]
+
+local frag_sh_p = [[
+	uniform vec3 color = vec3(1);
+	void main()
+	{
+		gl_FragColor = vec4(color,1);
+	}
+	]]
 local vert_sh=[[
 in vec3 position;
 void main(){

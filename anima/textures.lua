@@ -1346,6 +1346,7 @@ function Texture(w,h,formato,pTexor,args)
 	end
 	function tex:inc_signature()
 		self.instance = self.instance + 1
+		return self
 	end
 	function tex:get_signature()
 		return tostring(self)..self.instance
