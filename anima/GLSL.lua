@@ -561,7 +561,7 @@ function initFBO(wFBO,hFBO,args)
 		for i=0,args.num_tex-1 do
 			gl.glBindTexture(glc.GL_TEXTURE_2D, thefbo.color_tex[i]);
 			dprint("initFBO creates tex",thefbo.color_tex[i])
-			thefbo.GL:addTexture(thefbo.color_tex[i],"from FBO "..thefbo.fb[0].." "..tostring(thefbo))
+			thefbo.GL:addTexture(thefbo.color_tex[i], thefbo)--"from FBO "..thefbo.fb[0].." "..tostring(thefbo))
 			gl.glPixelStorei(glc.GL_UNPACK_ALIGNMENT,1);
 	
 			gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_WRAP_S, args.wrap);
@@ -743,6 +743,7 @@ function initFBO(wFBO,hFBO,args)
 		return glext.glIsFramebuffer(self.fb[0])
 	end
 	function thefbo:delete(keep_tex)
+		--print"thefbo:delete"
 		--do return end
 		assert(self.GL:checkcontext())
 		dprint("deleting FBO",self.fb[0],self)
@@ -765,6 +766,7 @@ function initFBO(wFBO,hFBO,args)
 			--if it was converted to Texture dont delete
 			for i=0,args.num_tex-1 do
 				if not textures[i] then
+				--if textures[i] then
 					gl.glDeleteTextures(1, self.color_tex+i);
 					self.GL:removeTexture((self.color_tex+i)[0])
 				end

@@ -1079,6 +1079,8 @@ function GLcanvas(GL)
 		if GL.use_log then print = GL.luaprint end
 		if not GL.not_imgui then self.Impl:destroy() end
 		
+		self:removeTextures()
+		
 		--self.window:destroy()
 		sdl.destroyWindow(self.window)
 		sdl.quit()
@@ -1111,8 +1113,9 @@ function GLcanvas(GL)
 		if GL.use_log then print = GL.luaprint end
 		if not GL.not_imgui then self.Impl:destroy() end
 		
-		self.window:destroy()
+		self:removeTextures()
 		
+		self.window:destroy()
 		
 		--dont destroy in case multiwindow
 		--imgui.igShutdown();
@@ -1198,14 +1201,32 @@ function GLcanvas(GL)
 	end
 	function GL:removeTexture(n,info)
 		if not self.chktextures[n] then
-			print("texture",n,"not present",info)
+			print("texture",n,"not present",info) 
 			--print(debug.traceback())
 			prtable(GL.chktextures)
 			error("iii",2)
 		end
 		self.chktextures[n] = nil
 	end
-	
+	function GL:removeTextures()
+		local countremove = 0
+		
+		for k,v in pairs(self.chktextures) do
+			--print("removeTextures",k,v)
+			countremove = countremove +1
+			if v.delete then
+				v:delete()
+			else
+				print("could not remove",k,v)
+			end
+			self.chktextures[k] = nil
+		end
+		--print("end removeTextures",countremove)
+		for k,v in pairs(self.chktextures) do
+			print("not removed",k,v)
+		end
+		
+	end
 	local function doinitCOMMON(self)
 		--require"anima.GLSL"
 		-----------------------------------------------------------------------------------
