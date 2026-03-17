@@ -8,7 +8,6 @@ local GL = GLcanvas{H=700 ,aspect=1,vsync=true}
 
 local FF,FMMm
 local tex
-local maskfbo
 
 function GL.init()
 	tex = GL:Texture():Load([[golf.png]])
@@ -17,17 +16,16 @@ function GL.init()
 	
 	FF = require"anima.plugins.flood_fill"(GL)
 	FFMm = require"anima.graphics.FMMmodule"(GL)
-	maskfbo = GL:initFBO({no_depth=true})
 
 	GL:DirtyWrap()
 end
 
 function GL.draw(t,w,h)
+
+	FF:process(tex)
 	ut.Clear()
-	
-	FF:process_fbo(maskfbo,tex)
-	maskfbo:tex():drawcenter()
-	
+	tex:drawcenter()
+	FF:show_mask()
 	FFMm:draw(tex, FF.mask)
 end
 

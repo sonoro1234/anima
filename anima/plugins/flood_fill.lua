@@ -259,11 +259,13 @@ local function FloodF(GL)
 	
 	local DOFINDCOMPONENTS
 	local fbo, adder
+	local picking = false
 	local NM = GL:Dialog("flood_fill",{
 	{"threshold",0.1,guitypes.val,{min=0,max=1},function() DOFINDCOMPONENTS=true end},
-	{"show_image",1,guitypes.toggle},
+	--{"show_image",1,guitypes.toggle},
 	{"pick",0,guitypes.button,function(this) 
-
+		
+		picking = true
 		GL.mouse_pick = {action=function(X,Y)
 							
 							print("t1",GL:ScreenToViewport(X,Y))
@@ -274,13 +276,17 @@ local function FloodF(GL)
 							--this.vars.orig[0] = false
 							DOFINDCOMPONENTS = true
 							this.dirty = true
+							GL:SetCursor(nil)
+							picking = false
 							--Flood_fill(fbo:tex(),tex2, this.point,this.threshold)
 						end}
 
 end},
 {"op",1,guitypes.slider_enum,{"none","add","subs"}},
 {"point",{187,520},guitypes.drag}
-})
+},function() 
+	if picking then GL:SetCursor(GL.cursors.pickcolor) end
+end)
 	M.NM = NM
 	NM.plugin = M
 	
@@ -343,9 +349,9 @@ end},
 			self.mask:inc_signature()
 			DOFINDCOMPONENTS = false
 		end
-		
+		--[[
 		ut.Clear()
-		if NM.show_image then
+		--if NM.show_image then
 			texture:drawcenter()
 			ut.ClearDepth()
 			gl.glEnable(glc.GL_BLEND)
@@ -353,11 +359,19 @@ end},
 			glext.glBlendEquation(glc.GL_FUNC_ADD)
 			self.mask:drawcenter()
 			gl.glDisable(glc.GL_BLEND)
-		else
-			self.mask:drawcenter()
-		end
+		--else
+			--self.mask:drawcenter()
+		--end
+		--]]
 	end
-	
+	function M:show_mask()
+		ut.ClearDepth()
+			gl.glEnable(glc.GL_BLEND)
+			gl.glBlendFunc(glc.GL_SRC_ALPHA, glc.GL_ONE_MINUS_SRC_ALPHA)
+			glext.glBlendEquation(glc.GL_FUNC_ADD)
+			self.mask:drawcenter()
+			gl.glDisable(glc.GL_BLEND)
+	end
 	GL:add_plugin(M,"flood_fill")
 	return M
 end
@@ -385,7 +399,7 @@ function GL.init()
 	FF = FloodF(GL)
 	--mixer = require"anima.plugins.mixer"(GL,2)
 	fbo = GL:initFBO{no_depth=true}
-	--GL:DirtyWrap()
+	GL:DirtyWrap()
 end
 
 function GL.draw(t,w,h)
@@ -394,7 +408,8 @@ function GL.draw(t,w,h)
 	--FF:process_fbo(fbo,texture)
 	--fbo:tex():drawcenter()
 	FF:process(texture)
-	
+	texture:drawcenter()
+	FF:show_mask()
 	-- mixer.NM.dirty = true
 	-- ut.Clear()
 	-- mixer:process{texture,FF.tex2}

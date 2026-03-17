@@ -7,14 +7,14 @@
 -- Usage: pick point in flood_fill module from area to be inpainted and then do_it on criminisi module
 
 require"anima"
-local GL = GLcanvas{H=700 ,aspect=1,profile="CORE",vsync=false,fbo_nearest=false,fps=300}
+local GL = GLcanvas{H=700 ,aspect=1,profile="CORE",vsync=false,fbo_nearest=true,fps=25}
 
 local tex
 local crimi
 local FF,morfbo1,morpho,morpho1,morfbo,subsproc
 
 local DBox = GL:DialogBox("Criminisi",true)
-local fname = [[golf.png]]--[[edificio.png]]
+local fname = [[golf.png]]---[[triangle.png]]--[[jarron.png]]--[[square2.png]]--[[twozones.png]]--[[golf.png]]--[[edificio.png]]
 
 function GL.init()
 	tex = GL:Texture():Load(fname)
@@ -22,13 +22,14 @@ function GL.init()
 	GL:set_WH(tex.width,tex.height)
 	
 	crimi = require"anima.graphics.criminisi"(GL, tex)
+	--crimi = require"anima.graphics.criminisi_yuhang"(GL, tex)
 
 	FF = require"anima.plugins.flood_fill"(GL)
-	FF.NM.vars.show_image[0] = false
+	--FF.NM.vars.show_image[0] = false
 	morpho = require"anima.plugins.morphology"(GL)
 	morpho.NM:SetValues{op="dilate",kernelsize=4,iters=10}
 	morpho1 = require"anima.plugins.morphology"(GL)
-	morpho1.NM:SetValues{op="dilate",kernelsize=2,iters=1}
+	morpho1.NM:SetValues{op="dilate",kernelsize=2,iters=1,bypass=true}
 	morpho1.NM.invisible = true
 	subsproc = require"anima.plugins.texture_processor"(GL,2)
 	subsproc:set_process[[vec4 process(vec2 pos){
@@ -60,20 +61,16 @@ function GL.draw(t,w,h)
 	subsproc:process_fbo(crimi.maskfbo,{morfbo:tex(),morfbo1:tex()})
 	
 	-- if doing criminisi show canvas
-	if crimi.doing then crimi.NM.vars.mostrar[0] = 1 end
+	--if crimi.doing then crimi.NM.vars.mostrar[0] = 1 end
 	-- show tex and mask blended
 	if crimi.NM.mostrar == 0 then
 		tex:drawcenter()
-			ut.ClearDepth()
-			gl.glEnable(glc.GL_BLEND)
-			gl.glBlendFunc(glc.GL_SRC_ALPHA, glc.GL_ONE_MINUS_SRC_ALPHA)
-			glext.glBlendEquation(glc.GL_FUNC_ADD)
-			crimi.maskfbo:tex():drawcenter()
-			gl.glDisable(glc.GL_BLEND)
+		crimi.maskfbo:tex():draw_blend()
 	else
 		crimi.draw(t,w,h)
 	end
-
+	--FF:show_mask()
+	
 end
 
 

@@ -84,7 +84,7 @@ function GL.init()
 end
 
 function GL.draw(t,w,h)
-	if crimi.doing then crimi.NM.vars.mostrar[0] = 1 end
+	--if crimi.doing then crimi.NM.vars.mostrar[0] = 1 end
 	crimi.draw(t,w,h)
 end
 

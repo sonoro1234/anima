@@ -70,10 +70,10 @@ uniform int i,j;
 ivec2 texsize = textureSize(canvas,0);
 ivec2 limits = texsize - ivec2(win_halfsize);
 
-
+const vec3 labfac = vec3(1.0/100.0,1.0/125.0,1.0/125.0);
 vec3 ToLab(vec3 color)
 {
-	return XYZ2LAB(RGB2XYZ(sRGB2RGB(color.rgb)),D65);
+	return XYZ2LAB(RGB2XYZ(sRGB2RGB(color.rgb)),D65);//*labfac;
 	//return color;
 }
 
@@ -211,6 +211,7 @@ void main()
 		//vec3 isopix = texture2D(isophote,(gl_FragCoord.xy)/isophoteSize).rgb;
 		
 		vec2 isograd = vec2(-isopix.b,isopix.g);
+		//isograd = normalize(isograd);
 		float dataterm = abs(dot(normal, isograd));
 		float sumwindow = 0;
 		for(int x=-win_halfsize;x<=win_halfsize;x++){
@@ -350,6 +351,7 @@ local function searchDistancesGPU(i,j)
 	---[=[
 	local di,jj,x,y = M.minimizer:reduce(fbodist,offX, offY, W, H, true)
 	if di==math.huge then
+		print("di",di)
 		return nil
 	else
 		M.distance = di
@@ -585,7 +587,7 @@ local function max_square(fbo, ch)
 		v.acum = acum
 		v.f = acum / s_p
 	end
-	prtable( s_s)
+	--prtable( s_s)
 	return maxsquare, sizes
 end
 
@@ -600,12 +602,15 @@ local function copyfbos()
 	maskfbo_t:Bind()
 	M.maskfbo:tex():draw()
 	maskfbo_t:UnBind()
+	maskfbo_t:tex():inc_signature()
 end
 -----------------------------
-local initconfprog	
+local initconfprog, initcanvas
 local iterscount = 0
 local function do_criminisi()
 	M.doing = true
+	M.P1 = nil
+	M.P2 = nil
 	local fr_t = 1/GL.fps;
 	local init_t = secs_now()
 	local toyield_t = init_t
@@ -628,12 +633,16 @@ local function do_criminisi()
 	copyfbos()
 	
 	initconfprog:process_fbo(conf_fbo,{maskfbo_t:tex()})
-	canvas_fbo:Bind()
-	tex:drawcenter()
-	canvas_fbo:UnBind()
+	
+	-- canvas_fbo:Bind()
+	-- tex:drawcenter()
+	-- canvas_fbo:UnBind()
+	initcanvas:process_fbo(canvas_fbo,{tex,maskfbo_t:tex()})
+	
 	local co,bb = coroutine.running()
 	if not bb then coroutine.yield() end
 	--coroutine.yield()
+	--do return end
 	while true do
 		find_contour()
 		find_isophotes()
@@ -653,21 +662,23 @@ local function do_criminisi()
 			--return
 		end
 		------
-		dis[math.min(iterscount, maxitersize-1)] = M.distance
+		dis[math.min(iterscount, maxitersize-1)] = M.distance --P.prio -- M.distance
 		iter[math.min(iterscount, maxitersize-1)] = math.min(iterscount, maxitersize-1)
 		---------
 		UpdateCanvasGPU(P,P2)
-		
+		M.P1 = P
+		M.P2 = P2
 		iterscount = iterscount + 1
 		
-		if (secs_now() - toyield_t) >= fr_t then
-			local co,is_main = coroutine.running()
-			if not is_main then coroutine.yield() end
-			toyield_t = secs_now()
-		--else
-			--print((secs_now() - toyield_t) , fr_t)
+		if not NM.use_step then
+			if (secs_now() - toyield_t) >= fr_t then
+				local co,is_main = coroutine.running()
+				if not is_main then coroutine.yield() end
+				toyield_t = secs_now()
+			end
+		else
+			coroutine.yield()
 		end
-		--coroutine.yield()
 	end
 	--clear alfa
 	canvas_fbo:Bind()
@@ -685,6 +696,8 @@ local function do_criminisi()
 	print("pixels",iterscount*((2*NM.win_halfsize+1)^2), Wc*Hc-Ws*Hs)
 end
 
+local prog_p, vaoS,vaoS2
+local showprio, showprio2
 function M:init()
 	M.maskfbo = GL:initFBO({no_depth=true})
 	maskfbo_t = GL:initFBO({no_depth=true})
@@ -695,10 +708,38 @@ function M:init()
 	initconfprog:set_process[[vec4 process(vec2 pos){
 			return vec4(1-c1.r,0,0,0);
 		}]]
+	initcanvas = require"anima.plugins.texture_processor"(GL,2)
+	initcanvas:set_process[[vec4 process(vec2 pos){
+		if (c2.b > 0)
+			return c1;
+		else
+			return vec4(0);
+		}]]
+	showprio = require"anima.plugins.texture_processor"(GL,1)
+	showprio:set_process[[vec4 process(vec2 pos){
+			float v = pow(c1.r*4,0.01);
+			return vec4(vec3(v),1);
+		}]]
+	showprio2 = require"anima.plugins.texture_processor"(GL,2)
+	showprio2:set_process[[vec4 process(vec2 pos){
+		if(c1.r>0){
+		vec2 normal = normalize(vec2(c1.g, c1.b));
+		vec2 isograd = vec2(-c2.b,c2.g);
+		//isograd = normalize(isograd);
+		float dataterm = abs(dot(normal, isograd));
+		float col = c2.r>0 ? 1:0 ;
+		
+		return vec4(vec3(1,col,0),1);
+		}
+		return vec4(0);
+		}]]
 	init_contour()
 	initProgDist()
 	initPrio()
 	initUpdate()
+	prog_p = GLSL:new():compile(vert_sh_p, frag_sh_p)
+	vaoS = VAO({position={0,0,0,0,0,0,0,0}},prog_p)
+	vaoS2 = VAO({position={0,0,0,0,0,0,0,0}},prog_p)
 end
 
 M.make_mask_co = nil
@@ -710,8 +751,26 @@ NM = GL:Dialog("inpaint",{
 {"win_halfsize",10,guitypes.drag,{min=3,max=30}},
 {"use_coroutine",true,guitypes.toggle},
 {"use_GPUreduction",false,guitypes.toggle},
+{"use_step",false, guitypes.toggle},
+{"step",false,guitypes.button,function(this) 
+	if this.use_step then
+		if M.make_mask_co and coroutine.status(M.make_mask_co)~="dead" then
+			local doone = true
+			--while iterscount < 25 or doone do
+				print("step", iterscount)
+				local ok,err = coroutine.resume(M.make_mask_co) 
+				if not ok then print(err, "status:",coroutine.status(M.make_mask_co)); print(debug.traceback(M.make_mask_co)) end
+				doone = false
+			--end
+		else
+			M.make_mask_co = coroutine.create(do_criminisi)
+			local ok,err = coroutine.resume(M.make_mask_co) 
+			if not ok then print(err, "status:", coroutine.status(M.make_mask_co)) end
+		end
+	end
+end,{sameline=true}},
 {"do_it",false, guitypes.button, function(this)
-	--this.vars.mostrar[0] = 1
+	this.vars.mostrar[0] = 1
 	if this.use_coroutine then
 	M.make_mask_co = coroutine.create(do_criminisi)
 	local ok,err = coroutine.resume(M.make_mask_co) 
@@ -719,7 +778,7 @@ NM = GL:Dialog("inpaint",{
 	else
 		do_criminisi()
 	end
-end}
+end},
 },function()
 ig.SameLine()
 ig.TextUnformatted(M.doing and "doing" or "done")
@@ -738,6 +797,42 @@ ig.Text("distance: %5.2f",M.distance)
 end)
 M.NM = NM
 
+local function get_eye_point(X,Y)
+	local ndc = mat.vec2(X+0.5,Y+0.5)*2/mat.vec2(GL.W,GL.H) - mat.vec2(1,1)
+	return  mat.vec2(ndc.x,ndc.y)
+end
+local function draw_patches()
+	prog_p:use()
+	gl.glViewport(0,0,GL.W,GL.H)
+	prog_p.unif.color:set{1,0,0}
+	local win_halfsize = math.floor(NM.win_halfsize)
+	--P1
+	local points1 = {}
+	local P1 = M.P1
+	if P1 then
+		table.insert(points1,get_eye_point(P1.i- win_halfsize,P1.j - win_halfsize))
+		table.insert(points1,get_eye_point(P1.i- win_halfsize,P1.j + win_halfsize))
+		table.insert(points1,get_eye_point(P1.i+ win_halfsize,P1.j + win_halfsize))
+		table.insert(points1,get_eye_point(P1.i+ win_halfsize,P1.j - win_halfsize))
+		local lp = mat.vec2vao(points1)
+		vaoS:set_buffer("position",lp,(#points1)*2)
+		vaoS:draw(glc.GL_LINE_LOOP,(#points1))
+	end
+	--P2
+	local P2 = M.P2
+	if P2 then
+		prog_p.unif.color:set{0,0,1}
+		points1 = {}
+		table.insert(points1,get_eye_point(P2[1]- win_halfsize,P2[2] - win_halfsize))
+		table.insert(points1,get_eye_point(P2[1]- win_halfsize,P2[2] + win_halfsize))
+		table.insert(points1,get_eye_point(P2[1]+ win_halfsize,P2[2] + win_halfsize))
+		table.insert(points1,get_eye_point(P2[1]+ win_halfsize,P2[2] - win_halfsize))
+		local lp = mat.vec2vao(points1)
+		vaoS2:set_buffer("position",lp,(#points1)*2)
+		vaoS2:draw(glc.GL_LINE_LOOP,(#points1))
+	end
+end
+
 function M.draw(t,w,h)
 	ut.Clear()
 	if NM.mostrar == 0 then
@@ -755,11 +850,16 @@ function M.draw(t,w,h)
 		conf_fbo:tex():drawcenter()
 	elseif NM.mostrar == 6 then
 		--prio_fbo:tex():drawcenter()
-		prio_fbo:tex():togrey(nil,nil,{1000,0,0,0})
+		--prio_fbo:tex():togrey(nil,nil,{4,0,0,0})
+		--showprio:process({prio_fbo:tex():inc_signature()})
+		showprio2:process{contour_fbo:tex():inc_signature(), isophote_fbo:tex():inc_signature()}
 	elseif NM.mostrar == 7 then
 		fbodist:tex():togrey(nil,nil,{1/300,0,0,0})
 	end
-	if M.make_mask_co and coroutine.status(M.make_mask_co)~="dead" then
+	
+	draw_patches()
+	
+	if not NM.use_step and M.make_mask_co and coroutine.status(M.make_mask_co)~="dead" then
 		local ok,err = coroutine.resume(M.make_mask_co) 
 		if not ok then print(err, "status:",coroutine.status(M.make_mask_co)); print(debug.traceback(M.make_mask_co)) end
 	end

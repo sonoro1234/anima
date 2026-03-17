@@ -12,7 +12,7 @@ GL.use_presets = true
 local medit1
 local morpho 
 local tex
-local mask1,mask2,morfbo
+local mask2,morfbo
 local mixer,subsproc
 local GIMPm
 local DBox = GL:DialogBox("resynthesizer",true)
@@ -22,7 +22,7 @@ function GL.init()
 	
 	medit1 = require"anima.plugins.flood_fill"(GL)
 	morpho = require"anima.plugins.morphology"(GL)
-	morpho.NM:SetValues{op="dilate"}
+	morpho.NM:SetValues{op="dilate",kernelsize=4,iters=10}
 
 	GIMPm = require"anima.graphics.GIMPmodule"(GL)
 	subsproc = require"anima.plugins.texture_processor"(GL,2)
@@ -35,7 +35,6 @@ function GL.init()
 	plugin.serializer(medit1)
 	plugin.serializer(morpho)
 	
-	mask1 = GL:initFBO({no_depth=true})
 	mask2 = GL:initFBO({no_depth=true})
 	morfbo = GL:initFBO({no_depth=true})
 	
@@ -51,18 +50,14 @@ function GL.draw(t,w,h)
 	
 	ut.Clear()
 
-	medit1:process_fbo(mask1,tex)
-	mask1:tex():drawcenter()
+	medit1:process(tex)
+	--mask1:tex():drawcenter()
 	morpho:process_fbo(morfbo,medit1.mask)
 	
 	subsproc:process_fbo(mask2,{morfbo:tex(),medit1.mask})
 	
-	ut.ClearDepth()
-	gl.glEnable(glc.GL_BLEND)
-	gl.glBlendFunc(glc.GL_SRC_ALPHA, glc.GL_ONE_MINUS_SRC_ALPHA)
-	glext.glBlendEquation(glc.GL_FUNC_ADD)
-	mask2:tex():drawcenter()
-	gl.glDisable(glc.GL_BLEND)
+	tex:drawcenter()
+	mask2:tex():draw_blend()
 	
 	GIMPm:draw(tex,medit1.mask,mask2:tex())
 end
