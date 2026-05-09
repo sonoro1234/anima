@@ -79,59 +79,31 @@ function M.photofx(GL,args)
 	local  programfx,fbo
 	local LUTx,LUTy,LUTz
 	local LUTsize = args.LUTsize or 256
-	local LUTdatax = ffi.new("float[?]",LUTsize)
-	local LUTdatay = ffi.new("float[?]",LUTsize)
-	local LUTdataz = ffi.new("float[?]",LUTsize)
-
-	LUTdatax[0] = -1
-	LUTdatay[0] = -1
-	LUTdataz[0] = -1
+	local cuus = {}
 	local numpoints = args.numpoints or 10
-	local pointsx = ffi.new("ImVec2[?]",numpoints)
-	pointsx[0].x = -1
-	local pointsy = ffi.new("ImVec2[?]",numpoints)
-	pointsy[0].x = -1
-	local pointsz = ffi.new("ImVec2[?]",numpoints)
-	pointsz[0].x = -1
-	
+
 	local whitepoint = ffi.new("float[2]")
-	
-	local function getpoints(points)
-		local pts = {}
-		for i=0,numpoints-1 do
-			pts[i] = {x=points[i].x,y=points[i].y}
-		end
-		return pts
-	end
-	local function setpoints(pts,points)
-		for i=0,#pts do
-			points[i].x = pts[i].x
-			points[i].y = pts[i].y
-		end
-	end
 	
 	LM.save = function()
 		local vals = LM.NM:GetValues()
-		local ptsx = getpoints(pointsx)
-		local ptsy = getpoints(pointsy)
-		local ptsz = getpoints(pointsz)
-		return {vals=vals,ptsx=ptsx,ptsy=ptsy,ptsz=ptsz}
+		local ptsx = cuus[1]:getpoints()
+		local ptsy = cuus[2]:getpoints()
+		local ptsz = cuus[3]:getpoints()
+		return {vals=vals,ptsx=ptsx,ptsy=ptsy,ptsz=ptsz,whitepoint=whitepoint}
 	end
 	LM.load = function(self,params)
 		--print("LAVload",self.NM.dirty)
 		LM.NM:SetValues(params.vals)
-		setpoints(params.ptsx,pointsx)
-		setpoints(params.ptsy,pointsy)
-		setpoints(params.ptsz,pointsz)
-		LUTdatax[0] = -1
-		LUTdatay[0] = -1
-		LUTdataz[0] = -1
-		imgui.CurveGetData(pointsx, numpoints,LUTdatax, LUTsize )
-		imgui.CurveGetData(pointsy, numpoints,LUTdatay, LUTsize )
-		imgui.CurveGetData(pointsz, numpoints,LUTdataz, LUTsize )
-		LUTx:set_data(LUTdatax, glc.GL_RED)
-		LUTy:set_data(LUTdatay, glc.GL_RED)
-		LUTz:set_data(LUTdataz, glc.GL_RED)
+		whitepoint = params.whitepoint
+		cuus[1]:setpoints(params.ptsx)
+		cuus[2]:setpoints(params.ptsy)
+		cuus[3]:setpoints(params.ptsz)
+		cuus[1]:get_data()
+		cuus[2]:get_data()
+		cuus[3]:get_data()
+		LUTx:set_data(cuus[1].LUT, glc.GL_RED)
+		LUTy:set_data(cuus[2].LUT, glc.GL_RED)
+		LUTz:set_data(cuus[3].LUT, glc.GL_RED)
 		self.NM.dirty=true
 	end
 	
@@ -140,14 +112,12 @@ function M.photofx(GL,args)
 	
 	local sz = 300
 	local curr_curve = 1
-	local curve_pars = {
-	{ ig.ImVec2(sz,sz),pointsx, numpoints,LUTdatax, LUTsize,true},
-	{ ig.ImVec2(sz,sz),pointsy, numpoints,LUTdatay, LUTsize,true},
-	{ ig.ImVec2(sz,sz),pointsz, numpoints,LUTdataz, LUTsize,true}
-	}
 	local curve_labels = {"L","a","b"}
 	local Luts = {LUTx,LUTy,LUTz}
-
+	local cux = ig.LuaCurve(curve_labels[1],LUTsize)
+	local cuy = ig.LuaCurve(curve_labels[2],LUTsize)
+	local cuz = ig.LuaCurve(curve_labels[3],LUTsize)
+	cuus = {cux,cuy,cuz}
 	local NM
 	NM = GL:Dialog("photofx",
 	{
@@ -169,66 +139,39 @@ function M.photofx(GL,args)
 		local scpos = ig.GetCursorScreenPos()
 		
 		ig.SetCursorScreenPos(scpos)
-		if imgui.Curve(curve_labels[curr_curve],unpack(curve_pars[curr_curve]))  then
-			Luts[curr_curve]:set_data(curve_pars[curr_curve][4], glc.GL_RED)
-			NM.dirty = true
-		end
+		ig.PushID(curr_curve)
+		cuus[curr_curve]:draw(ig.ImVec2(sz,sz),curr_curve)
+		ig.PopID()
+		ig.BeginDisabled()
 		for i=1,3 do
 			if i~=curr_curve then
 				ig.SetCursorScreenPos(scpos)
 				ig.PushStyleColor(imgui.ImGuiCol_PlotLinesHovered, ig.ImVec4(0,0,1,1));
-				if imgui.Curve("##"..curve_labels[i],unpack(curve_pars[i]))  then
-					--Luts[i]:set_data(curve_pars[i][5], glc.GL_RED)
-				end
+				ig.PushID(i)
+				cuus[i]:draw(ig.ImVec2(sz,sz),curr_curve) 
+				ig.PopID()
 				ig.PopStyleColor(1)
 			end
 		end
-		
+		ig.EndDisabled()
 		ig.SetCursorScreenPos(scpos)
-		imgui.Curve(curve_labels[curr_curve].."##s",unpack(curve_pars[curr_curve]))
+		if cuus[curr_curve]:draw(ig.ImVec2(sz,sz),"repe") then
+			cuus[curr_curve]:get_data()
+			Luts[curr_curve]:set_data(cuus[curr_curve].LUT, glc.GL_RED)
+			NM.dirty = true
+		end
 		if gui.pad("colorp",whitepoint) then 
-				pointsz[0].y = 0
-				pointsz[1].y = whitepoint[1]*0.5*0.5 + 0.5
-				pointsz[2].y = 1
-				pointsz[0].x = 0
-				pointsz[1].x = 0.5
-				pointsz[2].x = 1
-				pointsz[3].x = -1
-				pointsy[0].y = 0
-				pointsy[1].y = whitepoint[0]*0.5*0.5 + 0.5
-				pointsy[2].y = 1
-				pointsy[0].x = 0
-				pointsy[1].x = 0.5
-				pointsy[2].x = 1
-				pointsy[3].x = -1
-				
-				LUTdatax[0] = -1
-				LUTdatay[0] = -1
-				LUTdataz[0] = -1
-				imgui.CurveGetData(pointsx, numpoints,LUTdatax, LUTsize )
-				imgui.CurveGetData(pointsy, numpoints,LUTdatay, LUTsize )
-				imgui.CurveGetData(pointsz, numpoints,LUTdataz, LUTsize )
-				LUTx:set_data(LUTdatax, glc.GL_RED)
-				LUTy:set_data(LUTdatay, glc.GL_RED)
-				LUTz:set_data(LUTdataz, glc.GL_RED)
+				cuus[3]:setpoints({[0]={x=0,y=0},{x=0.5,y= whitepoint[1]*0.5*0.5 + 0.5},{x=1,y=1}})
+				cuus[2]:setpoints({[0]={x=0,y=0},{x=0.5,y= whitepoint[0]*0.5*0.5 + 0.5},{x=1,y=1}})
+				cuus[1]:get_data()
+				cuus[2]:get_data()
+				cuus[3]:get_data()
+				LUTx:set_data(cuus[1].LUT, glc.GL_RED)
+				LUTy:set_data(cuus[2].LUT, glc.GL_RED)
+				LUTz:set_data(cuus[3].LUT, glc.GL_RED)
 				NM.dirty = true 
 			end
-		-- if imgui.Curve("c_x", ig.ImVec2(sz,sz),pointsx, numpoints,LUTdatax, LUTsize ) then
-			-- LUTx:set_data(LUTdatax, glc.GL_RED)
-			----for i=0,2 do print(LUTdatax[i]) end
-			-- doprocess=true
-			-- this.dirty=true
-		-- end
-		-- if imgui.Curve("c_y", ig.ImVec2(sz,sz),pointsy, numpoints,LUTdatay, LUTsize )  then
-			-- LUTy:set_data(LUTdatay, glc.GL_RED)
-			-- doprocess=true
-			-- this.dirty=true
-		-- end
-		-- if imgui.Curve("c_z", ig.ImVec2(sz,sz),pointsz, numpoints,LUTdataz, LUTsize )  then
-			-- LUTz:set_data(LUTdataz, glc.GL_RED)
-			-- doprocess=true
-			-- this.dirty=true
-		-- end
+
 		fB.draw()
 		presets.draw()
 	end)
@@ -238,13 +181,13 @@ function M.photofx(GL,args)
 	
 		programfx = GLSL:new():compile(vert_shad,frag_shad)
 		
-		imgui.CurveGetData(pointsx, numpoints,LUTdatax, LUTsize )
-		imgui.CurveGetData(pointsy, numpoints,LUTdatay, LUTsize )
-		imgui.CurveGetData(pointsz, numpoints,LUTdataz, LUTsize )
+		cuus[1]:get_data()
+		cuus[2]:get_data()
+		cuus[3]:get_data()
 		
-		LUTx = GL:Texture1D(LUTsize,glc.GL_R32F,LUTdatax,glc.GL_RED,nil,{GL=GL})
-		LUTy = GL:Texture1D(LUTsize,glc.GL_R32F,LUTdatay,glc.GL_RED,nil,{GL=GL})
-		LUTz = GL:Texture1D(LUTsize,glc.GL_R32F,LUTdataz,glc.GL_RED,nil,{GL=GL})
+		LUTx = GL:Texture1D(LUTsize,glc.GL_R32F,cuus[1].LUT,glc.GL_RED)
+		LUTy = GL:Texture1D(LUTsize,glc.GL_R32F,cuus[2].LUT,glc.GL_RED)
+		LUTz = GL:Texture1D(LUTsize,glc.GL_R32F,cuus[3].LUT,glc.GL_RED)
 		Luts = {LUTx,LUTy,LUTz}
 		
 		local mesh = require"anima.mesh"
@@ -324,7 +267,8 @@ function M.photofx(GL,args)
 end
 --alias
 M.make = M.photofx
---[=[
+if not ... then
+---[=[
 require"anima"
 local GL = GLcanvas{H=800,aspect=3/2}
 local tex,slab,lch
@@ -343,6 +287,7 @@ function GL.draw(t,w,h)
 end
 GL:start()
 --]=]
+end
 return M
 
 
