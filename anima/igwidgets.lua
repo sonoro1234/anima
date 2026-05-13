@@ -212,7 +212,7 @@ function W.SingleValueEdit()
                                              rot,
                                              rot + opening,
                                               64);
-                        foreground:PathStroke(ActiveSegmentColor, false, SegmentWidth - Padding);
+                        foreground:PathStroke(ActiveSegmentColor, SegmentWidth - Padding);
                     else
                     
                         foreground:AddCircle(self._center,

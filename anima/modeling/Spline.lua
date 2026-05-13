@@ -106,7 +106,7 @@ local function Editor(GL,updatefunc1,args)
 				local scpoint = ViewportToScreen(p.x,p.y)
 				pointsI[j-1] = scpoint
 			end
-			--dl:AddPolyline(pointsI, #M.ps[i], color, ig.lib.ImDrawFlags_Closed, 1)
+			--dl:AddPolyline(pointsI, #M.ps[i], color, 1, ig.lib.ImDrawFlags_Closed)
 			PolyArrow(dl, pointsI, #M.ps[i], color)
 			if M.ps[i].holes then
 				for j,hole in ipairs(M.ps[i].holes) do
@@ -115,7 +115,7 @@ local function Editor(GL,updatefunc1,args)
 						local scpoint = ViewportToScreen(p.x,p.y)
 						pointsI[k-1] = scpoint
 					end
-					--dl:AddPolyline(pointsI, #hole, colorhole, ig.lib.ImDrawFlags_Closed, 1)
+					--dl:AddPolyline(pointsI, #hole, colorhole, 1, ig.lib.ImDrawFlags_Closed)
 					PolyArrow(dl, pointsI, #hole, colorhole)
 				end
 			end

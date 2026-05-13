@@ -495,7 +495,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 				end
 				pointsI[i-1] = scpoint
 			end
-			dl:AddPolyline(pointsI,#quad,ig.U32(1,1,0,1),#quad > 2, 1)
+			dl:AddPolyline(pointsI,#quad,ig.U32(1,1,0,1), 1, #quad > 2 and ig.lib.ImDrawFlags_Closed or 0)
 			
 			--vpointX and Y1
 			if PR.planes[j] then
@@ -1213,7 +1213,8 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 	return PR
 end 
 ---------------------------
---[=[
+if not ... then
+---[=[
 local GL = GLcanvas{W=800,viewH=600,aspect=1,aspectNO=1024/768,vsync=1}--DEBUG=true}
 
 
@@ -1282,5 +1283,5 @@ function GL.draw(t,w,h)
 end
 GL:start()
 --]=]
-
+end
 return PlanesPicker
