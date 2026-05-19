@@ -239,20 +239,21 @@ local function Filterer(GL,args)
 		local min = math.max(0,peak-wi)
 		local max = math.min(1,peak+wi)
 		if NM.kind == 0 then
-			NM.defs.curv.curve:setpoints{{x=min,y=0.5},{x=peak,y=gain},{x=max,y=0.5},{x=-1,y=0}}
+			NM.defs.curv.curve:setpoints{[0]={x=min,y=0.5},{x=peak,y=gain},{x=max,y=0.5}}
 		elseif NM.kind == 1 then
-			NM.defs.curv.curve:setpoints{{x=min,y=0.5},{x=peak,y=gain},{x=max,y=gain},{x=-1,y=0}}
+			NM.defs.curv.curve:setpoints{[0]={x=min,y=0.5},{x=peak,y=gain},{x=max,y=gain}}
 		else --2
-			NM.defs.curv.curve:setpoints{{x=min,y=gain},{x=peak,y=gain},{x=max,y=0.5},{x=-1,y=0}}
+			NM.defs.curv.curve:setpoints{[0]={x=min,y=gain},{x=peak,y=gain},{x=max,y=0.5}}
 		end
 		--NM.defs.curv.curve:setpoints{{x=min,y=0.5},{x=min,y=gain},{x=peak,y=gain},{x=max,y=gain},{x=max,y=0.5},{x=-1,y=0}}
+		NM.defs.curv.curve:get_data()
 	end
 	
 	local powersdata = ffi.new("float[?]",END_EDIT_FREQUENCY)
 	local maxvalp = ffi.new("float[1]",0.001)
 	local NM = GL:Dialog("fft",
 	{{"unit",6,guitypes.valint,{min=0,max=7}},
-	{"curv",{0,0.5,1,0.5},guitypes.curve,{pressed_on_modified=false},function(curve) FF:filter(curve.LUT,curve.LUTsize) end},
+	{"curv",{0,0.5,1,0.5},guitypes.curve,{},function(curve) FF:filter(curve.LUT,curve.LUTsize) end},
 	{"peak",0.5,guitypes.val,{min=0,max=END_EDIT_FREQUENCY},function(val,this) setcurve(this) end},
 	{"width",0.1,guitypes.val,{min=0,max=0.1},function(val,this) setcurve(this) end},
 	{"gain",1,guitypes.val,{min=0,max=2},function(val,this) setcurve(this) end},
@@ -478,7 +479,7 @@ local function Filterer(GL,args)
 		self:setoldFBO()
 	end
     function FF:filter(filterArray, length) 
-		--print"fft:filter"
+		--print("fft:filter",filterArray, length)
 		self:saveoldFBO()
 		
 		self:bindtexs()
@@ -575,8 +576,8 @@ function GL.draw(t,w,h)
 end
 GL:start()
 --]=]
-
---[==[
+if not ... then
+---[==[
 require"anima"
 local RES = 512*2
 local GL = GLcanvas{H=RES,W=RES,vsync=true,SDL=false}
@@ -633,7 +634,7 @@ function GL.init()
 	local tex = GL:Texture()
 
 	chain = tex:make_chain{tproc,fft}
-	--GL:DirtyWrap()
+	GL:DirtyWrap()
 end
 
 function GL.draw(t,w,h)
@@ -644,6 +645,7 @@ end
 
 GL:start()
 --]==]
+end
 
 
 return Filterer

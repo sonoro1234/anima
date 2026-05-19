@@ -272,10 +272,14 @@ if not ... then
 require"anima"
 local GL = GLcanvas{H=800,aspect=3/2}
 local tex,slab,lch
+local Hist = gui.Histogram(GL,2^8)
+function GL:imgui()
+	Hist()
+end
 function GL.init()
 	tex = GL:Texture():Load[[c:\luagl\media\estanque3.jpg]]
-	slab = tex:make_slab()
-	--GL:set_WH(tex.width,tex.height)
+	--slab = tex:make_slab()
+	GL:set_WH(tex.width,tex.height)
 	lch = M.photofx(GL)
 end
 function GL.draw(t,w,h)

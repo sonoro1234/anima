@@ -629,20 +629,19 @@ function gui.Dialog(name,vars,func, invisible)
 			end
 			defs[v[1]] = {default= v[2],type=v[3],args=v[4],items=items,n_items=#v[4]}
 		elseif v[3] == guitypes.curve then
-			v[4] = v[4] or {numpoints=10,LUTsize=720}
+			v[4] = v[4] or {LUTsize=720}
 			local siz_def = #v[2]/2
 			assert(siz_def==math.floor(siz_def))
-			local numpoints = v[4].numpoints or 10
-			numpoints = math.max(numpoints,siz_def + 1)
 			local LUTsize = v[4].LUTsize or 720
-			local pressed_on_modified = v[4].pressed_on_modified
-			local curve = gui.Curve(v[1],numpoints,LUTsize,pressed_on_modified)
+			local curve = gui.Curve(v[1],LUTsize)
 			local points = curve.points
+
 			for i=0,siz_def-1 do
+				points[i] = points[i] or {}
 				points[i].x = v[2][i*2+1]
 				points[i].y = v[2][i*2+2]
 			end
-			points[siz_def].x = -1
+
 			curve:get_data()
 			pointers[v[1]] = points
 			defs[v[1]] = {default=v[2],type=v[3],curve=curve,args=v[4]}
@@ -809,6 +808,7 @@ function gui.Dialog(name,vars,func, invisible)
 			elseif v[3] == guitypes.curve then
 				local curve = defs[v[1]].curve
 				if curve:draw() then
+					curve:get_data()
 					if type(v[5])=="function" then 
 						v[5](curve,self)
 					end
@@ -1051,7 +1051,7 @@ function gui.SetImGui(GL)
 	end
 	imgui = ig.lib
 	------now in LuaJIT-ImGui
-	gui.Curve = ig.Curve
+	gui.Curve = ig.LuaCurve
 	gui.dial = ig.dial
 	gui.pad = ig.pad
 	gui.Plotter = ig.Plotter

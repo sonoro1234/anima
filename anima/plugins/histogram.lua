@@ -435,7 +435,7 @@ end
 function GL.draw(t,w,h)
 	ut.Clear()
 	Histogram1:ShowTex(w,h,NM.fac)
-	--Histogram1:Show(w,h,NM.scale)
+	Histogram1:Show(w,h,NM.scale)
 end
 GL:start()
 end
