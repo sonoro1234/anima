@@ -177,8 +177,8 @@ local function make(GL)
 	return M
 end
 
-
---[=[
+if not ... then
+---[=[
 require"anima"
 path = require"anima.path"
 vicim = require"anima.vicimag"
@@ -229,5 +229,6 @@ end
 
 GL:start()
 --]=]
---print(path.this_script_path(),path.script_path())
+end
+
 return make

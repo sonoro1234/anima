@@ -229,7 +229,8 @@ local function make(GL)
 	return M
 end
 
---[=[
+if not ... then
+---[=[
 require"anima"
 
 GL = GLcanvas{H=800,aspect=1.5}
@@ -244,5 +245,6 @@ function GL.draw(t,w,h)
 end
 GL:start()
 --]=]
+end
 
 return make

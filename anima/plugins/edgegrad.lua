@@ -64,12 +64,13 @@ end
 	return M
 end
 
---[=[
+if not ... then
+---[=[
 GL = GLcanvas{H=1080,aspect=1.5}
 local tex,edge
 
 function GL.init()
-	tex = Texture():Load([[G:\VICTOR\pelis\pelipino\master1080\muro\frame-0001.tif]],false,true)
+	tex = GL:Texture():Load([[C:\luagl\pelis\pelipino\master1080\muro\frame-0001.tif]],false,true)
 	edge = make(GL)
 	
 	--GL:DirtyWrap()
@@ -82,6 +83,7 @@ function GL.draw(t,w,h)
 end
 GL:start()
 --]=]
+end
 --[=[
 --print(path.this_script_path())
 GL = GLcanvas{H=1080,aspect=1.5}
@@ -89,7 +91,7 @@ local tex,wcol
 local fbos = {}
 local curr = 0
 function GL.init()
-	tex = Texture():Load([[G:\VICTOR\pelis\pelipino\master1080\muro\frame-0001.tif]],false,true)
+	tex = GL:Texture():Load([[c:\luagl\pelis\pelipino\master1080\muro\frame-0001.tif]],false,true)
 	wcol = make(GL)
 	fbos[0] = GL:initFBO()
 	fbos[1] = GL:initFBO()

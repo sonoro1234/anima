@@ -659,7 +659,8 @@ local function ColorKmeans(GL,K)
 	return M
 end
 
---[=[
+if not ... then
+---[=[
 GL = GLcanvas{fps=25,H=700,aspect = 1.5,DEBUG=true,fbo_nearest=true,SDL=false}
 
 local textura
@@ -726,5 +727,6 @@ end
 
 GL:start()
 --]=]
+end
 
 return ColorKmeans

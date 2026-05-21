@@ -255,7 +255,7 @@ local function Filterer(GL,args)
 	{{"unit",6,guitypes.valint,{min=0,max=7}},
 	{"curv",{0,0.5,1,0.5},guitypes.curve,{},function(curve) FF:filter(curve.LUT,curve.LUTsize) end},
 	{"peak",0.5,guitypes.val,{min=0,max=END_EDIT_FREQUENCY},function(val,this) setcurve(this) end},
-	{"width",0.1,guitypes.val,{min=0,max=0.1},function(val,this) setcurve(this) end},
+	{"width",0.1,guitypes.val,{min=0,max=0.3},function(val,this) setcurve(this) end},
 	{"gain",1,guitypes.val,{min=0,max=2},function(val,this) setcurve(this) end},
 	{"kind",0,guitypes.combo,{"peak","lowpass","hipass"},function(val,this) setcurve(this) end},
 	{"bypass",false,guitypes.toggle},
