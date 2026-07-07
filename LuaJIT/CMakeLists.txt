@@ -27,7 +27,7 @@ else(UNIX)
 	  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT
 	  CONFIGURE_COMMAND "" #${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT ${ljdir}
       BINARY_DIR ${ljsrc}
-      BUILD_COMMAND ${ljsrc}/msvcbuild.bat #dont know how to set DLUAJIT_ENABLE_LUA52COMPAT
+      BUILD_COMMAND ${ljsrc}/msvcbuild.bat "lua52compat"
       INSTALL_COMMAND ""
     )
     set (ljname lua51.lib)
