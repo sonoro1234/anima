@@ -409,7 +409,7 @@ local contours_loader = gui.FileBrowser(nil,{filename="phfx",key="importcont",pa
 	
 	local function Tess2tesselate(points1)
 		local insert = table.insert
-			local Tess2 = require"anima.Fonter.tess2b3" 
+			local Tess2 = require"anima.fonter.tess2b3" 
 			local contours = {}
 			local contour = {}
 			for i,v in ipairs(points1) do
@@ -468,7 +468,7 @@ local contours_loader = gui.FileBrowser(nil,{filename="phfx",key="importcont",pa
 		
 		--local points,indexes = CG.EarClipSimple2(points, true)
 		
-		local glu_tesselator = require"anima.Fonter.glu_tesselator"
+		local glu_tesselator = require"anima.fonter.glu_tesselator"
 		local meshes = glu_tesselator.tesselate(points,glc.GLU_TESS_WINDING_ODD,true)
 		--meshes[1].triangles = CG.Delaunay( meshes[1].points,meshes[1].triangles)
 		local points, indexes = meshes[1].points, meshes[1].triangles

@@ -174,13 +174,13 @@ local function Editor(GL,updatefunc1)
 		elseif NM.tesselator == 1 then
 			--winding positive and get tr
 			--- glu_tesselator
-			local glu_tesselator = require"anima.Fonter.glu_tesselator"
+			local glu_tesselator = require"anima.fonter.glu_tesselator"
 			local meshes = glu_tesselator.tesselate(self.ps[ii],glc.GLU_TESS_WINDING_ODD+NM.Tess2_winding,true)
 			--meshes[1].triangles = CG.Delaunay( meshes[1].points,meshes[1].triangles)
 			self.triangulation[ii].points, self.triangulation[ii].tr = meshes[1].points, meshes[1].triangles
 		elseif NM.tesselator == 5 then --Tess2
 			local insert = table.insert
-			local Tess2 = require"anima.Fonter.tess2b3" 
+			local Tess2 = require"anima.fonter.tess2b3" 
 			local contours = {}
 			local contour = {}
 			for i,v in ipairs(self.ps[ii]) do
