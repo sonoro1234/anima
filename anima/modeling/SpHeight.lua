@@ -46,22 +46,47 @@ local function Editor(GL,camera,updatefunc)
 	return M
 end
 
---[=[
+if not ... then
+---[=[
 local GL = GLcanvas{H=800,aspect=1,DEBUG=true,use_imgui_viewport=false}
-local function update(n) end --print("update spline",n) end
-local camera = Camera(GL, "tps")
-local edit = Editor(GL,camera,update,{region=true})--,doblend=true})
+local object, edit, camera
+local function make_mesh()
+		print"makemesh"
+		---[[
+		local vec3 = mat.vec3
+		local vec2 = mat.vec2
+		local meshE = edit.mesh or mesh.mesh{triangles={0,2,1}, points={vec3(-1,-1,0), vec3(0,1,0), vec3(1,-1,0)}, tcoords={vec2(0,0.5),vec2(0.5,1),vec2(1,1)}}
+		--]]
+		local meshW = meshE:clone()
+		meshW:M4(camera:MV().inv)
+		meshW:calc_centroid()
+		local minb,maxb = meshW:bounds()
+		local center = vec3(meshW.centroid.x,meshW.centroid.y,minb.z)
+
+		--if NM.gentex then MI:MeshRectify(meshE,nil,glc.GL_NEAREST) end
+		local frame = {X=vec3(1,0,0),Y=vec3(0,1,0),Z=vec3(0,0,1),center=center}
+		object:setMesh(meshW,nil, frame)
+	end
+--local function update(n) print("update spline",n) end
+camera = Camera(GL, "tps")
+edit = Editor(GL,camera,make_mesh)--,{region=true})--,doblend=true})
 local plugin = require"anima.plugins.plugin"
-edit.fb = plugin.serializer(edit)
+edit.SE.fb = plugin.serializer(edit.SE)
 local DBox = GL:DialogBox("Spline demo",true)
 function GL.init()
+	object = require"anima.Object3D"(GL,camera)
 	DBox:add_dialog(edit.NM)
 end
 function GL.imgui()
 	--ig.ShowDemoWindow()
 	--edit.NM:draw()
 end
+function GL:draw()
+	ut.Clear()
+	object:draw()
+end
 GL:start()
 --]=]
+end
 
 return Editor

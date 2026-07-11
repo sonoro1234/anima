@@ -449,7 +449,7 @@ function M.mesh(t)
 	function mesh:dump()
 		print"points"
 		for i=1,#self.points do
-			print(i,self:point(i),self:tcoord(i),self:normal(i))
+			print(i,self:point(i),self:tcoord(i),self.normals and self:normal(i) or "no normals")
 		end
 		print"triangles"
 		for i=1,self.ntriangles do

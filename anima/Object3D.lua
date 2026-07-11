@@ -184,8 +184,9 @@ local function Object(GL,camera,args)
 		
 	end
 	function O:setMesh(mesh,tex,frame)
-		O.bounds = {mesh:bounds()}
+		mesh = mesh or inimesh
 		O.mesh = mesh or inimesh
+		O.bounds = {mesh:bounds()}
 		O.tex = tex or O.tex or initex
 		O.tex:Bind()
 		O.tex:gen_mipmap()
@@ -285,7 +286,8 @@ local function Object(GL,camera,args)
 	return O
 end
 
---[[
+if not ... then
+---[[
 local GL = GLcanvas{H=800,aspect=1}
 require"anima.camera2"
 local camera = newCamera(GL,"tps")
@@ -305,5 +307,6 @@ function GL.draw(t,w,h)
 end
 GL:start()
 --]]
+end
 
 return Object

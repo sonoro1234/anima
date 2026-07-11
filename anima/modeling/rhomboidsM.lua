@@ -875,6 +875,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 	end
 	
 	function PR:Viewport2Eye(scpoint)
+		scpoint = vec2(scpoint.x, scpoint.y)
 		local ndc = scpoint*2/vec2(GL.W,GL.H) - vec2(1,1)
 		local eyepoint = camera:MP().inv * (mat.vec4(ndc.x,ndc.y,1,1))
 		eyepoint = eyepoint/eyepoint.w

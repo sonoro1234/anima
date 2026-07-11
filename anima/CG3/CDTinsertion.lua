@@ -268,10 +268,17 @@ function CG.CDTinsertion(P,indexes,Polinds,bridges,delout)
 						--CCW poly
 						local PUi = Ed[b][a]
 						for i=1,#Pu do 
-							if PUi == Pu[i] then Pdelout[Pu[i]] = true; break end
-							-- if not IsPointInPolis(Pols,P[Pu[i]]) then
-								-- Pdelout[Pu[i]] = true 
-							-- end
+							-- if PUi == Pu[i] then Pdelout[Pu[i]] = true; break end
+							if not IsPointInPolis(Pols,P[Pu[i]]) then
+								Pdelout[Pu[i]] = true 
+								-- if not (PUi == Pu[i]) then
+									-- print("-----PUi delout missed----------", PUi, Pu[i])
+								-- end
+							-- else
+								-- if (PUi == Pu[i]) then
+									-- print("-----PUi false delout----------", PUi, Pu[i] )
+								-- end
+							end
 						end
 						--end
 					end
