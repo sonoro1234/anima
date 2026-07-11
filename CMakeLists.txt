@@ -4,6 +4,7 @@ PROJECT(anima) # VERSION 1)
 cmake_minimum_required(VERSION 3.13)
 
 if(WIN32) #to mingw work as all the others
+#set(luasocket_CMAKE_SHARED_LIBRARY_PREFIX CMAKE_SHARED_LIBRARY_PREFIX)
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
 endif(WIN32)
 
@@ -79,7 +80,7 @@ add_subdirectory(LuaJIT)
 endif(ANIMA_BUILD_LUAJIT)
 
 if(ANIMA_BUILD_SNDFILE)
-add_subdirectory(luajit-libsndfile)
+add_subdirectory(LuaJIT-libsndfile)
 set(REAL_HAVE_GETTIMEOFDAY HAVE_GETTIMEOFDAY)
 #message("LuaJIT-libsndfile HAVE_GETTIMEOFDAY " ${HAVE_GETTIMEOFDAY})
 endif(ANIMA_BUILD_SNDFILE)
@@ -158,10 +159,16 @@ if(WIN32)
 endif()
 set(LUA_INCLUDE_DIR ${CMAKE_BINARY_DIR}/LuaJIT/luajit-2.1/project_luajit/src)
 
+
 if(NOT LUAJIT_WINDOW_ONLY)
 add_subdirectory(luanoise)
 add_subdirectory(LuaJIT-IPOL)
 endif(NOT LUAJIT_WINDOW_ONLY)
+
+##############luasocket
+# set(CDIR ${LUAJIT_BIN})
+# set(LDIR ${LUAJIT_BIN}/lua)
+# add_subdirectory(luasocket_cmake)
 #########install
 
 if(NOT LUAJIT_WINDOW_ONLY)
@@ -178,7 +185,7 @@ install(DIRECTORY LuaJIT-rtmidi/examples DESTINATION ${LUAJIT_BIN}/examples/LuaJ
 install(DIRECTORY LuaJIT-SDL2/test DESTINATION ${LUAJIT_BIN}/examples/LuaJIT-SDL2)
 install(DIRECTORY LuaJIT-SDL3/test DESTINATION ${LUAJIT_BIN}/examples/LuaJIT-SDL3)
 install(DIRECTORY luajit-async/tests DESTINATION ${LUAJIT_BIN}/examples/luajit-async)
-install(DIRECTORY luajit-libsndfile/test DESTINATION ${LUAJIT_BIN}/examples/luajit-libsndfile)
+install(DIRECTORY LuaJIT-libsndfile/test DESTINATION ${LUAJIT_BIN}/examples/LuaJIT-libsndfile)
 #####linux luajit launcher
 if(UNIX)
 install(FILES anima_launcher 
