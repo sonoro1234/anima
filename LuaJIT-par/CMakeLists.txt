@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.7)
+cmake_minimum_required(VERSION 3.13)
 project(libpar)
 
 if(WIN32) #to mingw work as all the others

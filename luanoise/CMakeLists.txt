@@ -1,5 +1,5 @@
 PROJECT(simplexnoise CXX)
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.13)
 set(simplex_src
     simplexnoise.cpp
 )

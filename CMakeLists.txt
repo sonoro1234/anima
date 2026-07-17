@@ -1,7 +1,7 @@
-PROJECT(anima) # VERSION 1)
-
 #to allow install from subdirectory
 cmake_minimum_required(VERSION 3.13)
+PROJECT(anima) # VERSION 1)
+
 
 if(WIN32) #to mingw work as all the others
 #set(luasocket_CMAKE_SHARED_LIBRARY_PREFIX CMAKE_SHARED_LIBRARY_PREFIX)
@@ -178,7 +178,14 @@ endif(NOT LUAJIT_WINDOW_ONLY)
 
 install(FILES luafilesystem/lfs_ffi.lua luafilesystem/lfs.lua DESTINATION ${LUAJIT_BIN}/lua)
 install(FILES ffi-reflect/reflect.lua DESTINATION ${LUAJIT_BIN}/lua)
-install(FILES luapower/time.lua DESTINATION ${LUAJIT_BIN}/lua/luapower)
+#luapower
+install(FILES luapower/time/time.lua DESTINATION ${LUAJIT_BIN}/lua/luapower)
+install(FILES luapower/path/path.lua DESTINATION ${LUAJIT_BIN}/lua/luapower)
+install(DIRECTORY luapower/fs/ DESTINATION ${LUAJIT_BIN}/lua/luapower PATTERN ".git" EXCLUDE)
+install(FILES luapower/glue/glue.lua DESTINATION ${LUAJIT_BIN}/lua/luapower)
+install(FILES luapower/setluapower.lua DESTINATION ${LUAJIT_BIN}/lua/luapower)
+install(FILES luapower/lfs_fs.lua DESTINATION ${LUAJIT_BIN}/lua/)
+
 install(DIRECTORY LuaJIT-ImGui/examples DESTINATION ${LUAJIT_BIN}/examples/LuaJIT-ImGui)
 install(DIRECTORY LuaJIT-rtaudio/samples DESTINATION ${LUAJIT_BIN}/examples/LuaJIT-rtaudio)
 install(DIRECTORY LuaJIT-rtmidi/examples DESTINATION ${LUAJIT_BIN}/examples/LuaJIT-rtmidi)

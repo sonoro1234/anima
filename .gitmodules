@@ -41,3 +41,15 @@
 [submodule "LuaJIT-freetype"]
 	path = LuaJIT-freetype
 	url = https://github.com/sonoro1234/LuaJIT-freetype.git
+[submodule "luapower/time"]
+	path = luapower/time
+	url = https://github.com/luapower/time.git
+[submodule "luapower/fs"]
+	path = luapower/fs
+	url = https://github.com/luapower/fs.git
+[submodule "luapower/path"]
+	path = luapower/path
+	url = https://github.com/luapower/path.git
+[submodule "luapower/glue"]
+	path = luapower/glue
+	url = https://github.com/luapower/glue.git
