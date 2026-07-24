@@ -14,4 +14,4 @@ luadir="$bindir/lua"
 export LUA_CPATH="./?.so;$bindir/?.so"
 export LUA_PATH="./?.lua;$luadir/?.lua;$luadir/?/init.lua"
 export LD_LIBRARY_PATH=$bindir
-exec "$bindir/luajit" -e "local oprint = print; print = function(...) oprint(...); io.stdout:flush() end" "$@"
+exec "$bindir/luajit" -e "io.stdout:setvbuf'no'" "$@"
