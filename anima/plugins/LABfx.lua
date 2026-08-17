@@ -143,9 +143,9 @@ function M.photofx(GL,args)
 		local scpos = ig.GetCursorScreenPos()
 		
 		ig.SetCursorScreenPos(scpos)
-		ig.PushID(curr_curve)
-		cuus[curr_curve]:draw(ig.ImVec2(sz,sz),curr_curve)
-		ig.PopID()
+		-- ig.PushID(curr_curve)
+		-- cuus[curr_curve]:draw(ig.ImVec2(sz,sz),curr_curve)
+		-- ig.PopID()
 		ig.BeginDisabled()
 		for i=1,3 do
 			if i~=curr_curve then
