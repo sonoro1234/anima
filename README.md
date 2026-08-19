@@ -75,5 +75,5 @@ In linux use:
 
 # credits
 
-Thanks to @capr for luapower repos in [luapower](https://github.com/sonoro1234/anima/tree/master/luapower)
+Thanks to [Cosmin Apreutesei](https://github.com/capr) for luapower repos in [luapower](https://github.com/sonoro1234/anima/tree/master/luapower)
 
