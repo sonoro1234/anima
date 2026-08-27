@@ -6,14 +6,17 @@
 local vert_shad = [[
 in vec3 Position;
 in vec2 texcoords;
+out vec2 texcoord_f;
 void main()
 {
-	gl_TexCoord[0] = vec4(texcoords,0,1);
+	texcoord_f = texcoords;//vec4(texcoords,0,1);
 	gl_Position = vec4(Position,1);
 }
 ]]
 
 local frag_shad = require"anima.GLSL.GLSL_color"..[[
+in vec2 texcoord_f;
+out vec4 fr_color;
 uniform sampler2D tex0;
 uniform sampler1D LUTx;
 uniform sampler1D LUTy;
@@ -34,12 +37,12 @@ const vec3 labscale = vec3(1.0/100.0,1.0/115.0,1.0/115.0);
 const vec3 laboffset = vec3(0.0,0.5,0.5);
 void main()
 {
-	vec4 tcolor = texture2D(tex0,gl_TexCoord[0].st);
+	vec4 tcolor = texture2D(tex0,texcoord_f);
 	
 	if (bypass){
 		if(usealpha)
 			tcolor.a = 1.0;
-		gl_FragColor = tcolor;
+		fr_color = tcolor;
 		return;
 	}
 	
@@ -55,9 +58,9 @@ void main()
 
 	collab = collab*labscale + laboffset;
 	
-	collab.x = texture1D(LUTx,collab.x*scale + offset).r;
-	collab.y = texture1D(LUTy,collab.y*scale + offset).r;
-	collab.z = texture1D(LUTz,collab.z*scale + offset).r;
+	collab.x = texture(LUTx,collab.x*scale + offset).r;
+	collab.y = texture(LUTy,collab.y*scale + offset).r;
+	collab.z = texture(LUTz,collab.z*scale + offset).r;
 	
 	collab = (collab - laboffset)/labscale;
 	
@@ -69,9 +72,9 @@ void main()
 	if(invert)
 		tcolor.a = 1.0 - tcolor.a;
 	if(usealpha)
-		gl_FragColor = mix(vec4(tcolor.rgb,1.0),vec4(color,1.0),tcolor.a);
+		fr_color = mix(vec4(tcolor.rgb,1.0),vec4(color,1.0),tcolor.a);
 	else
-		gl_FragColor = vec4(color,tcolor.a);
+		fr_color = vec4(color,tcolor.a);
 }
 ]]
 
@@ -152,7 +155,7 @@ function M.photofx(GL,args)
 				ig.SetCursorScreenPos(scpos)
 				ig.PushStyleColor(imgui.ImGuiCol_PlotLinesHovered, ig.ImVec4(0,0,1,1));
 				ig.PushID(i)
-				cuus[i]:draw(ig.ImVec2(sz,sz),curr_curve) 
+				if cuus[i]:draw(ig.ImVec2(sz,sz),curr_curve) then print("dis",i) end
 				ig.PopID()
 				ig.PopStyleColor(1)
 			end
@@ -160,7 +163,7 @@ function M.photofx(GL,args)
 		ig.EndDisabled()
 		ig.SetCursorScreenPos(scpos)
 		if cuus[curr_curve]:draw(ig.ImVec2(sz,sz),"repe") then
-			cuus[curr_curve]:get_data()
+			--cuus[curr_curve]:get_data()
 			Luts[curr_curve]:set_data(cuus[curr_curve].LUT, glc.GL_RED)
 			NM.dirty = true
 		end

@@ -91,7 +91,8 @@ local function save_ptr(cd, ti)
         local s = ffi.string(cd)
         return s
     else
-        print("cdataser WARNING: saving nil ptr!!")
+        print("cdataser WARNING: saving nil ptr!!",cd,el_size,const)
+		error"nil ptr"
         return nilval
     end
 end

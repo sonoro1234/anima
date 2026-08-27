@@ -167,7 +167,9 @@ function SK:draw(t,w,h,args)
 end
 	return SK
 end
---[=[
+
+if not ... then
+---[=[
 require"anima"
 GL = GLcanvas{fps=60,aspect=1.5,H=700}
 local SK = make(GL)
@@ -191,5 +193,6 @@ end
 
 GL:start()
 --]=]
+end
 
 return make

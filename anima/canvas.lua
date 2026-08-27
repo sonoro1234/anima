@@ -587,6 +587,7 @@ end
 --------------------------------------------------------------------------------------------
 local singleton_canvas
 function GLcanvas(GL)
+	print"open GLcanvas"
 	if singleton_canvas then error"another GLcanvas is opened" end
 	singleton_canvas = true
 	

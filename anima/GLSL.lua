@@ -1239,7 +1239,7 @@ function VAO(t,program,indices,tsize,isize)
 	end
 	--only set floats
 	function tVao:set_buffer(name,data,size)
-		--print("set_buffer",name,data,size)
+		--print("---set_buffer",self,name,data,size)
 		local b_size
 		if type(data)=="table" then
 			size = #data
@@ -1258,10 +1258,11 @@ function VAO(t,program,indices,tsize,isize)
 		if not att.present then print(name,"not present in vao:set_buffer"); return end
 		local thisvbo = vbos[att_names[name]]
 		thisvbo.count = size/att.typesize
-		
+		--print("set_buffer sizes",size,att.typesize,size/att.typesize)
 		--cuidado TODO controlar diferentes medidas
 		self.count = thisvbo.count
-		self:check_counts() -- aqui controlamos
+		--but wait all set_buffer are done
+		--self:check_counts() -- aqui controlamos
 		
 		thisvbo:Bind(glc.GL_ARRAY_BUFFER);
 		--to orphan buffer

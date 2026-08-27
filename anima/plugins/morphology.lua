@@ -230,7 +230,8 @@ local function morphology(GL,args)
 	return M
 end
 
---[=[
+if not ... then
+---[=[
 local GL = GLcanvas{H=700,aspect=1,fbo_nearest=true}
 
 NM = GL:Dialog("test",{
@@ -282,4 +283,5 @@ end
 
 GL:start()
 --]=]
+end
 return morphology
