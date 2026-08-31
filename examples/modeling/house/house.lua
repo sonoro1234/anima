@@ -5,7 +5,7 @@ local GL = GLcanvas{W=800,viewH=600,aspect=1,vsync=1,profile="CORE"}--DEBUG=true
 GL.use_presets = true
 local NM 
 
-local camera = Camera(GL,"tps")
+local camera = Camera(GL,{gizmo=true,type="tps"})
 camera.NM.vars.dist[0] = 1.5
 local edit
 local tex
