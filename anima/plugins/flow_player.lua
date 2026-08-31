@@ -8,10 +8,11 @@ uniform mat4 MVP;
 uniform mat4 TM;
 in vec3 position;
 in vec2 texcoords;
+out vec4 t_coor_f;
 void main()
 {
 
-	gl_TexCoord[0] = TM*vec4(texcoords,0,1);
+	t_coor_f = TM*vec4(texcoords,0,1);
 	gl_Position = MVP*vec4(position,1);
 }
 
@@ -24,11 +25,13 @@ uniform sampler2D bflow;
 uniform float pos;
 uniform vec2 size;
 uniform bool fadeonly=false;
+in vec4 t_coor_f;
+out vec4 fcolor;
 void main()
 {
-	vec4 delta = texture2D(flow,gl_TexCoord[0].st);
+	vec4 delta = texture2D(flow,t_coor_f.st);
 	vec2 delt = delta.rg / size;
-	delta = texture2D(bflow,gl_TexCoord[0].st);
+	delta = texture2D(bflow,t_coor_f.st);
 	vec2 bdelt = delta.rg / size;
 
 	if(fadeonly){
@@ -36,16 +39,16 @@ void main()
 		bdelt = vec2(0.0);
 	}
 	/*
-	vec2 texc = gl_TexCoord[0].st;
+	vec2 texc = t_coor_f.st;
 	if(texc.x == 0.0 || texc.x == 1.0 || texc.y == 0.0 || texc.y == 1.0){
 		delt.x = delt.y = 0.0;
 		bdelt.x = bdelt.y = 0.0;
 	}
 	*/
-	vec4 color1 = texture2D(tex0,gl_TexCoord[0].st - pos*delt);
-	vec4 color2 = texture2D(tex1,gl_TexCoord[0].st - (1.0-pos)*bdelt);
+	vec4 color1 = texture2D(tex0,t_coor_f.st - pos*delt);
+	vec4 color2 = texture2D(tex1,t_coor_f.st - (1.0-pos)*bdelt);
 
-	//vec2 ll = gl_TexCoord[0].st - pos*delt;
+	//vec2 ll = t_coor_f.st - pos*delt;
 	//if(ll<0 || ll>1){}
 	
 	//color1 = vec4(color1.a);
@@ -54,7 +57,7 @@ void main()
 	vec4 color = (1.0-pos)*color1 + pos*color2;
 	//vec4 color = mix(color1,color2,pow(pos,4));
 	
-	gl_FragColor = color;
+	fcolor = color;
 }
 ]]
 
@@ -217,18 +220,20 @@ local function flow_player(GL)
 		gl.glMatrixMode(glc.GL_TEXTURE);
 		gl.glPopMatrix();
 	end
-	GL:add_plugin(fplay)
+	GL:add_plugin(fplay,"flow_player")
 	return fplay
 end
 
---[=[
-GL = GLcanvas{fps=25,H=1080,viewH=700,aspect=3/2}
+if not ... then
+---[=[
+GL = GLcanvas{fps=25,H=1080,viewH=700,aspect=3/2,profile="CORE"}
 
 fpl = flow_player(GL)
 --args = {images=images,fflows=fflows,bflows=bflows,frame= AN({1,80,80*1})}
 
-local args = fpl:loadimages("lotomask","lotomask_tvl1",[[D:\VICTOR\pelis\caprichos]])
-args.frame = AN({8,8,18},{8,9,4},{9,20+16,40*2})
+local args = fpl:loadimages("lotomask","lotomask_tvl1",[[C:\LuaGL\pelis\caprichos]])
+--args.frame = AN({8,9,4},{9,20+16,4*25})
+args.frame = AN({9,20+16,4*25})
 args.doclamp = true
 function GL.init()
 end
@@ -238,6 +243,7 @@ end
 
 GL:start()
 --]=]
+end
 
 
 return flow_player

@@ -1,22 +1,28 @@
 
 --require"anima"
 local vert_shad2 = [[
-
+out vec4 tcoor_f;
+in vec3 position;
+in vec2 texcoords;
+uniform mat4 MVP;
 void main()
 {
-	gl_TexCoord[0] = gl_MultiTexCoord0;
-	gl_Position = ftransform();
+	tcoor_f = vec4(texcoords,0,1);//gl_MultiTexCoord0;
+	//gl_Position = gl_ModelViewProjectionMatrix* vec4(position,1);//ftransform();
+	gl_Position = MVP* vec4(position,1);
 }
 
 ]]
+
 local frag_shad2 = [[
 uniform sampler2D tex0;
-
+out vec4 fcolor;
+in vec4 tcoor_f;
 void main()
 {
-	//gl_FragColor = texture2D(tex0,gl_TexCoord[0].st);
+	//fcolor = texture2D(tex0,tcoor_f.st);
 	//alpha saturate
-	gl_FragColor = vec4(texture2D(tex0,gl_TexCoord[0].st).rgb, 1.0);
+	fcolor = vec4(texture2D(tex0,tcoor_f.st).rgb, 1.0);
 }
 ]]
 
@@ -25,15 +31,17 @@ local frag_shadmix = [[
 uniform sampler2D tex0;
 uniform float alpha;
 uniform bool set_alpha1;
+out vec4 fcolor;
+in vec4 tcoor_f;
 void main()
 {
 	
-	vec4 color = texture2D(tex0,gl_TexCoord[0].st);
+	vec4 color = texture2D(tex0,tcoor_f.st);
 
 	if(set_alpha1)
 		color.a = 1;
 	color.a *= alpha;
-	gl_FragColor = color;
+	fcolor = color;
 
 }
 ]]
@@ -78,7 +86,10 @@ function M.layers_mixer(GL,usemsaa, lm_args)
 			fbo = GL:initFBO()
 		end
 		programmix = GLSL:new():compile(vert_shad2,frag_shadmix)
+		self.quad_mix = mesh.quad(0,0,GL.W,GL.H):vao(programmix)
+		self.quad_mix_pos = mesh.quad(-0.5*GL.W/GL.H,-0.5,0.5*GL.W/GL.H,0.5):vao(programmix)
 		program2 = GLSL:new():compile(vert_shad2,frag_shad2)
+		self.quad2 = mesh.quad(0,0,GL.W,GL.H):vao(program2)
 		LM.inited = true
 	end
 
@@ -132,7 +143,8 @@ function M.layers_mixer(GL,usemsaa, lm_args)
 			theclip[1]:draw(cliptime, w, h,theclip)
 
 			---[[ mix
-			glext.glUseProgram(programmix.program);
+			--glext.glUseProgram(programmix.program);
+			programmix:use()
 			glext.glActiveTexture(glc.GL_TEXTURE0);
 			
 			if usemsaa then
@@ -177,22 +189,43 @@ function M.layers_mixer(GL,usemsaa, lm_args)
 			
 			if theseg.planer then
 				theseg.planer:set(cliptime)
+				local MVP = theseg.planer.camera:MVP()
 				local x,y,z = unpack(theseg.planer.pos)
 				local he = theseg.planer.h
-				gl.glTranslatef(x[0],y[0],0)
-				ut.DoQuadC(he*w/h,he,z[0])
+				--gl.glTranslatef(x[0],y[0],0)
+				--local MP = mat.translate(x[0],y[0],0)
+				programmix.unif.MVP:set(MVP.gl)
+				--ut.DoQuadC(he*w/h,he,z[0])
+				if not theseg.planer.vao or theseg.planer.z0~=z[0] then
+					theseg.planer.z0 = z[0]
+					theseg.planer.vao = mesh.quad(-0.5*he*w/h, -0.5*he, 0.5*he*w/h, 0.5*he,z[0]):vao(programmix)
+				end
+				theseg.planer.vao:draw_elm()
 			elseif theseg.positioner then
 				local NM = theseg.positioner
-				ut.ortho_camera(w/h,1)
+				--ut.ortho_camera(w/h,1)
+				local MP = mat.ortho(-0.5*w/h, 0.5*w/h, -0.5, 0.5, -1, 1000);
+				
+				-- gl.glTranslatef(NM.xpos,NM.ypos,NM.zpos)
+				-- gl.glRotatef(NM.twist,0,0,1)
+				-- gl.glScalef(NM.scale,NM.scale,NM.scale)
+				
+				MP = MP * mat.translate(NM.xpos,NM.ypos,NM.zpos)
+				MP = MP * mat.rotate_axis(NM.twist,mat.vec3(0,0,1))
+				MP = MP * mat.scale(NM.scale,NM.scale,NM.scale)
+				
+				programmix.unif.MVP:set(MP.gl)
+				
 				gl.glViewport(0, 0, w, h)
-				gl.glTranslatef(NM.xpos,NM.ypos,NM.zpos)
-				gl.glRotatef(NM.twist,0,0,1)
-				gl.glScalef(NM.scale,NM.scale,NM.scale)
-
-				ut.DoQuadC(w/h,1)
+				--ut.DoQuadC(w/h,1)
+				self.quad_mix_pos:draw_elm()
+				--print"positioner------------"
 			else
-				ut.project(w,h)
-				ut.DoQuad(w,h)
+				--ut.project(w,h)
+				local MP = mat.ortho(0, w, 0, h, -1, 1);
+				programmix.unif.MVP:set(MP.gl)
+				--ut.DoQuad(w,h)
+				self.quad_mix:draw_elm()
 			end
 			--]]
 		end
@@ -213,9 +246,11 @@ function M.layers_mixer(GL,usemsaa, lm_args)
 			gl.glClearColor(0.0, 0.0, 0.0, 0)
 			ut.Clear()
 				
-			ut.project(w,h)
-			
-			ut.DoQuad(w,h)
+			--ut.project(w,h)
+			local MP = mat.ortho(0, w, 0, h, -1, 1);
+			program2.unif.MVP:set(MP.gl)
+			--ut.DoQuad(w,h)
+			self.quad2:draw_elm()
 		end
 		gl.glDisable(glc.GL_MULTISAMPLE);
 	end
@@ -371,10 +406,11 @@ local function newPlanner(GL,planez,show,cameraplaner)
 	function planner:set(time)
 		if self.autom then
 			for i,v in ipairs(self.autom) do
+			print("autom",i)
 				v:dofunc(time)
 			end
 		end
-		self.camera:Set(time)
+		--self.camera:Set(time)
 	end
 	return planner
 end

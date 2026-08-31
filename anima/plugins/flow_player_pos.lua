@@ -1,14 +1,33 @@
 require"anima"
 local vicim = require"anima.vicimag"
 
+local vert_std = [[
+in vec3 position;
+in vec2 texcoords;
+out vec4 t_coor_f;
+uniform mat4 MVP;
+	void main()
+	{
+		//t_coor_f = gl_MultiTexCoord0;
+		//t_coor_f = vec4(position.xy,0,1);
+		t_coor_f = vec4(texcoords,0,1);
+		//gl_FrontColor = gl_Color;
+		//gl_Position = ftransform();
+		//gl_Position = gl_ModelViewProjectionMatrix*gl_Vertex;
+		//gl_Position = MVP*gl_Vertex;
+		gl_Position = MVP*vec4(position.xy,0,1);
+	}
+	]]
 
 local frag_inp = [[
 uniform sampler2D tex0;
 uniform sampler2D tex1;
 uniform float alpha;
+in vec4 t_coor_f;
+out vec4 fcolor;
 void main()
 {
-	gl_FragColor = mix(texture2D(tex0,gl_TexCoord[0].st),texture2D(tex1,gl_TexCoord[0].st),alpha);
+	fcolor = mix(texture2D(tex0,t_coor_f.st),texture2D(tex1,t_coor_f.st),alpha);
 }
 ]]
 
@@ -18,6 +37,8 @@ uniform sampler2D flow;
 uniform vec2 size;
 uniform float pos;
 uniform bool fadeonly=false;
+out vec4 t_coor_f;
+uniform mat4 MVP;
 void main()
 {
 	vec4 delta = texture2D(flow,position);
@@ -27,8 +48,8 @@ void main()
 		delt = vec2(0);
 	}
 	
-	gl_TexCoord[0] = vec4(position,0,1);
-	gl_Position = gl_ModelViewProjectionMatrix*vec4(position + pos*delt, 0, 1);
+	t_coor_f = vec4(position,0,1);
+	gl_Position = MVP*vec4(position + pos*delt, 0, 1);
 	
 }
 
@@ -36,18 +57,19 @@ void main()
 local frag_shad = [[
 uniform sampler2D tex0;
 uniform float alpha;
+in vec4 t_coor_f;
+out vec4 fcolor;
 void main()
 {
 	
-	vec4 color = texture2D(tex0,gl_TexCoord[0].st);
-	gl_FragColor = vec4(color.rgb,alpha);
+	vec4 color = texture2D(tex0,t_coor_f.st);
+	fcolor = vec4(color.rgb,alpha);
 }
 ]]
 local function make_points(w,h)
 	w = w -1
 	h = h -1
 	local texc = {};
-	local texc2 = {};
 	for j = 0, h do
         local Y = j / h;
 		for i = 0, w do
@@ -67,16 +89,17 @@ local function flow_player(GL)
 	local fplay = {}
 	
 	local NM = GL:Dialog("fpp",{
-	{"inpaint",false,guitypes.toggle},{"dopos",true,guitypes.toggle}})
+	{"inpaint",true,guitypes.toggle},{"dopos",true,guitypes.toggle}})
 	fplay.NM = NM
 	
 	function fplay:init()
 		self.program = GLSL:new():compile(vert_shad,frag_shad)
-		self.prinp = GLSL:new():compile(ut.vert_std,frag_inp)
+		self.prinp = GLSL:new():compile(vert_std,frag_inp)
 		self.tex1 = GL:Texture()
 		self.tex2 = GL:Texture()
 		local texc = make_points(GL.W,GL.H)
 		self.vao = VAO({position=texc},self.program)
+		self.vao2 = mesh.quad(0,0,GL.W,GL.H):vao(self.prinp)
 	end
 	
 	local function get_args(t,timev)
@@ -120,8 +143,12 @@ local function flow_player(GL)
 			U.tex1:set{1}
 			self.tex1:Bind(0)
 			self.tex2:Bind(1)
-			ut.project(w,h)
-			ut.DoQuad(w,h)
+			--ut.project(w,h)
+			local MP = mat.ortho(0, w, 0, h, -1, 1);
+			U.MVP:set(MP.gl)
+			gl.glViewport(0,0,w,h)
+			--ut.DoQuad(w,h)
+			self.vao2:draw_elm()--glc.GL_POINTS)
 		end
 		
 		if NM.dopos then
@@ -141,7 +168,9 @@ local function flow_player(GL)
 		self.flow:Bind(1)
 		--gl.glClearColor(0,0,0,0)
 		--ut.Clear()
-		ut.project(1,1)
+		--ut.project(1,1)
+		local MP = mat.ortho(0, 1, 0, 1, -1, 1);
+		U.MVP:set(MP.gl)
 		gl.glViewport(0,0,w,h)
 		self.vao:draw(glc.GL_POINTS)
 		---[[
@@ -164,41 +193,27 @@ local function flow_player(GL)
 		gl.glEnable(glc.GL_DEPTH_TEST)
 	end
 	
-	GL:add_plugin(fplay)
+	GL:add_plugin(fplay,"flow_player_pos")
 	return fplay
 end
---[=[
-local path = require"anima.path"
-local images,fflows,bflows = {},{},{}
 
---local imdir =[[H:\pelis\palmeras\compressed1080\dosserierecortada_tn]]
-local imdir = [[G:\VICTOR\pelis\ninfas\compressed1080\infrarojodos]]
-funcdir(imdir,function(f) table.insert(images,f) end)
-local function getflows(f)
-	--print(f)
-	local _,fnam = path.splitpath(f)
-	if fnam:sub(1,1) == "b" then
-		table.insert(bflows,f)
-	else
-		table.insert(fflows,f)
-	end
-end
--- 
+if not ... then
+---[=[
+GL = GLcanvas{fps=25,H=1080,viewH=700,aspect=3/2,profile="CORE"}
 
---funcdir([[H:\pelis\palmeras\flow\dosserierecortada_tn]],getflows,"flo")
-funcdir([[G:\VICTOR\pelis\ninfas\flow\infrarojodos]],getflows,"flo")
-
-for i=#fflows + 2,#images do
-	images[i] = nil
-end
-print(#images)
-prtable(images,fflows,bflows)
-
-GL = GLcanvas{fps=25,H=1080,viewH=700,aspect=3/2}
-
-fpl = flow_player(GL)
-args = {images=images,fflows=fflows,bflows=bflows,frame= AN({1,80,80*1})}
+local fpl --= flow_player(GL)
+--args = {images=images,fflows=fflows,bflows=bflows,frame= AN({1,80,80*1})}
+local fpl2 = require"anima.plugins.flow_player"(GL)
+local args = fpl2:loadimages("lotomask","lotomask_tvl1",[[C:\LuaGL\pelis\caprichos]])
+--args.frame = AN({8,9,4},{9,20+16,4*25})
+args.frame = AN({9,20+16,4*25})
+args.doclamp = true
+local tex 
 function GL.init()
+	tex = GL:Texture():Load([[C:\LuaGL\pelis\caprichos\master1080\lotomask\frame-0001.tif]])
+	GL:set_WH(tex.width, tex.height)
+	--init here to have GL.W and H
+	fpl = flow_player(GL)
 end
 function GL.draw(t,w,h)
 	fpl:draw(t,w,h,args)
@@ -206,6 +221,6 @@ end
 
 GL:start()
 --]=]
-
+end
 
 return flow_player

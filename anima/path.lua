@@ -10,6 +10,7 @@ local function isabs(P)
 	end
 end
 local sep = is_windows and '\\' or '/'
+local alt_sep = is_windows and '/' or '\\'
 M.path_sep = sep
 M.sep = sep
 local np_gen1, np_gen2 = '[^SEP]+SEP%.%.SEP?', 'SEP+%.?SEP'
@@ -43,6 +44,9 @@ local function abspath(P)
 	return normpath(P)
 end
 -----------------------------end penlight
+local function norm_sep(P)
+	return P:gsub(alt_sep,sep)
+end
 local function splitpath(P)
 	return P:match("(.+)"..sep.."([^"..sep.."]+)")
 end
@@ -105,6 +109,7 @@ function M.change_ext(path,ext)
 	return noext..ext
 end
 function M.path2table(P)
+	P = norm_sep(P)
 	local t = {}
 	while true do
 		local a,b = M.splitpath(P)
@@ -192,8 +197,9 @@ end
 --[=[
 --print(ext("nest.eerd.exe"))
 require"anima.utils"
-local pp = M.change_ext([[c:\p1\p2\p3.pep]],"pri")
-local tt = M.path2table(pp)
+local pp = [[C:\LuaGL\frames_anima\caprichos_peli\images\/extras/frame-0002.jpg]]
+--local pp = M.change_ext([[c:\p1\p2\/p3.pep]],"pri")
+local tt = M.path2table(norm_sep(pp))
 prtable(tt)
 tt[#tt-1] = "p2nuevo"
 print(M.table2path(tt))

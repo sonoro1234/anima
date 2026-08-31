@@ -1,40 +1,21 @@
 
 local vicim = require"anima.vicimag"
 
-local vert_mix = [[
-void main()
-{
-	gl_TexCoord[0] = gl_MultiTexCoord0;
-	gl_Position = ftransform();
-}
-
-]]
-
-local frag_mix = [[
-uniform sampler2D tex1;
-uniform sampler2D tex2;
-uniform float alpha;
-void main()
-{
-	vec4 color1 = texture2D(tex1,gl_TexCoord[0].st);
-	vec4 color2 = texture2D(tex2,gl_TexCoord[0].st);
-	gl_FragColor = mix(color1,color2,alpha);
-}
-
-]]
-
 local vert_shad = [[
 in vec2 texc;
 uniform sampler2D flow;
 uniform vec2 size;
 uniform float pos;
+out vec4 t_coor_f;
+uniform mat4 MVP;
+
 
 void main()
 {
 
 	vec4 delta = texture2D(flow,texc);
 	vec2 delt = delta.rg / size;
-	gl_TexCoord[0] = vec4(texc,0,1);
+	t_coor_f = vec4(texc,0,1);
 	
 	/*
 	if(texc.x == 0.0 || texc.x == 1.0)
@@ -48,7 +29,8 @@ void main()
 		delt.x = delt.y = 0.0;
 		
 	vec4 position = vec4(texc,0,1) + pos*vec4(delt,0,0);
-	gl_Position = gl_ModelViewProjectionMatrix * position;
+	//gl_Position = gl_ModelViewProjectionMatrix * position;
+	gl_Position = MVP * position;
 
 }
 
@@ -56,15 +38,14 @@ void main()
 local frag_shad = [[
 uniform sampler2D tex0;
 uniform float alpha;
-uniform bool dogrey;
 vec3 togrey = vec3(0.299, 0.587, 0.114);
+in vec4 t_coor_f;
+out vec4 fcolor;
 void main()
 {
 	
-	vec4 color = texture2D(tex0,gl_TexCoord[0].st);
-	if(dogrey)
-		color = vec4(dot(color.rgb,togrey));
-	gl_FragColor = vec4(color.rgb,alpha);
+	vec4 color = texture2D(tex0,t_coor_f.st);
+	fcolor = vec4(color.rgb,alpha);
 }
 ]]
 
@@ -118,7 +99,6 @@ local function flow_player(GL)
 	
 	function fplay:init()
 		self.program = GLSL:new():compile(vert_shad,frag_shad)
-		self.program_mix = GLSL:new():compile(vert_mix,frag_mix)
 		self.tex1 = GL:Texture()
 		self.tex2 = GL:Texture()
 	end
@@ -168,26 +148,15 @@ local function flow_player(GL)
 		
 		gl.glDisable(glc.GL_DEPTH_TEST)	
 		ut.Clear()
-		--[[
-		self.program_mix:use()
-		local U = self.program_mix.unif
-		U.tex1:set{0}
-		U.tex2:set{1}
-		U.alpha:set{pos}
-		self.tex1:Bind(0)
-		self.tex2:Bind(1)
-		ut.project(w,h)
-		ut.DoQuad(w,h)
-		--]]
-		---[[
-		ut.project(1,1)
-		gl.glViewport(0, 0, w, h)
-		
 
 		self.program:use()
 		local U = self.program.unif
-		
-
+		----------
+		--ut.project(1,1)
+		local MP = mat.ortho(0, 1, 0, 1, -1, 1);
+		U.MVP:set(MP.gl)
+		gl.glViewport(0, 0, w, h)
+		-------------------
 		U.tex0:set{0}
 		U.flow:set{1}
 		U.pos:set{pos}
@@ -195,13 +164,8 @@ local function flow_player(GL)
 		U.size:set{self.flow.width,self.flow.height}
 		self.tex1:Bind(0)
 		self.flow:Bind(1)
-
-
-		
 		
 		self.vao1:draw_elm()
-		--self.vao1:draw(glc.GL_POINTS)
-		--self.vao1:draw_mesh()--,glc.GL_TRIANGLES)
 
 		gl.glEnable(glc.GL_BLEND)
 		--gl.glBlendFunc(glc.GL_SRC_ALPHA, glc.GL_ONE_MINUS_SRC_ALPHA)
@@ -212,102 +176,32 @@ local function flow_player(GL)
 		self.tex2:Bind(0)
 		self.bflow:Bind(1)
 		self.vao1:draw_elm()
-		--self.vao1:draw(glc.GL_POINTS)
+
 		gl.glDisable(glc.GL_BLEND)
-	--]]
+
 		gl.glEnable(glc.GL_DEPTH_TEST)
 	end
 	
 	GL:add_plugin(fplay)
 	return fplay
 end
---[[
-mesh = make_mesh(10,10)
 
-for i,v in ipairs(mesh.triangles) do
-print(i,v)
-end
---]]
---[=[
-DORENDER = false
-local path = require"anima.path"
-local images,fflows,bflows = {},{},{}
---local imdir = [[H:\pelis\palmeras\compressed1080\dosserierecortada_tn]]
-local imdir
-local carp = "fati3" --"bolasluz" --"fati3" --"olas_azul"
-local carpflow = "fati3brox"--"bolasluz" --"fati3brox" --"olas_azul_brox"
-if DORENDER then
-	imdir = [[H:\pelis\ninfas\master1080\]]..carp
-else
-	imdir = [[H:\pelis\ninfas\compressed1080\]]..carp
-end
-funcdir(imdir,function(f) table.insert(images,f) end)
-local function getflows(f)
-	--print(f)
-	local _,fnam = path.splitpath(f)
-	if fnam:sub(1,1) == "b" then
-		table.insert(bflows,f)
-	else
-		table.insert(fflows,f)
-	end
-end
-funcdir([[H:\pelis\ninfas\flow\]]..carpflow,getflows,"flo")
---funcdir([[H:\pelis\palmeras\flow\dosserierecortada_tnbrox]],getflows,"flo")
---funcdir([[H:\pelis\palmeras\flow\dosserierecortada_tn005rr]],getflows,"flo")
---funcdir([[H:\pelis\palmeras\flow\dosserierecortada_tn]],getflows,"flo")
 
-for i=#bflows + 2,#images do
-	images[i] = nil
-end
-print(#images)
-prtable(images,fflows,bflows)
-
-GL = GLcanvas{fps=25,H=1080,viewH=700,aspect=3/2,DORENDER=DORENDER,RENDERINI=0,RENDEREND=30,use_fbo=true}
-GL:setMovie[[H:\pelis\test]]
-
-function GL.init()
-	
-end
-fpl = flow_player(GL)
-args = {images=images,fflows=fflows,bflows=bflows,frame= AN({1,80,80*3})}
-
-function GL.draw(t,w,h)
-	fpl:draw(t,w,h,args)
-	--glext.glUseProgram(0)
-	--ut.Clear()
-	--textura:Show(w,h)
-
-end
-
-GL:start()
---]=]
---[=[
-local path = require"anima.path"
-local images,fflows,bflows = {},{},{}
-
-funcdir([[H:\pelis\palmeras\compressed1080\dosserierecortada_tn]],function(f) table.insert(images,f) end)
-local function getflows(f)
-	--print(f)
-	local _,fnam = path.splitpath(f)
-	if fnam:match("backward") then
-		table.insert(bflows,f)
-	else
-		table.insert(fflows,f)
-	end
-end
-funcdir([[C:\slowmoVideo\palmerasdosrecortadas\cache\oFlowOrig]],getflows)
-
-for i=#fflows + 2,#images do
-	images[i] = nil
-end
-print(#images)
-prtable(images,fflows,bflows)
-
-GL = GLcanvas{fps=25,H=1080,viewH=700,aspect=3/2}
+if not ... then
+---[=[
+GL = GLcanvas{fps=25,H=1080,viewH=700,aspect=3/2,profile="CORE",DEBUG=false}
 
 fpl = flow_player(GL)
-args = {images=images,fflows=fflows,bflows=bflows,frame= AN({1,20,40})}
+--args = {images=images,fflows=fflows,bflows=bflows,frame= AN({1,80,80*1})}
+local fpl2 = require"anima.plugins.flow_player"(GL)
+local args = fpl2:loadimages("lotomask","lotomask_tvl1",[[C:\LuaGL\pelis\caprichos]])
+--args.frame = AN({8,9,4},{9,20+16,4*25})
+args.frame = AN({9,20+16,4*25})
+args.doclamp = true
+local tex 
 function GL.init()
+	tex = GL:Texture():Load([[C:\LuaGL\pelis\caprichos\master1080\lotomask\frame-0001.tif]])
+	GL:set_WH(tex.width, tex.height)
 end
 function GL.draw(t,w,h)
 	fpl:draw(t,w,h,args)
@@ -315,15 +209,6 @@ end
 
 GL:start()
 --]=]
---[=[
-GL = GLcanvas{fps=25,H=1080,viewH=700,aspect=3/2}
-folderpl = require"glutils.GLFolderClip"(GL)
-clip = folderpl:make_clip([[H:\pelis\palmeras\compressed1080\dosserierecortada_tn_sl]],0.1,nil,nil,40,0)
-
-function GL.draw(t,w,h)
-	folderpl:draw(t,w,h,clip)
 end
-GL:start()
---]=]
 
 return flow_player

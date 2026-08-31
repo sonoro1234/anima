@@ -35,7 +35,8 @@ function M.Quad(left,top,right,bottom)
 	return m
 end
 
-function M.quad(left,bottom,right,top)
+function M.quad(left,bottom,right,top,z)
+	z = z or 0
 	left = left or -1
 	bottom = bottom or -1
 	right = right or 1
@@ -43,10 +44,10 @@ function M.quad(left,bottom,right,top)
 	
 	local m = {}
 	m.points = {
-        left,bottom, 0,
-		left,top, 0,
-        right,bottom, 0,
-        right,top, 0,
+        left,bottom, z,
+		left,top, z,
+        right,bottom, z,
+        right,top, z,
     }
 	m.normals = {
 		0,0,1,

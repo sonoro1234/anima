@@ -14,9 +14,10 @@ void main()
 local frag_shad = [[
 
 in vec2 texCoord;
+out vec4 fcolor;
 void main(){
 	loadtextures(texCoord);
-	gl_FragColor = process(texCoord);
+	fcolor = process(texCoord);
 }
 
 ]]

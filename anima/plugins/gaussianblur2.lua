@@ -2,17 +2,27 @@
 local generator = require"anima.plugins.generate_gaussian_kernel"
 local plugin = require"anima.plugins.plugin"
 local vert_std = [[
+out vec4 tcoorf;
+in vec2 texcoords;
+in vec3 position;
+uniform mat4 MVP;
 void main()
 {
-	gl_TexCoord[0] = gl_MultiTexCoord0;
-	gl_Position = ftransform();
+	tcoorf = vec4(texcoords,0,1);
+	//gl_TexCoord[0] = gl_MultiTexCoord0;
+	//gl_Position = ftransform();
+	//gl_Position = gl_ModelViewProjectionMatrix * vec4(position,1);
+	gl_Position = MVP * vec4(position,1);
 }
 ]]
 local frag_std = [[
 uniform sampler2D tex0;
+out vec4 fcolor;
+in vec4 tcoorf;
 void main()
 {
-	gl_FragColor = texture2D(tex0,gl_TexCoord[0].st);
+	fcolor = texture2D(tex0,tcoorf.st);
+	//gl_FragColor = texture2D(tex0,gl_TexCoord[0].st);
 }
 ]]
 
@@ -37,12 +47,16 @@ local function BlurClipMaker(GL,args)
 		print("Clip:compile",Clip.size)
 		local fragH, fragV = generator(Clip.size*4-1,NM.eps)
 		programH = GLSL:new():compile(vert_std,fragH);
+		self.quadHvao = mesh.quad(0,0,GL.W,GL.H):vao(programH)
 		programV = GLSL:new():compile(vert_std,fragV);
+		self.quadVvao = mesh.quad(0,0,GL.W,GL.H):vao(programV)
 	end
 	function Clip.init()
 		print"gaussianblur2 init"
 		Clip:compile()
 		programstd = GLSL:new():compile(vert_std,frag_std);
+		Clip.quadvao = mesh.quad(0,0,GL.W,GL.H):vao(programstd)
+		Clip.MVP = mat.ortho(0, ANCHO, 0, ALTO, -1, 1);
 		mixfbos[0] = GL:initFBO()
 		mixfbos[1] = GL:initFBO()
 		Clip.inited = true
@@ -81,8 +95,10 @@ local function BlurClipMaker(GL,args)
 			
 			gl.glClearColor(0.0, 0.0, 0.0, 0)
 			ut.Clear()
-			ut.project(ANCHO,ALTO)
-			ut.DoQuad(w,h)
+			--ut.project(ANCHO,ALTO)
+			programH.unif.MVP:set(self.MVP.gl)
+			--ut.DoQuad(w,h)
+			self.quadHvao:draw_elm()
 			
 			programV:use();
 			mixfbos[0]:Bind()
@@ -94,8 +110,10 @@ local function BlurClipMaker(GL,args)
 			
 			gl.glClearColor(0.0, 0.0, 0.0, 0)
 			ut.Clear()
-			ut.project(ANCHO,ALTO)
-			ut.DoQuad(w,h)
+			--ut.project(ANCHO,ALTO)
+			programV.unif.MVP:set(self.MVP.gl)
+			--ut.DoQuad(w,h)
+			self.quadVvao:draw_elm()
 		end
 		
 		programstd:use()
@@ -106,8 +124,10 @@ local function BlurClipMaker(GL,args)
 		programstd.unif.tex0:set{0}
 		gl.glClearColor(0.0, 0.0, 0.0, 0)
 		ut.Clear()
-		ut.project(ANCHO, ALTO)
-		ut.DoQuad(w,h)
+		--ut.project(ANCHO, ALTO)
+		programstd.unif.MVP:set(self.MVP.gl)
+		--ut.DoQuad(w,h)
+		self.quadvao:draw_elm()
 	end
 	
 	GL:add_plugin(Clip)
@@ -116,11 +136,11 @@ end
 
 --[=[
 require"anima"
-local GL = GLcanvas{H=1080,aspect=2/3}
+local GL = GLcanvas{H=1080,aspect=2/3,profile="CORE"}
 local blur = BlurClipMaker(GL,{size=2})
 -- local blur = require"anima.plugins.gaussianblur"(GL)
-local LM = require"anima.plugins.layermixer_blend"
-local themixer = LM.layers_mixer(GL,true)
+-- local LM = require"anima.plugins.layermixer_blend"
+-- local themixer = LM.layers_mixer(GL,true)
 local tex
 function GL.init()
 	tex = GL:Texture():Load[[C:\luaGL\frames_anima\7thDoor\puertas\_MG_4250.tif]]
