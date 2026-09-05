@@ -18,6 +18,7 @@ void main()
 }
 ]]
 
+local font_u = require"anima.font_utils"
 local function TextClipMaker(GL, fontname,args)
 
 	fontname = fontname or "Courier New"
@@ -25,8 +26,8 @@ local function TextClipMaker(GL, fontname,args)
 	local font,fontO
 
 	function Clip:init()
-		print"titulos init"
-		font = GLFontOutline(fontname,args) --GLFont(GL.cnv,"Papyrus, Bold  48")
+		print("titulos init",GL.W,GL.H)
+		font = font_u.GLFontOutline(fontname,args) --GLFont(GL.cnv,"Papyrus, Bold  48")
 		font:init()
 		self.font = font
 		--for i=0,255 do 
@@ -86,7 +87,7 @@ local function TextClipMaker(GL, fontname,args)
 		
 		local sc = size * 1/font.maxY --font.agmf[string.byte"H"].gmfBlackBoxY --
 		gl.glScalef(sc,sc,sc)
-		
+		--print(size, font.maxY)
 		if type(text)=="string" then text = {text} end
 		
 		if centered then
@@ -109,7 +110,9 @@ local function TextClipMaker(GL, fontname,args)
 			end
 	
 			gl.glColor4d(color[1], color[2], color[3],1) --, br)
+			--print("posX",posX,posY,size,sc)
 			font:printXY(line,posX,posY )
+			--font:printXY(line,0,0 )
 			--next prepare
 			posY = posY - font.maxY
 		end
@@ -122,40 +125,50 @@ local function TextClipMaker(GL, fontname,args)
 	return Clip
 end
 
---[=[
+if not ... then
+---[=[
 require"anima"
 TA = require"anima.TA"
 chartable = TA():range(211,255)
 chartable = chartable:Do(function(v) return string.char(v) end)
 alltext = table.concat(chartable)
 --local lfs = require"lfs"
-texto = [[Música]] --lfs.win_utf8_to_acp("MÃºsica")
-for i=1,#texto do
-	print(i,texto:sub(i,i))
-end
+texto = [[Música\ndivertida]] --lfs.win_utf8_to_acp("MÃºsica")
+texto = {[[Música]],[[divertida]]}
+-- for i=1,#texto do
+	-- print(i,texto:sub(i,i))
+-- end
 
-GL = GLcanvas{H=800,aspect=3/2}
-	texter = TextClipMaker(GL,"Silk RemingtonSBold",{italic=false})
-	texini = {texter,
-	--size=AN({0.05,0.2,15}),
-	size = 0.05,
+local GL = GLcanvas{H=1080,fps=60,aspect=3/2,profileNO="CORE",use_log=true}
+local texter = TextClipMaker(GL,"Silk RemingtonSBold",{italic=false,outlineonly=false})
+local texini = {texter,
+	size=AN({0.05,0.2,15}),
+	--size = 0.05,
 	--text={[[Palmeras]],"Huecas"},
+	text = {"D"},
 	--text = alltext,
-	text = texto,
-	color={1,0,0},rot_speed = 30,centered=true,dontclear=true,shadow=false,shadowdist=0.01, posX = AN{-0.75,-0.55,15},posY = AN{-0.5,0,15},bright = AN({0,1,10},{1,1,20},{1,0,5})}
+	--text = texto,
+	color={1,0,0},rot_speed = 30,centered=false,dontclear=false,shadow=false,shadowdist=0.01, posXN = AN{-0.75,-0.55,15},posYN = AN{-0.5,0,15},bright = AN({0,1,10},{1,1,20},{1,0,5})}
+local mssafbo
 function GL.init()
-
+	msaafbo = GL:initFBOMultiSample()
 end
 function GL.draw(t,w,h)
-					gl.glEnable(glc.GL_BLEND)
-				glext.glBlendEquation(glc.GL_FUNC_ADD)
-				gl.glBlendFunc (glc.GL_SRC_ALPHA, glc.GL_ONE_MINUS_SRC_ALPHA);
+					-- gl.glEnable(glc.GL_BLEND)
+				-- glext.glBlendEquation(glc.GL_FUNC_ADD)
+				-- gl.glBlendFunc (glc.GL_SRC_ALPHA, glc.GL_ONE_MINUS_SRC_ALPHA);
 	gl.glClearColor(0,0,0, 1)
+	
+	msaafbo:Bind()
+	
 	ut.Clear()
 	texter:draw(t,w,h,texini)--{text="Pepito"})
+
+	msaafbo:Dump()
 end
 GL:start()
 
 --]=]
+end
 
 return TextClipMaker

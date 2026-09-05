@@ -9,18 +9,19 @@ uniform float perlindistfac;
 uniform float facX;
 uniform float plane_angle;
 uniform float heightlimit;
-
+uniform mat4 MV;
+uniform mat4 MP;
 //const float halfpi = 3.14159*0.5;
 //float tanalfa = tan(halfpi-plane_angle);
 vec3 V3c = vec3(0.0,-sin(plane_angle),cos(plane_angle));
-vec4 pcenter4 = gl_ModelViewMatrix * vec4(0.0,0.0,0.0,1.0);
+vec4 pcenter4 = MV * vec4(0.0,0.0,0.0,1.0);
 vec4 pcenter4b = pcenter4/pcenter4.w;
 vec3 pcenter = pcenter4b.xyz;
 
 
 vec3 trans_angle(vec3 p)
 {
-	vec4 PP = gl_ModelViewMatrix * vec4(p,1.0);
+	vec4 PP = MV * vec4(p,1.0);
 	vec3 P = PP.xyz/PP.w;
 	if(plane_angle == 0.0)
 		return P;
@@ -32,7 +33,7 @@ vec3 trans_angle(vec3 p)
 vec3 H3 = trans_angle(vec3(0,heightlimit,0));
 vec3 trans_angleH(vec3 p)
 {
-	vec4 PP = gl_ModelViewMatrix * vec4(p,1.0);
+	vec4 PP = MV * vec4(p,1.0);
 	vec3 P = PP.xyz/PP.w;
 	if(plane_angle == 0.0)
 		return P;
@@ -57,9 +58,12 @@ vec2 plane_project(vec3 v)
 	return res;
 }
 
+in vec3 position;
+in vec2 texcoords;
+out vec4 tcoor_f;
 void main()
 {
-	vec4 p4 =  gl_Vertex;
+	vec4 p4 =  vec4(position,1);//gl_Vertex;
 	p4 = p4 / p4.w;
 	vec3 p = p4.xyz;
 	
@@ -73,9 +77,9 @@ void main()
 		p = trans_angleH(p);
 	}
 	
-	gl_TexCoord[0] = gl_MultiTexCoord0;
+	tcoor_f = vec4(texcoords,0,1);//gl_MultiTexCoord0;
 
-	gl_Position = gl_ProjectionMatrix * vec4(p,1.0);
+	gl_Position = MP * vec4(p,1.0);
 }
 
 ]]
@@ -83,12 +87,13 @@ void main()
 local frag_shad = [[
 
 uniform sampler2D tex0;
-
+in vec4 tcoor_f;
+out vec4 fcolor;
 void main()
 {
 	
-	vec4 color = texture2D(tex0, gl_TexCoord[0].st);
-    gl_FragColor = color;
+	vec4 color = texture2D(tex0, tcoor_f.st);
+    fcolor = color;
 	
 }
 
@@ -127,6 +132,46 @@ local function CreateMesh(MESHW,MESHH,piecesX,piecesY)
 	return meshList
 end
 
+local function CreateMesh2(MESHW,MESHH,piecesX,piecesY)
+	
+	local wfac,yfac
+
+	wfac = MESHW/(piecesX)
+	yfac = MESHH/(piecesY)
+		
+	local points = {}
+	local tcoords = {}
+	local first = {}
+	local count = {}
+	for j=-0.2*piecesY,1.2*piecesY do
+		--gl.glBegin(glc.GL_TRIANGLE_STRIP)
+		table.insert(first,#points)
+        for i=-0.2*piecesX,1.2*piecesX do
+			--[j][i] = {}
+			for k=0,1 do
+				local x = i*wfac
+				local y = (j+k)*yfac 
+				local yt = (j+k)/piecesY
+				local xt = i/piecesX
+				local xu,yu,zu = x-MESHW*0.5,y-MESHH*0.5,0 
+				--gl.glTexCoord2f(xt, yt);
+				table.insert(tcoords, mat.vec2(xt,yt))
+				--gl.glVertex3f( xu, yu,zu) 
+				table.insert(points, mat.vec3( xu, yu,zu))
+			end
+		end
+		table.insert(count,#points-first[#first])
+		--gl.glEnd()
+	end
+	--gl.glEndList();
+	local primcount = #first
+	first = ffi.new("GLint[?]",#first,first)
+	count = ffi.new("GLsizei[?]",#count,count)
+	local mesh = require"anima.mesh"
+	return mesh.mesh({points=points,tcoords=tcoords}),first,count,primcount
+end
+
+
 
 
 local M = {}
@@ -147,13 +192,16 @@ local NM = GL:Dialog(name or "seawaves",
 	pieces = argsmake.pieces or 300
 	local Clip = {NM=NM,name=name}
 	local fbo
-	
+	local first,count,primcount
 	function Clip.init()
 		local aspect_ratio = GL.W/GL.H
 		Clip.program = GLSL:new():compile(vert_shad,frag_shad);
 		Clip.camera = argsmake.camera or newCamera(GL,argsmake.camtype,"seawaves")
 		--Clip.camera.NMC.vars.ortho:setval(1)
-		Clip.meshList = CreateMesh(aspect_ratio,1,pieces*aspect_ratio,pieces)
+		--Clip.meshList = CreateMesh(aspect_ratio,1,pieces*aspect_ratio,pieces)
+		local mesh 
+		mesh,first,count,primcount = CreateMesh2(aspect_ratio,1,pieces*aspect_ratio,pieces)
+		Clip.vao = mesh:vao(Clip.program)
 		fbo = GL:initFBO()
 		Clip.inited = true
 	end
@@ -197,19 +245,24 @@ local NM = GL:Dialog(name or "seawaves",
 		u.tex0:set{0}
 		
 		--ut.ortho_camera(w,h) -- falta lookAt
-		Clip.camera:Set()
+		--Clip.camera:Set()
+		u.MV:set(Clip.camera:MV().gl)
+		u.MP:set(Clip.camera:MP().gl)
+		gl.glViewport(0,0,w,h)
 		ut.Clear()
-		gl.glCallList(Clip.meshList);
+		--gl.glCallList(Clip.meshList);
+		Clip.vao:multi_draw(glc.GL_TRIANGLE_STRIP,first,count,primcount)
 		--]]
 	end
 	GL:add_plugin(Clip,name)
 	return Clip
 end
 
---[=[
+if not ... then
+---[=[
 --test
 
-GL = GLcanvas{fps=250,RENDERINI=0,RENDEREND=208,H=700,aspect = 1.5}
+GL = GLcanvas{fps=50,RENDERINI=0,RENDEREND=208,H=700,aspect = 1.5,profile="CORE"}
 function GL.init()
 	textura2 = GL:Texture():Load([[C:\luaGL\media\fandema1.tif]])
 	theplug = M.make(GL,"sea")--,{camtype="tps"})
@@ -224,4 +277,6 @@ function GL.draw(t,w,h)
 end
 GL:start()
 --]=]
+end
+
 return M

@@ -16,17 +16,18 @@ uniform sampler2D tex0,tex1;
 uniform float alpha;
 uniform int mode;
 in vec2 f_tc;
+out vec4 fcolor;
 void main()
 {
 	
 	vec4 color = texture2D(tex0,f_tc);
 	vec4 colorold = texture2D(tex1,f_tc);
-	//gl_FragColor = max(colorold *alpha,color);
+	//fcolor = max(colorold *alpha,color);
 
 	
-	gl_FragColor = colorold * alpha + color*(1.0 - abs(alpha)); 
+	fcolor = colorold * alpha + color*(1.0 - abs(alpha)); 
 	//vec4 colores = (colorold-0.5)*2.0 * alpha + (color-0.5)*2.0*(1.0 - abs(alpha)); 
-	//gl_FragColor = colores*0.5+0.5;
+	//fcolor = colores*0.5+0.5;
 }
 ]]
 local frag_shad3 = [[
@@ -34,6 +35,7 @@ uniform sampler2D tex0,tex1;
 uniform float alpha,alpha2;
 uniform int mode;
 in vec2 f_tc;
+out vec4 fcolor;
 void main()
 {
 	
@@ -41,7 +43,7 @@ void main()
 	vec4 colorold = texture2D(tex1,f_tc);
 	vec4 colormax = max(colorold *alpha,color);
 	vec4 color1 = colorold * alpha + color*(1.0 - abs(alpha));
-	gl_FragColor = mix(color1,colormax,alpha2);
+	fcolor = mix(color1,colormax,alpha2);
 
 }
 ]]
@@ -50,17 +52,18 @@ uniform sampler2D tex0,tex1;
 uniform float alpha;
 uniform int mode;
 in vec2 f_tc;
+out vec4 fcolor;
 void main()
 {
 	
 	vec4 color = texture2D(tex0,f_tc);
 	vec4 colorold = texture2D(tex1,f_tc);
 	
-	//gl_FragColor = mix(colorold * alpha,color,color.a);
+	//fcolor = mix(colorold * alpha,color,color.a);
 	
 	vec4 mix = colorold * alpha;// + color;
 	vec4 colormax = max(mix,color);
-	gl_FragColor = colormax;
+	fcolor = colormax;
 }
 ]]
 

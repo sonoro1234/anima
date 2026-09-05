@@ -6,7 +6,7 @@ in vec3 Position;
 in vec2 texcoords;
 void main()
 {
-	gl_TexCoord[0] = vec4(texcoords,0,1);
+	//gl_TexCoord[0] = vec4(texcoords,0,1);
 	gl_Position = vec4(Position,1);
 }
 
@@ -147,9 +147,10 @@ end
 --alias
 M.liquid = M.make
 --test
---[=[
+if not ... then
+---[=[
 require"anima"
-GL = GLcanvas{fps=25,H=700,aspect=3/2}
+GL = GLcanvas{fps=25,H=700,aspect=3/2,profile="CORE"}
 liquid = M.make(GL)
 function GL.init()
 	textura = GL:Texture():Load([[C:\luagl\media\estanque3.jpg]])
@@ -160,6 +161,7 @@ function GL.draw(t,w,h)
 end
 GL:start()
 --]=]
+end
 
 return M
 

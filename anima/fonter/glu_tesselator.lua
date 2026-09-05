@@ -127,15 +127,25 @@ end
 --polygon with poly.holes
 local anchor = {}
 local insert = table.insert
-function M.tesselate(poly, winding, get_indexes)
-	meshes = {}
-   local tobj = glu.gluNewTess();
-
+function M.init()
+	M.tobj = glu.gluNewTess();
+	local tobj = M.tobj
    glu.gluTessCallback(tobj, glc.GLU_TESS_VERTEX,cb_vertexCallback1);
    glu.gluTessCallback(tobj, glc.GLU_TESS_BEGIN,cb_beginCallback);
    glu.gluTessCallback(tobj, glc.GLU_TESS_END, cb_endCallback);
    glu.gluTessCallback(tobj, glc.GLU_TESS_ERROR, cb_errorCallback);
    glu.gluTessCallback(tobj, glc.GLU_TESS_COMBINE, cb_combineCallback);
+   --only triangles are generated
+   glu.gluTessCallback(tobj, glc.GLU_TESS_EDGE_FLAG_DATA, function() end)
+end
+function M.uninit()
+	glu.gluDeleteTess(M.tobj);
+	M.tobj = nil
+end
+function M.tesselate(poly, winding, get_indexes)
+	meshes = {}
+	if not M.tobj then M.init() end
+    local tobj = M.tobj
 
    glu.gluTessProperty(tobj, glc.GLU_TESS_WINDING_RULE,winding or glc.GLU_TESS_WINDING_ODD);
    glu.gluTessNormal(tobj, 0,0,1)
@@ -162,7 +172,7 @@ function M.tesselate(poly, winding, get_indexes)
       
 		glu.gluTessEndPolygon(tobj);
   -- end
-   glu.gluDeleteTess(tobj);
+   --glu.gluDeleteTess(tobj);
    
    -- local Meshes = {}
    -- for i=1,#meshes do
@@ -178,13 +188,8 @@ end
 function M.tesselate_set(polyset,winding,get_indexes)
 	--print("tesselate_set winding", winding)
 	meshes = {}
-   local tobj = glu.gluNewTess();
-
-   glu.gluTessCallback(tobj, glc.GLU_TESS_VERTEX,cb_vertexCallback1);
-   glu.gluTessCallback(tobj, glc.GLU_TESS_BEGIN,cb_beginCallback);
-   glu.gluTessCallback(tobj, glc.GLU_TESS_END, cb_endCallback);
-   glu.gluTessCallback(tobj, glc.GLU_TESS_ERROR, cb_errorCallback);
-   glu.gluTessCallback(tobj, glc.GLU_TESS_COMBINE, cb_combineCallback);
+    if not M.tobj then M.init() end
+	local tobj = M.tobj 
 
    glu.gluTessProperty(tobj, glc.GLU_TESS_WINDING_RULE, winding or glc.GLU_TESS_WINDING_ODD);
    glu.gluTessNormal(tobj, 0,0,1)
@@ -201,7 +206,7 @@ function M.tesselate_set(polyset,winding,get_indexes)
     end
 		glu.gluTessEndPolygon(tobj);
   -- end
-   glu.gluDeleteTess(tobj);
+   --glu.gluDeleteTess(tobj);
 
 	anchor = {}
    return get_Meshes(meshes, get_indexes)

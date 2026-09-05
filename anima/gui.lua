@@ -459,6 +459,8 @@ function gui.ImGui_Transport(GL)
 			
 			ig.SameLine()
 			ig.Text("(%05.1f FPS)", ig.GetIO().Framerate)
+			ig.SameLine()
+			ig.Text("(%05.1f Mb)", collectgarbage("count")/1024)
 			--print(ig.GetIO().Framerate)
 			ig.SameLine()
 			if ig.Button("next") then 

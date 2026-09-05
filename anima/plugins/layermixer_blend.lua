@@ -406,7 +406,7 @@ local function newPlanner(GL,planez,show,cameraplaner)
 	function planner:set(time)
 		if self.autom then
 			for i,v in ipairs(self.autom) do
-			print("autom",i)
+			--print("autom",i)
 				v:dofunc(time)
 			end
 		end

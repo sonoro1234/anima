@@ -1,4 +1,5 @@
 ----------font utilities windows only
+local ffi = require"ffi"
 if ffi.os == "Windows" then
 ffi.cdef([[
 typedef int BOOL;
@@ -207,7 +208,7 @@ FW_HEAVY =900
 */
 };
 ]]
-
+local M = {}
 local function error_win(lvl)
         local errcode = ffi.C.GetLastError()
         local str = ffi.new("char[?]",1024)
@@ -221,7 +222,7 @@ local function error_win(lvl)
             error("Windows Error: "..errcode..","..ffi.string(str, numout), lvl)
         end
     end
-function GLFontOutline(font,args)
+function M.GLFontOutline(font,args)
 	args = args or {}
 	args.italic = args.italic and true or false
 	if args.bold then args.weight = 700 end
@@ -297,7 +298,7 @@ function GLFontOutline(font,args)
 		gl.glPopAttrib();
 	end
 	function fonter:printXY(tex,x,y,z,size)
-	
+			GetGLError"fontprintxy1"
 		if not self.list_base then self:init() end
 	--if true then return end
 		gl.glPushMatrix()
@@ -318,7 +319,7 @@ function GLFontOutline(font,args)
 end  
 
 -- bitmap fonts from iup framework
-function GLFont(cnv,font)
+function M.GLFont(cnv,font)
 	local fonter = {}
 	cnv.FONT = font
 	fonter.list_base = gl.glGenLists(256);
@@ -347,4 +348,7 @@ function GLFont(cnv,font)
 	return fonter
 end
 
+return M
 end -- os= win
+
+

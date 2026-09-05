@@ -13,13 +13,13 @@ end
 local fonter = require"fonter"
 
 local filen = [[C:\anima\lua\anima\fonts\ProggyTiny.ttf]]
-local filen = [[C:\anima\lua\anima\fonts\SilkRemington-SBold.ttf]]
-local filen = [[C:\anima\lua\anima\fonts\fontawesome-webfont.ttf]]
---local filen = [[C:\anima\lua\anima\fonts\fa-solid-900.ttf]]
+--local filen = [[C:\anima\lua\anima\fonts\SilkRemington-SBold.ttf]]
+-- local filen = [[C:\anima\lua\anima\fonts\fontawesome-webfont.ttf]]
+-- local filen = [[C:\anima\lua\anima\fonts\fa-solid-900.ttf]]
 --local filen = [[C:\anima\lua\anima\fonts\verdana.ttf]]
 local filen = [[C:\anima\lua\anima\fonts\seguiemj.ttf]]
 
-fonter.triangulator = "ear" --"monotone" --"glu" --ear
+fonter.triangulator = "glu" --"monotone" --"glu" --ear
 --fonter.mode = "polys"
 fonter.min_area = 1e-4 --1e-12
 local ch1=string.byte"D"
@@ -31,7 +31,7 @@ local t1 = secs_now()
 	{
 	--{0,198}
 	--{129691,129691}
-	{199,199} 
+	--{199,199} 
 	--{9641,9641}, --bad seguiemj
 	--{10037,10037}, --bad seguiemj
 	--{127959,127959}, --bad seguiemj
@@ -44,13 +44,13 @@ local t1 = secs_now()
 	--{62851,62851}
 	--{57433,57433}
 	--{9772,9772}
-	--{0,255}
 	--{61724,62000}
 	--{61724,0xFFFF}
 	--{61400,0xFFFF}
 	--{0,0xFFFF}
 	--{0,0xFFFF}
-	--{0,0x10FFFF}
+	{0,0x10FFFF}
+	--{0,255}
 	--{0,128120}
 	--{128121, 128121}
 	--{199,199}
@@ -95,7 +95,7 @@ print("-----------done in",secs_now()-t1)
 
 -------------
 
-local GL = GLcanvas{H=800,aspect=1}
+local GL = GLcanvas{H=800,aspect=1,fps=60}
 
 local NM = GL:Dialog("fonter",{
 {"show",0,guitypes.valint,{min=0,max=20}},
@@ -108,7 +108,7 @@ local color = require"anima.graphics.color"
 
 local mssa
 function GL.init()
-	f1:initgl()
+	f1:initgl(nil,true)
 	mssa = GL:initFBOMultiSample()
 	camera = Camera(GL,"tps")
 	camera.NM.vars.pos:set{0.4,0.3,-0.3}
@@ -257,10 +257,12 @@ function GL.draw(t,w,h)
 	gl.glViewport(0,0,w,h)
 	if fonter.mode == "polys" then
 		f1:printcp(ch1[0],camera,nil,NM)
+		-- f1:printstring("huevo",camera,nil,NM)
 	else
+		-- f1:printstring("huevo",camera,nil,NM)
 		f1:printcp(ch1[0],camera,nil,NM)
 	end
-	--f1:printstring("Te estoy",camera)
+	f1:printstring("Te estoy",camera,nil,NM)
 	mssa:Dump()
 end
 

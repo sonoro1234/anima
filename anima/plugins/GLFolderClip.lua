@@ -1,14 +1,18 @@
 --local ut = require"glutils.common"
 local vert_shad = [[
-#version 120
+uniform mat4 MVP;
+uniform mat4 TM1;
+uniform mat4 TM2;
+in vec3 position;
+in vec2 texcoords;
+out vec4 tcoord_f1;
+out vec4 tcoord_f2;
 void main()
 {
-	//gl_TexCoord[0] = gl_MultiTexCoord0;
 
-	gl_TexCoord[0] = gl_TextureMatrix[0]*gl_MultiTexCoord0;
-	gl_TexCoord[1] = gl_TextureMatrix[1]*gl_MultiTexCoord0;
-	//gl_Position = ftransform();
-	gl_Position = gl_ModelViewProjectionMatrix *gl_Vertex;
+	tcoord_f1 = TM1*vec4(texcoords,0,1);//gl_MultiTexCoord0;
+	tcoord_f2 = TM2*vec4(texcoords,0,1);//gl_MultiTexCoord0;
+	gl_Position = MVP *vec4(position,1);
 }
 
 ]]
@@ -16,7 +20,8 @@ local frag_shad = [[
 #version 120
 uniform sampler2D tex0,tex1;
 uniform float alpha;
-
+in vec4 tcoord_f1;
+in vec4 tcoord_f2;
 void main()
 {
 /*
@@ -31,8 +36,8 @@ void main()
   vec4 color1 = texture2D(tex0,gl_TexCoord[0].st)*fac0;
   vec4 color2 = texture2D(tex1,gl_TexCoord[1].st)*fac1;
 */
-  vec4 color1 = texture2D(tex0,gl_TexCoord[0].st);
-  vec4 color2 = texture2D(tex1,gl_TexCoord[1].st);
+  vec4 color1 = texture2D(tex0,tcoord_f1.st);
+  vec4 color2 = texture2D(tex1,tcoord_f2.st);
 	gl_FragColor = mix(color1,color2,alpha); 
 
 }
@@ -201,11 +206,44 @@ function sequencer:init()
 	self.program = GLSL:new()
 	self.program:compile(vert_shad,frag_shad);
 	self.program2 = GLSL:new():compile(vert_shad,frag_shad2);
+	local mesh = require"anima.mesh"
+	local quad = mesh.quad(0,0,self.GL.W,self.GL.H)
+	quad.normals = nil
+	self.program.tvao = quad:vao(self.program)
+	local quad = mesh.quad(0,0,self.GL.W,self.GL.H)
+	quad.normals = nil
+	self.program2.tvao = quad:vao(self.program2)
 	self.inited = true
 	--debugprint = require"glutils.GLTextClip"(GL)
 	--self.debugfont = GLFontOutline(GL.cnv,"Courier New, Italic  12") --GLFont(GL.cnv,"Papyrus, Bold  48")
 end
 
+function sequencer:SetTextureMatrixes2(w,h)
+	local aspect = w/h
+	local mats = {}
+	for i=1,2 do
+		--glext.glActiveTexture(glc.GL_TEXTURE0 + i -1);
+		--gl.glMatrixMode(glc.GL_TEXTURE);
+		--gl.glPushMatrix()
+		--gl.glLoadIdentity();
+		mats[i] = mat.identity()
+	
+		if aspect >= self.textures[i].aspect then
+			local rat = aspect/self.textures[i].aspect
+			--gl.glScaled(rat,1,1)
+			mats[i] = mats[i] * mat.scale(rat,1,1)
+			--gl.glTranslated(-0.5*(rat-1)/rat,0, 0);
+			mats[i] = mats[i] * mat.translate(-0.5*(rat-1)/rat,0, 0)
+		else
+			local rat = self.textures[i].aspect/aspect
+			--gl.glScaled(1,rat,1)
+			mats[i] = mats[i] * mat.scale(1,rat,1)
+			--gl.glTranslated(0,-0.5*(rat-1)/rat, 0);
+			mats[i] = mats[i] * mat.translate(0,-0.5*(rat-1)/rat, 0)
+		end
+	end
+	return mats
+end
 function sequencer:SetTextureMatrixes(w,h)
 	local aspect = w/h
 	for i=1,2 do
@@ -232,6 +270,7 @@ function sequencer:UnsetTextureMatrixes()
 		gl.glPopMatrix();
 	end
 end
+
 function sequencer:draw(timebegin, w , h, args)
 	--args.verbose = true
 	--print(ga,ga.is_setable_var, ga.value)
@@ -250,9 +289,10 @@ function sequencer:draw(timebegin, w , h, args)
 		T2 = args.reorder[T2]
 	end
 	local Clip = self
-	
+	local usedprog
 	if not (mode=="perlin") then
 		glext.glUseProgram(Clip.program.program);
+		usedprog = Clip.program
 		Clip.program.unif.tex0:set{0}
 		Clip.program.unif.tex1:set{1}
 		Clip.program.unif.alpha:set{biasFC(ga,alfa)}
@@ -263,6 +303,7 @@ function sequencer:draw(timebegin, w , h, args)
 		end
 	else
 		glext.glUseProgram(Clip.program2.program);
+		usedprog = Clip.program2
 		Clip.program2.unif.tex0:set{0}
 		Clip.program2.unif.tex1:set{1}
 		Clip.program2.unif.alpha:set{biasFC(ga,alfa)}
@@ -314,13 +355,34 @@ function sequencer:draw(timebegin, w , h, args)
 	self.textures[2]:Bind(1)
 	
 	
-	ut.project(w,h)
+	--ut.project(w,h)
+	local MVP = mat.ortho(0.0, w, 0.0, h, -1, 1);
+	gl.glViewport(0,0,w,h)
+	usedprog.unif.MVP:set(MVP.gl)
 	
-	self:SetTextureMatrixes(w,h)
+	--self:SetTextureMatrixes(w,h)
+	local mats = self:SetTextureMatrixes2(w,h)
+	usedprog.unif.TM1:set(mats[1].gl)
+	usedprog.unif.TM2:set(mats[2].gl)
 
-	ut.DoQuad(w,h)
+	--ut.DoQuad(w,h)
+	local usedvao
+	if w~=self.GL.W then 
+		--redo vao
+		--print(self.GL.W,w)
+		if self.usedvaoW ~= w then
+		local quad = mesh.quad(0,0,w,h)
+		quad.normals = nil
+		self.usedvao = quad:vao(usedprog)		
+		self.usedvaoW = w
+		end
+		usedvao = self.usedvao
+	else
+		usedvao = usedprog.tvao
+	end
+	usedvao:draw_elm()
 
-	self:UnsetTextureMatrixes()
+	--self:UnsetTextureMatrixes()
 
 	--debugprint:draw(timebegin, w , h,{text=images[T1],size=0.03,posX=-1,posY=-0.45,dontclear=true})
 	--debugprint:draw(timebegin, w , h,{text=images[T2],size=0.03,posX=-1,posY=-0.5,dontclear=true})
@@ -379,4 +441,26 @@ local function FolderClipMaker(GL)
 	GL:add_plugin(seq)
 	return seq
 end
+
+if not ... then
+require"anima"
+local GL = GLcanvas{fps=60,H=600,aspect=16/9,profileNO="CORE",DEBUG=false}
+GL.rootdir = [[c:\LuaGL\pelis\caprichos]]
+local Framer = FolderClipMaker(GL)
+--local peli = Framer:loadimages([[emiliazuldos]],2,1,nil,445,0.5,{rloop=false})
+--peli.frame = AN({1,15,28},{15,15,26})
+local peli = Framer:loadimages([[rojos2]],0.5,nil,nil,445,0.3,{rloop=false})
+local TA = require"anima.TA"
+peli.reorder = TA():range(18,35)..TA{1,1,1,1,1,1,1}  ..TA{8,9,10,10,10,10}
+function GL.init()
+	--PrepareAudio(GL,[[C:\Users\Carmen\Desktop\musicas victor\kyrie5d-7.wav]],0,false)
+end
+function GL.draw(t,w,h)
+	--peli:draw(t,w,h)
+	-- peli[1]:draw(t,w,h,peli)
+	peli[1]:draw(t,3*h/2,h,peli)
+end
+GL:start()
+end
+
 return FolderClipMaker

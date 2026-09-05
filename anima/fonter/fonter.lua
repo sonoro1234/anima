@@ -50,7 +50,7 @@ end
 	
 local function face_show_glyph_index_outlines(face,glyph_index)
 	face:set_char_size(64*64)
-	face:load_glyph(glyph_index, ft.C.FT_LOAD_NO_BITMAP)
+	face:load_glyph(glyph_index, bit.bor(ft.C.FT_LOAD_NO_BITMAP, ft.C.FT_LOAD_NO_SCALE*0))
 	local glyph = face.glyph
 	local outline = glyph.outline
 	print("outline",outline.n_contours, outline.n_points)
@@ -100,13 +100,22 @@ local function decompose(outline,polyset)
 	outline:decompose(funcs)
 end
 
-local function face_glyph_outline_to_polyset(face,fosize,glyph_index,steps,outlinef)
+local function face_glyph_outline_to_polyset(face,fosize,glyph_index,steps,outlinef,opts)
 	steps = steps or 10
 	face:set_char_size( fosize)
 	local invsize = 1/(fosize)
 	
-	face:load_glyph(glyph_index, ft.C.FT_LOAD_NO_BITMAP)
+	face:load_glyph(glyph_index, bit.bor(ft.C.FT_LOAD_NO_BITMAP, ft.C.FT_LOAD_NO_SCALE))
 	local glyph = face.glyph
+
+	if opts then
+		if opts.bold then
+			ft.C.FT_GlyphSlot_Embolden(glyph)
+		end
+		if opts.italic then
+			ft.C.FT_GlyphSlot_Oblique(glyph);
+		end
+	end
 	
 	local outline = glyph.outline
 	--print("flags",bit.band(outline.flags, ft.C.FT_OUTLINE_REVERSE_FILL),outline.flags)
@@ -121,7 +130,7 @@ local function face_glyph_outline_to_polyset(face,fosize,glyph_index,steps,outli
 				pol[j] = v*invsize
 			end
 		end
-		return Vec(glyph.advance.x, glyph.advance.y,0)*invsize, outline:orientation(), polyset2
+		return Vec(glyph.advance.x, glyph.advance.y,0)*invsize, outline:orientation(), polyset2, glyph
 	end
 	
 	--outline:check()
@@ -218,12 +227,12 @@ local function face_glyph_outline_to_polyset(face,fosize,glyph_index,steps,outli
 		end
 	end
 	---]]
-	return Vec(glyph.advance.x, glyph.advance.y,0)*invsize, outline:orientation(),polyset
+	return Vec(glyph.advance.x, glyph.advance.y,0)*invsize, outline:orientation(),polyset, glyph
 end
-local function face_char_outline_to_polyset(face,fosize,ch,steps,outlinef)
+local function face_char_outline_to_polyset(face,fosize,ch,steps,outlinef,opts)
 	local glyph_index = face:char_index(ch )
 	printD("------face_char_outline_to_polyset",ch,glyph_index,face:glyph_name(glyph_index,nil,64))
-	return face_glyph_outline_to_polyset(face,fosize,glyph_index,steps,outlinef)
+	return face_glyph_outline_to_polyset(face,fosize,glyph_index,steps,outlinef, opts)
 end
 function M.GetStrPolys(face,str,fosize)
 	local chars = {}
@@ -255,7 +264,7 @@ function M.GetCodePoint(face,cp,fosize,steps, outlinef)
 	return {polyset = polyset, advance = advance, glyph_index = glyph_index, cp = cp, name = face:glyph_name(glyph_index),empty = empty, orientation = orientation}
 end
 
-function M.GetCodePointColor(face, cp, fosize, steps, outlinef)
+function M.GetCodePointColor(face, cp, fosize, steps, outlinef, opts)
 	local glyph_index = face:char_index(cp )
 	local layer_glyph_index = ffi.new("FT_UInt[1]")
 	local layer_color_index = ffi.new("FT_UInt[1]")
@@ -264,6 +273,7 @@ function M.GetCodePointColor(face, cp, fosize, steps, outlinef)
 	local have_layers = ft.C.FT_Get_Color_Glyph_Layer( face, glyph_index, layer_glyph_index, layer_color_index, iterator );
 	printD("Color","have_layers",have_layers, glyph_index)
 	if have_layers > 0 then
+		local metricsw , metricsh = 0, 0
 		local polyset, advance, orientation = {}
 		local layers = {}
 		--get palette
@@ -284,7 +294,11 @@ function M.GetCodePointColor(face, cp, fosize, steps, outlinef)
 				color = palette[0][layer_color_index[0]]
 				printD("color", color, color.blue, color.green, color.red, color.alpha)
 			end
-			local adv, ori, polysetM = face_glyph_outline_to_polyset(face, fosize,layer_glyph_index[0],steps,outlinef)
+			local adv, ori, polysetM, glyph = face_glyph_outline_to_polyset(face, fosize,layer_glyph_index[0],steps,outlinef, opts)
+			local metrics = glyph.metrics
+			metricsw = math.max(metrics.width, metricsw)
+			metricsh = math.max(metrics.height, metricsh)
+			--print("metrics col",metrics.width, metrics.height,metrics.horiBearingX,metrics.horiBearingY,metrics.horiAdvance,metrics.vertBearingX,metrics.vertBearingY,metrics.vertAdvance)
 			printD("#polysetM", #polysetM)
 			--for i,p in ipairs(polysetM) do table.insert(polyset, p) end
 			table.insert(layers, {polyset=polysetM, color={color.red/255, color.green/255, color.blue/255, color.alpha/255}})
@@ -292,11 +306,13 @@ function M.GetCodePointColor(face, cp, fosize, steps, outlinef)
 			printD(adv,ori)
 		until ft.C.FT_Get_Color_Glyph_Layer( face, glyph_index, layer_glyph_index, layer_color_index, iterator ) == 0
 		local empty = false --#polyset == 0 and true
-		return {layers=layers, advance = advance, glyph_index = glyph_index, cp = cp, name = face:glyph_name(glyph_index),empty = empty, orientation = orientation}
+		return {layers=layers, advance = advance, glyph_index = glyph_index, cp = cp, name = face:glyph_name(glyph_index),empty = empty, orientation = orientation, metrics={width = metricsw,height = metricsh}}
 	else
-		local advance, orientation, polyset = face_char_outline_to_polyset(face, fosize,cp,steps,outlinef)
+		local advance, orientation, polyset, glyph = face_char_outline_to_polyset(face, fosize,cp,steps,outlinef,opts)
+		local metrics = glyph.metrics
+		--print("metrics",metrics.width, metrics.height,metrics.horiBearingX,metrics.horiBearingY,metrics.horiAdvance,metrics.vertBearingX,metrics.vertBearingY,metrics.vertAdvance)
 		local empty = #polyset == 0 and true
-		return {layers ={{polyset = polyset,color={1,1,1,1}}}, advance = advance, glyph_index = glyph_index, cp = cp, name = face:glyph_name(glyph_index),empty = empty, orientation = orientation}
+		return {layers ={{polyset = polyset,color={1,1,1,1}}}, advance = advance, glyph_index = glyph_index, cp = cp, name = face:glyph_name(glyph_index),empty = empty, orientation = orientation, metrics={width = metrics.width,height = metrics.height}}
 	end
 end
 
@@ -511,7 +527,7 @@ function M.char_to_trmeshes_gluBAK(ch)
 	return meshes
 end
 function M.char_to_trmeshes_glu(layer, orientation)
-	local glutess = require"glu_tesselator"
+	local glutess = require"anima.fonter.glu_tesselator"
 	local meshes = {}
 	local winding = (orientation==1) and glc.GLU_TESS_WINDING_POSITIVE or glc.GLU_TESS_WINDING_NEGATIVE
 	--print("winding",orientation,(orientation==1), winding, glc.GLU_TESS_WINDING_POSITIVE , glc.GLU_TESS_WINDING_NEGATIVE)
@@ -633,11 +649,11 @@ void main()
 ]]
 local frag_sh=[[
 #version 330
-uniform sampler2D tex0;
-uniform vec3 color;
+uniform vec4 color;
+out vec4 fcolor;
 void main()
 {
-	gl_FragColor = vec4(color,1);
+	fcolor = vec4(color);
 }
 ]]
 
@@ -651,20 +667,31 @@ local function GetVisibleRanges(face)
 	local charcode = face:first_char(gindex)
 
 	local cp_glyphs = {}
+	local glyphs_cp = {}
 	while gindex[0] ~= 0 do
 		--print(charcode, gindex[0] )
 		cp_glyphs[charcode] = gindex[0]
+		glyphs_cp[gindex[0]] = charcode
 		--print(charcode, cp_glyphs[charcode])
 		charcode = face:next_char(charcode,gindex )
 	end
-	return cp_glyphs
+	return cp_glyphs, glyphs_cp
 end
 
-function M.new_face(filename,ranges,size,steps,outlinef)
+function M.new_face(filename, args)
+
+	args = args or {}
+	local ranges = args.ranges or {{32,127}}
+	local size = args.size or 64*16
+	local steps = args.steps or 5
+	local outlinef = args.outlinef -- use ft outline functions
+	
 	--one library for all faces
 	M.library = M.library or M.ft()
-	local T = {ranges=ranges or {{32,127}},size=size or 4096,steps=steps or 5}
+	local T = {ranges=ranges,size=size,steps=steps}
+	T.library = M.ft()
 	T.face = M.library:face(filename)
+
 	T.has_kerning = bit.band(T.face.face_flags,ft.C.FT_FACE_FLAG_KERNING)
 	T.has_glyph_names = bit.band(T.face.face_flags,ft.C.FT_FACE_FLAG_GLYPH_NAMES)
 	print("T.has_glyph_names",T.has_glyph_names)
@@ -680,8 +707,8 @@ function M.new_face(filename,ranges,size,steps,outlinef)
 	for i,range in ipairs(T.ranges) do
 		for j=range[1],range[2] do
 			if T.visrng[j] then
-			print("--------------getting cp",j)--,string.char(j))
-			local ch = M.GetCodePointColor(T.face, j, T.size , T.steps, outlinef)
+			printD("--------------getting cp",j)--,string.char(j))
+			local ch = M.GetCodePointColor(T.face, j, T.size , T.steps, outlinef, args)
 			--M.GetCodePointColor(T.face, j)
 			--if not ch.name:match"ches" then ch.empty = true end --filter by name
 			printD("-----------ch.empty",ch.empty,j)
@@ -707,7 +734,7 @@ function M.new_face(filename,ranges,size,steps,outlinef)
 							meshes,rests = M.char_to_trmeshes_monotone(layer, ch.orientation)
 						elseif M.triangulator == "glu" then
 							meshes,rests = M.char_to_trmeshes_glu(layer, ch.orientation)
-						else
+						else --ear
 							meshes,rests = M.char_to_trmeshes(layer)
 						end
 						cross = cross or layer.cross
@@ -715,45 +742,100 @@ function M.new_face(filename,ranges,size,steps,outlinef)
 					end
 					ch.cross = cross
 					T.chars[j] = ch --{ch=ch,mesh=mesh,rests=rests}
-				end
-				--else print("bad cp",j)
-				end
+				end -- mode
+			else --empty can be space
+				table.insert(T.allcps,ch)
+				T.chars[j] = ch
 			end
-		end
-	end
+			end --if visible
+		end --range
+	end --ranges
 	--prtable(T.chars)
+	if M.triangulator == "glu" then
+		local glutess = require"anima.fonter.glu_tesselator"
+		glutess.uninit()
+	end
 	table.sort(T.allcps, function(a,b) return a.cp < b.cp end)
 	
-	function T:initgl()
+	function T:initgl(program,clean)
 		print"begin initgl"
 		if not M.program then M.initgl() end
+		T.program = program or M.program
+		T.cust_program = program
 		for k,v in pairs(self.chars) do
-			if M.mode == "polys" then
-				for ii, layer in ipairs(v.layers) do
-				layer.vaos = {}
-				for i,m in ipairs(layer.meshes) do
-					layer.vaos[i] = m:vao(M.program)
-				end
-				end
-			else
-				--if v.mesh then v.vao = v.mesh:vao(M.program) end
-				for ii, layer in ipairs(v.layers) do
-				layer.restsvaos = {}
-				layer.vaos = {}
-				for i,m in ipairs(layer.meshes) do
-					layer.vaos[i] = m:vao(M.program)
-					if layer.rests and layer.rests[i] then
-						layer.restsvaos[i] = layer.rests[i]:vao(M.program)
+			if not v.empty then
+				if M.mode == "polys" then
+					for ii, layer in ipairs(v.layers) do
+					layer.vaos = {}
+					for i,m in ipairs(layer.meshes) do
+						layer.vaos[i] = m:vao(M.program)
+					end
+					end
+				else
+					--if v.mesh then v.vao = v.mesh:vao(M.program) end
+					for ii, layer in ipairs(v.layers) do
+						layer.restsvaos = {}
+						layer.vaos = {}
+						for i,m in ipairs(layer.meshes) do
+							layer.vaos[i] = m:vao(M.program)
+							if layer.rests and layer.rests[i] then
+								layer.restsvaos[i] = layer.rests[i]:vao(M.program)
+							end
+						end
 					end
 				end
+			end -- not empty
+		end
+		local maxX, maxY = 0, 0
+		for cp,gly in pairs(self.chars) do
+			local aa = gly.metrics
+			maxX = math.max(maxX, aa.width/T.size)
+			maxY = math.max(maxY, aa.height/T.size)			
+		end
+		self.maxX = maxX
+		self.maxY = maxY
+		if clean then
+			print("-- clean meshes",collectgarbage"count")
+			for k,v in pairs(self.chars) do
+				for ii, layer in ipairs(v.layers) do
+					layer.meshes = nil
+					layer.rests = nil
 				end
 			end
+			collectgarbage()
+			collectgarbage()
+			print("-- after clean meshes",collectgarbage"count")
 		end
 		print"end initgl"
 	end
+	
+	function T:dims(txt)
+		local x,y = 0,0
+		for i=1,#txt do
+			local ch = txt:sub(i,i)
+			local cp = string.byte(ch)
+			local metrics = self.chars[cp].metrics
+			x = x + metrics.width/self.size
+			y = math.max(y, metrics.height/self.size)
+		end
+		return x, y
+	end
+	
+	function T:printXY(tex,x,y,z,size,MO,ColV4)
+		MO = MO or mat.identity()
+		if size then
+			local sc = size * 1/self.maxY --font.agmf[string.byte"H"].gmfBlackBoxY --
+			MO = MO * mat.scale(sc,sc,sc)
+		end
+		MO = MO * mat.translate(x,y,z or 0)
+		--print(x,y,z or 0)
+		self:cps_print(tex,MO, ColV4)
+	end
+	
 	local color = require"anima.graphics.color"
 	T.MO = mat.identity4()
-	function T:printcp(cp,camera,MO,NM)
+	
+	function T:printcp(cp,camera,MO,NM, ColV4)
 		gl.glDisable(glc.GL_DEPTH_TEST)
 		local numpoly = NM.show
 		MO = MO or T.MO
@@ -768,15 +850,16 @@ function M.new_face(filename,ranges,size,steps,outlinef)
 			cha  = v
 		end
 		if not cha then return end
+		if cha.empty then return end
+		
 		if M.mode == "polys" then
 			for ii, layer in ipairs(cha.layers) do
-			M.program.unif.color:set{layer.color[1],layer.color[2],layer.color[3]}
+				local col = ColV4 or layer.color
+				M.program.unif.color:set{col[1],col[2],col[3],col[4] or 1}
 			for i,v in ipairs(layer.vaos) do
 				if numpoly == 0 or numpoly == i then
-				--M.program.unif.color:set{color.HSV2RGB((i-1)/#layer.vaos,1,1)}
 				v:draw(glc.GL_LINE_LOOP)
 				gl.glPointSize(3)
-				--M.program.unif.color:set{1,1,1}
 				v:draw(glc.GL_POINTS,1,math.min(math.max(0,math.floor(NM.ini)),v.count))
 				gl.glPointSize(1)
 				end
@@ -786,14 +869,13 @@ function M.new_face(filename,ranges,size,steps,outlinef)
 			for ii, layer in ipairs(cha.layers) do
 			for i,vao in ipairs(layer.vaos) do
 				if numpoly == 0 or numpoly == i then
-				--M.program.unif.color:set{1,1,1}
-				M.program.unif.color:set{layer.color[1],layer.color[2],layer.color[3]}
-				--if cha.vao then cha.vao:draw(glc.GL_LINE_LOOP) end 
+				local col = ColV4 or layer.color
+				M.program.unif.color:set{col[1],col[2],col[3],col[4] or 1}
 				if NM.mesh then
 					if NM.lines then
 						vao:draw(glc.GL_LINE_LOOP)
 						gl.glPointSize(6)
-						M.program.unif.color:set{1,1,1}
+						M.program.unif.color:set{1,1,1,1}
 						vao:draw(glc.GL_POINTS,1,math.min(math.max(0,math.floor(NM.ini)),vao.count))
 						gl.glPointSize(1)
 					else
@@ -808,13 +890,13 @@ function M.new_face(filename,ranges,size,steps,outlinef)
 						end
 					end
 				end
-				M.program.unif.color:set{1,0,0}
+				M.program.unif.color:set{1,0,0,1}
 				if layer.restvaos then
 				local r = layer.restsvaos[i]
 				r:draw(glc.GL_LINE_LOOP)
 				end
 				-- gl.glPointSize(6)
-				-- M.program.unif.color:set{1,1,1}
+				-- M.program.unif.color:set{1,1,1,1}
 				-- if cha.vao then cha.vao:draw(glc.GL_POINTS) end
 				-- gl.glPointSize(1)
 				end
@@ -822,24 +904,100 @@ function M.new_face(filename,ranges,size,steps,outlinef)
 			end
 		end
 	end
-	function T:printstring(str,camera)
+	
+	function T:printstring(str,camera,MO1,NM,ColV4)
+		local MO1 = MO1 or mat.identity()
 		local advance = Vec(0,0,0)
 		local previndex 
 		for i=1,#str do
 			local ch = str:sub(i,i)
 			local cp = string.byte(ch)
-			local MO = mat.translate(advance)
-			self:printcp(cp,camera,MO)
+			--print("printstring",i,ch,cp)
+			--local MO = mat.translate(advance)*MO1
+			local MO = MO1* mat.translate(advance)
+			self:printcp(cp,camera,MO,NM,ColV4)
 			if self.has_kerning and previndex then
-				local delta = self.face:kerning( previndex, self.chars[cp].ch.glyph_index, ft.C.FT_KERNING_UNSCALED)
+				local delta = self.face:kerning( previndex, self.chars[cp].glyph_index, ft.C.FT_KERNING_UNSCALED)
 				advance = advance + Vec(delta.x,delta.y,0)/T.size
 			end
-			advance = advance + self.chars[cp].ch.advance
-			previndex = self.chars[cp].ch.glyph_index
+			advance = advance + self.chars[cp].advance
+			previndex = self.chars[cp].glyph_index
 		end
 	end
+	
+	function T:cp_print(cp, ColV4)
+		--gl.glDisable(glc.GL_DEPTH_TEST)
+
+		--prtable("--------chars",self.chars)
+		local cha = self.chars[cp] --or self.chars[63]
+		--assert(cha)
+		if not cha then
+			local k,v = next(self.chars)
+			cha  = v
+		end
+		if not cha then return end
+		if cha.empty then return end
+		
+		for ii, layer in ipairs(cha.layers) do
+			for i,vao in ipairs(layer.vaos) do
+				local col = ColV4 or layer.color
+				M.program.unif.color:set{col[1],col[2],col[3],col[4] or 1}
+				if vao then 
+					if vao.modedraw then
+						vao:draw(vao.modedraw)
+					else
+						vao:draw_elm() 
+					end
+				end
+				M.program.unif.color:set{1,0,0,1}
+			end
+		end
+	end
+	
+	function T:cps_print(str ,MO1,ColV4)
+		local MO1 = MO1 or mat.identity()
+		local advance = Vec(0,0,0)
+		local previndex 
+		for i=1,#str do
+			local ch = str:sub(i,i)
+			local cp = string.byte(ch)
+			local MO = MO1* mat.translate(advance)
+			T.cust_program.unif.MO:set(MO.gl)
+			self:cp_print(cp,ColV4)
+			-- if self.has_kerning and previndex then
+				-- local delta = self.face:kerning( previndex, self.chars[cp].glyph_index, ft.C.FT_KERNING_UNSCALED)
+				-- advance = advance + Vec(delta.x,delta.y,0)/T.size
+			-- end
+			advance = advance + self.chars[cp].advance
+			previndex = self.chars[cp].glyph_index
+		end
+	end
+	T.face:free()
 	return T
 end
+
+--[==[
+local filen = [[C:\anima\lua\anima\fonts\SilkRemington-SBold.ttf]]
+local library = M.ft()
+local function tester(filen)
+	print("----------------------------tester", filen)
+	local face = library:face(filen)
+	local has_kerning = bit.band(face.face_flags,ft.C.FT_FACE_FLAG_KERNING)
+	local has_glyph_names = bit.band(face.face_flags,ft.C.FT_FACE_FLAG_GLYPH_NAMES)
+	print("has_glyph_names",has_glyph_names~=0,"has_kerning",has_kerning~=0)
+	
+	face:select_charmap(ft.C.FT_ENCODING_UNICODE)
+	local visrang, v2 = GetVisibleRanges(face);
+	--prtable(visrang, v2)
+	print("glyphs",#v2)
+	return face
+end
+	--T.face = M.library:face(filename)
+local face1 = tester[[C:\anima\lua\anima\fonts\SilkRemington-SBold.ttf]]
+
+local face2 = tester[[C:\anima\lua\anima\fonts\ProggyTiny.ttf]]
+
+--]==]
 
 
 return M

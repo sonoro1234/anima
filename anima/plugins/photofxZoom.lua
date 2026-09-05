@@ -1,11 +1,14 @@
 require"anima"
 
 local vert_shad = [[
-
+uniform mat4 MVP;
+in vec3 position;
+in vec2 texcoords;
+out vec4 tcoordf;
 void main()
 {
-	gl_TexCoord[0] = gl_MultiTexCoord0;
-	gl_Position = ftransform();
+	tcoordf = vec4(texcoords,0,1);//gl_MultiTexCoord0;
+	gl_Position = MVP*vec4(position,1);//gl_Vertex;
 }
 
 ]]
@@ -16,6 +19,7 @@ uniform float ampR;
 uniform float black;
 uniform float white;
 uniform float saturation;
+in vec4 tcoordf;
 /*
 vec4 sigmoidal(vec4 val,float ampL,float ampR){
 
@@ -39,9 +43,10 @@ float sigmoidal(float val,float ampL,float ampR){
 
 	return offset + escale/(1.0 + exp(-i));
 }
+out vec4 fcolor;
 void main()
 {
-	vec4 tcolor = texture2D(tex0,gl_TexCoord[0].st);
+	vec4 tcolor = texture2D(tex0,tcoordf.st);
 	vec3 color = tcolor.rgb;
 	vec3 colhsv = RGB2HSV(color);
 	float lum = colhsv.z ;//dot(color.rgb,vec3(1.0/3.0));
@@ -53,7 +58,7 @@ void main()
 		*/
 	lum2 = sigmoidal(lum2,ampL,ampR);
 	color = HSV2RGB(vec3(colhsv.x,clamp(saturation*colhsv.y,0,1),lum2));
-	gl_FragColor = vec4(color,tcolor.a);
+	fcolor = vec4(color,tcolor.a);
 }
 ]]
 
@@ -135,7 +140,7 @@ function M.photofx(GL)
 			
 		gl.glClearColor(0.0, 0.0, 0.0, 0)
 		gl.glClear(bit.bor(glc.GL_COLOR_BUFFER_BIT,glc.GL_DEPTH_BUFFER_BIT))
-	
+	--[[
 		gl.glMatrixMode(glc.GL_PROJECTION)
 		gl.glLoadIdentity()
 		gl.glOrtho(0.0, w, 0.0, h, -1, 1);
@@ -144,7 +149,11 @@ function M.photofx(GL)
 		gl.glMatrixMode(glc.GL_MODELVIEW)
 		gl.glLoadIdentity();
 		gl.glViewport(0, 0, w, h)
-	
+		--]]
+		
+		local MVP = mat.ortho(0.0, w, 0.0, h, -1, 1)
+		programfx.unif.MVP:set(MVP.gl)
+		gl.glViewport(0, 0, w, h)
 		local zplane = 0
 		local MESHH = h
 		local MESHW = w
@@ -163,7 +172,17 @@ function M.photofx(GL)
 		end
 		local centerX = NM.centerX
 		local centerY = NM.centerY
-
+		
+		local mquad = mesh.quad(0,0,MESHW,MESHH)
+		mquad.normals = nil
+		mquad.texcoords[1],mquad.texcoords[2] = Zoom(zoom,centerX,centerY,LP,0)
+		mquad.texcoords[3],mquad.texcoords[4] = Zoom(zoom,centerX,centerY,LP,1)
+		mquad.texcoords[5],mquad.texcoords[6] = Zoom(zoom,centerX,centerY,RP,0)
+		mquad.texcoords[7],mquad.texcoords[8] = Zoom(zoom,centerX,centerY,RP,1)
+		
+		local mquadvao = mquad:vao(programfx)
+		mquadvao:draw_elm()
+		--[[
 		gl.glBegin(glc.GL_QUADS)
 		gl.glColor4f(1,1,1,1)
 		gl.glTexCoord2f(Zoom(zoom,centerX,centerY,LP,0));
@@ -186,7 +205,7 @@ M.make = M.photofx
 ---[=[
 if not ... then
 require"anima"
-local GL = GLcanvas{H=800,aspect=3/2}
+local GL = GLcanvas{H=800,aspect=3/2,profile="CORE"}
 local tex,slab,lch
 function GL.init()
 	tex = GL:Texture():Load[[c:\luagl\media\estanque3.jpg]]

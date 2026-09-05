@@ -588,7 +588,7 @@ end
 local singleton_canvas
 function GLcanvas(GL)
 	print"open GLcanvas"
-	if singleton_canvas then error"another GLcanvas is opened" end
+	if singleton_canvas then prtable(debug.getinfo(2));error"another GLcanvas is opened" end
 	singleton_canvas = true
 	
 	GL.fps = GL.fps or 25
@@ -1553,4 +1553,4 @@ function GLcanvas(GL)
 	---------------------
 	return GL
 end
-require"anima.font_utils"
+--require"anima.font_utils"

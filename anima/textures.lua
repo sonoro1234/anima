@@ -561,8 +561,22 @@ local function make_tex_prog()
 	}
 	]]
 	
+	local frag_alpha_set_shad = [[
+	uniform sampler2D tex0;
+	uniform float alpha;
+	in vec2 texcoordf;
+	out vec4 FragColor;
+	void main()
+	{
+
+		vec4 color = texture(tex0,texcoordf);
+		FragColor = vec4(color.rgb, alpha);
+	}
+	]]
+	
 		self.program = GLSL:new():compile(vert_shad,frag_shad)
 		self.program_alpha = GLSL:new():compile(vert_shad,frag_alpha_shad)
+		self.program_alpha_set = GLSL:new():compile(vert_shad,frag_alpha_set_shad)
 		--prtable(mesh)
 		local m = mesh.quad(-1,-1,1,1)
 		self.vao = VAO({Position=m.points,texcoord=m.texcoords},self.program,m.indexes)
@@ -592,6 +606,16 @@ local function make_tex_prog()
 		if not self.inited then self:init() end
 		self.program_alpha:use()
 		self.program_alpha.unif.tex0:set{0}
+		gl.glViewport(x,y,w,h)
+		self.vao:draw_elm()
+		glext.glUseProgram(0)
+	end
+	function P3:drawpos_alpha_set(x,y,w,h, alpha)
+		--print("P3:drawpos",x,y,w,h)
+		if not self.inited then self:init() end
+		self.program_alpha_set:use()
+		self.program_alpha_set.unif.tex0:set{0}
+		self.program_alpha_set.unif.alpha:set{alpha}
 		gl.glViewport(x,y,w,h)
 		self.vao:draw_elm()
 		glext.glUseProgram(0)
@@ -1220,6 +1244,15 @@ function Texture(w,h,formato,pTexor,args)
 	function tex:drawpos_alpha(x,y,w,h)
 		self:Bind(0)
 		prog:drawpos_alpha(x,y,w or self.width,h or self.height)
+	end
+	function tex:drawpos_alpha_set(x,y,w,h, alpha)
+		self:Bind(0)
+		prog:drawpos_alpha_set(x,y,w or self.width, h or self.height, alpha)
+	end
+	function tex:drawcenter_alpha_set(W,H, alpha)
+		self:Bind(0)
+		local x,y,w,h = getAspectViewport(W or self.GL.W,H or self.GL.H,self.width, self.height)
+		prog:drawpos_alpha_set(x,y,w, h, alpha)
 	end
 	function tex:drawposSRGB(x,y,w,h)
 		self:Bind(0)
