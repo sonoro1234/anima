@@ -1,6 +1,7 @@
-PROJECT(LuaJIT)
 #to allow install from subdirectory
 cmake_minimum_required(VERSION 3.17)
+PROJECT(LuaJIT)
+
 
 include(ExternalProject)
 
@@ -21,6 +22,7 @@ if(UNIX)
     )
     set (ljname libluajit.a)
 else(UNIX)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/luajit.exe.manifest ${ljsrc}/luajit.exe.manifest)
   if(MSVC)
     ExternalProject_Add(project_luajit
       PREFIX ${ljpre}
@@ -32,6 +34,8 @@ else(UNIX)
     )
     set (ljname lua51.lib)
   else(MSVC) #mingw
+	execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/luajit.rc ${ljsrc}/luajit.rc)
+	  execute_process(COMMAND windres -i ${ljsrc}/luajit.rc -o ${ljsrc}/manifest.o)
       set(DEBFLAGS "")
       if(CMAKE_BUILD_TYPE MATCHES Debug)
 		message(STATUS "luajit debug build")
@@ -43,7 +47,7 @@ else(UNIX)
 	  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT
 	  CONFIGURE_COMMAND "" #${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/LuaJIT ${ljdir}
       BINARY_DIR ${ljsrc}
-      BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} CCOPT="-DLUAJIT_ENABLE_LUA52COMPAT" ${DEBFLAGS}
+      BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} LIBS="manifest.o" CCOPT="-DLUAJIT_ENABLE_LUA52COMPAT" ${DEBFLAGS}
       INSTALL_COMMAND ""
     )
 		

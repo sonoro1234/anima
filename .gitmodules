@@ -53,3 +53,6 @@
 [submodule "luapower/glue"]
 	path = luapower/glue
 	url = https://github.com/luapower/glue.git
+[submodule "luapower/utf8"]
+	path = luapower/utf8
+	url = https://github.com/luapower/utf8.git

@@ -179,6 +179,7 @@ endif(NOT LUAJIT_WINDOW_ONLY)
 install(FILES luafilesystem/lfs_ffi.lua luafilesystem/lfs.lua DESTINATION ${LUAJIT_BIN}/lua)
 install(FILES ffi-reflect/reflect.lua DESTINATION ${LUAJIT_BIN}/lua)
 #luapower
+install(FILES luapower/utf8/utf8.lua DESTINATION ${LUAJIT_BIN}/lua/luapower)
 install(FILES luapower/time/time.lua DESTINATION ${LUAJIT_BIN}/lua/luapower)
 install(FILES luapower/path/path.lua DESTINATION ${LUAJIT_BIN}/lua/luapower)
 install(DIRECTORY luapower/fs/ DESTINATION ${LUAJIT_BIN}/lua/luapower PATTERN ".git" EXCLUDE)
