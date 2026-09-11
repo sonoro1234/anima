@@ -174,7 +174,7 @@ function M.photofx(GL,args)
 		local mesh = require"anima.mesh"
 		local m = mesh.quad(-1,-1,1,1)
 		LM.vao = VAO({Position=m.points,texcoords = m.texcoords},programfx,m.indexes)
-
+		fbo = GL:initFBO()
 		LM.inited = true
 	end
 	

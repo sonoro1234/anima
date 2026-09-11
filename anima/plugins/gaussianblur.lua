@@ -1,21 +1,25 @@
 --local ut = require"glutils.common"
 local plugin = require"anima.plugins.plugin"
 local vert_std = [[
-
+in vec3 position;
+in vec2 texcoords;
+uniform mat4 MVP;
+out vec4 tcoordf;
 void main()
 {
-	gl_TexCoord[0] = gl_MultiTexCoord0;
-	gl_Position = ftransform();
+	tcoordf = vec4(texcoords,0,1);
+	gl_Position = MVP * vec4(position,1);
 }
 
 ]]
 local frag_std = [[
 uniform sampler2D tex0;
-
+in vec4 tcoordf;
+out vec4 fcolor;
 void main()
 {
 
-	gl_FragColor = texture2D(tex0,gl_TexCoord[0].st);
+	fcolor = texture2D(tex0,tcoordf.st);
 }
 ]]
 
@@ -134,7 +138,7 @@ void main(void)
 local function BlurClipMaker(GL)
 
 	local Clip = {}
-	local programH, programV,programstd
+	local programH, programV,programstd, vao
 	local mixfbos = {}
 	local NM = GL:Dialog("blur",
 	{{"iters",1,guitypes.valint,{min=0,max=20}},
@@ -147,6 +151,7 @@ local function BlurClipMaker(GL)
 		programH = GLSL:new():compile(vert_std,fragH2);
 		programV = GLSL:new():compile(vert_std,fragV2);
 		programstd = GLSL:new():compile(vert_std,frag_std);
+		vao = mesh.quad(0,0,GL.W,GL.H):vao(programstd)
 		mixfbos[0] = GL:initFBO()
 		mixfbos[1] = GL:initFBO()
 		Clip.inited = true
@@ -165,6 +170,9 @@ local function BlurClipMaker(GL)
 
 		theclip[1]:draw(timebegin, w, h,theclip)
 		
+		local MVP = mat.ortho(0, w, 0, h, -1, 1);
+		gl.glViewport(0,0,w,h)
+
 		for i=1,NM.iters do
 			programH:use()
 			mixfbos[1]:Bind()
@@ -177,8 +185,10 @@ local function BlurClipMaker(GL)
 			gl.glClearColor(0.0, 0.0, 0.0, 0)
 			ut.Clear()
 			
-			ut.project(w,h)
-			ut.DoQuad(w,h)
+			--ut.project(w,h)
+			programH.unif.MVP:set(MVP.gl)
+			--ut.DoQuad(w,h)
+			vao:draw_elm()
 			
 			programV:use()
 			mixfbos[0]:Bind()
@@ -191,8 +201,10 @@ local function BlurClipMaker(GL)
 			gl.glClearColor(0.0, 0.0, 0.0, 0)
 			ut.Clear()
 			
-			ut.project(w,h)
-			ut.DoQuad(w,h)
+			--ut.project(w,h)
+			programV.unif.MVP:set(MVP.gl)
+			--ut.DoQuad(w,h)
+			vao:draw_elm()
 		end
 		
 		programstd:use()
@@ -202,27 +214,31 @@ local function BlurClipMaker(GL)
 		gl.glClearColor(0.0, 0.0, 0.0, 0)
 		ut.Clear()
 			
-		ut.project(w,h)
-		ut.DoQuad(w,h)
+		--ut.project(w,h)
+		programstd.unif.MVP:set(MVP.gl)
+		--ut.DoQuad(w,h)
+		vao:draw_elm()
 
 	end
 	GL:add_plugin(Clip)
 	return Clip
 end
 
---[=[
+if not ... then
+---[=[
 require"anima"
-local GL = GLcanvas{H=1080,aspect=2/3}
+local GL = GLcanvas{H=1080,aspect=2/3,profile="CORE"}
 local blur = BlurClipMaker(GL,{size=2})
 -- local blur = require"anima.plugins.gaussianblur"(GL)
 local tex
 function GL.init()
-	tex = GL:Texture():Load[[C:\luaGL\frames_anima\7thDoor\puertas\_MG_4250.tif]]
+	tex = GL:Texture():Load[[C:\LuaGL\frames_anima\pelis\7thDoor\puertas\_MG_4250.tif]]
 end
 function GL.draw(t,w,h)
 	blur:draw(t,w,h,{clip={tex}})
 end
 GL:start()
 --]=]
+end
 
 return BlurClipMaker

@@ -26,6 +26,8 @@ void main()
 
 	
 	fcolor = colorold * alpha + color*(1.0 - abs(alpha)); 
+	
+	//fcolor = color;
 	//vec4 colores = (colorold-0.5)*2.0 * alpha + (color-0.5)*2.0*(1.0 - abs(alpha)); 
 	//fcolor = colores*0.5+0.5;
 }
@@ -145,8 +147,10 @@ function M.make(GL,args)
 		local theclip = args.clip
 
 		local old_framebuffer = fbo:Bind()
+		--print("mblurrrr",old_framebuffer, fbo.old_framebuffer)
 		theclip[1]:draw(timebegin, w, h, theclip)
-		
+		fbo:UnBind()
+
 		local program = program[NM.mode]
 
 		program:use()
@@ -169,13 +173,15 @@ function M.make(GL,args)
 		program.unif.alpha2:set{NM.alpha2}
 
 		gl.glClearColor(0.0, 0.0, 0.0, 0)
+		gl.glViewport(0,0,w, h)
 		ut.Clear()
 
 		quads[NM.mode]:draw_elm()
 
 		mixindex = (mixindex + 1)%2
 		
-		fbo:UnBind()
+		--fbo:UnBind()
+		glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER,old_framebuffer);
 		ut.Clear()
 		mixfbos[mixindex]:tex():drawcenter(w,h)
 		

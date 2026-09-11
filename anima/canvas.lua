@@ -132,11 +132,15 @@ function PrepareAudioRT(GL,soundfile,offset,args)--asio,dev_id)
 	local AudioPlayer = require("rtAudioPlayer")
 	local sndf = require"sndfile_ffi"
 	
+	local api
 	if args.api then
 		api = rt.compiled_api_by_name(args.api)
 	else
+		local RtAudioInfo = rt.GetAllInfo()
+		local API, device = RtAudioInfo.first_out()
 		local apis = rt.compiled_api()
-		api = apis[0]
+		--api = apis[0]
+		api = rt.compiled_api_by_name(API)
 		print"available RtAudio APIs"
 		for i=0,rt.get_num_compiled_apis() do
 			print(i,ffi.string(rt.api_name(apis[i])))
@@ -1446,8 +1450,10 @@ function GLcanvas(GL)
 	GL.comp_source = "compressed1080"
 	GL.comp_ext = ".cmp"
 	GL.render_ext = ".tif"
-	function GL:Texture(w,h,form,texor)
-		local tex = Texture(w,h,form,texor,{GL=self})
+	function GL:Texture(w,h,form,texor,args)
+		args = args or {}
+		args.GL = self
+		local tex = Texture(w,h,form,texor,args)
 		tex.GL = self
 		local path = require"anima.path"
 		function tex:GLLoad(filename)

@@ -127,7 +127,7 @@ local function TextClipMaker(GL, fontname,args)
 			if shadow then
 				local shadowdist = args.shadowdist or 0.04
 				--gl.glColor4d(0, 0, 0,1) --, br)
-				font:printXY(line, posX + font.maxY*shadowdist, posY - font.maxY*shadowdist,-1,nil,MO,{0,0,0,1})
+				font:printXY(line, posX + font.maxY*shadowdist, posY - font.maxY*shadowdist,-1,nil,MO,{0,0,0,bright})
 			end
 			
 			--print("posX",posX,posY,size,sc)
@@ -163,8 +163,10 @@ local filen = [[C:\anima64\lua\anima\fonts\SilkRemington-SBold.ttf]]
 local filen = [[SilkRemington-SBold.ttf]]
 local GL = GLcanvas{H=800,fps=60,aspect=3/2,profileNO="CORE",use_log=false}
 
-local texter = TextClipMaker(GL,filen,{ranges = {{0,0x10FFFF}}, italic=true})
+--local filen = [[C:\anima\lua\anima\fonts\seguiemj.ttf]]
+local texter = TextClipMaker(GL,filen,{ italic=true})
 --local texter2 = require"anima.plugins.GLTextClip"(GL,"Silk RemingtonSBold",{italic=false,outlineonly=false})
+
 local filen2 = [[C:\anima\lua\anima\fonts\ProggyTiny.ttf]]
 --local texter2 = TextClipMaker(GL,filen2)
 local texini = {texter,
@@ -174,18 +176,19 @@ local texini = {texter,
 	--text = {"D"},
 	--text = alltext,
 	--text = texto,
-	color={1,0,0},rot_speed = math.pi*30/180,centered=false,dontclear=true,shadow=false,shadowdist=0.01, posXN = AN{-0.75,-0.55,15},posYN = AN{-0.5,0,15},bright = AN({0,1,10},{1,1,20},{1,0,5})}
-local texini2 = {texter2,
-	--size=AN({0.05,0.2,15}),
-	size = 2,
-	--text={[[Palmeras]],"Huecas"},
-	text = {"D"},
-	--text = alltext,
-	--text = texto,
-	color={1,0,0},rot_speed = math.pi*30/180,centered=false,dontclear=true,shadow=false,shadowdist=0.01, posXN = AN{-0.75,-0.55,15},posYN = AN{-0.5,0,15},bright = AN({0,1,10},{1,1,20},{1,0,5})}
-local mssafbo
+	color={0.6,0.4,0},rot_speed = math.pi*10/180,centered=false,dontclear=false,shadow=false,shadowdist=0.01, posXN = AN{-0.75,-0.55,15},posYN = AN{-0.5,0,15},bright = AN({0,1,10},{1,1,20},{1,0,5})}
+local titend = {texter,size=0.03,
+	centered = AN(ConstVal(false,10),ConstVal(false,5)),
+	text=AN(ConstVal([[Photography: Carmen Escudero]],5),ConstVal([[Music and programming: Victor Bomb�]],5),ConstVal({[[Direction: Motion Haikus]],[[(Carmen Escudero & Victor Bombi)]]},5)),
+	bright = AN( {0,1,1},{1,1,3},{1,0,1}, {0,1,1},{1,1,3},{1,0,1}, {0,1,1},{1,1,3},{1,0,1}),shadow=false}
+
+
+local mssafbo,mblur
 function GL.init()
 	msaafbo = GL:initFBOMultiSample()
+	mblur = require"anima.plugins.motion_blur".make(GL)
+	mblur.NM.vars.alpha2[0] = 1
+	mblur.NM.vars.alpha[0] = 0.95
 end
 function GL.draw(t,w,h)
 					-- gl.glEnable(glc.GL_BLEND)
@@ -196,9 +199,12 @@ function GL.draw(t,w,h)
 	--msaafbo:Bind()
 	
 	ut.Clear()
-	--texter:draw(t,w,h,{text="Pepito"})
-	 texter:draw(t,w,h,texini)
-	-- texter2:draw(t,w,h,texini2)
+	--texter:draw(t,w,h,{text="Victor Bombí"})
+	--texter:draw(t,w,h,{text='我能吞下玻璃而不伤身体'})
+	--texter:draw(t,w,h,{text="ვეპხის ტყაოსანი შოთა რუსთაველი"})
+	 --texter:draw(t,w,h,titend)
+	--texter:draw(t,w,h,texini)
+	mblur:draw(t,w,h,{clip=texini})
 
 	--msaafbo:Dump()
 end

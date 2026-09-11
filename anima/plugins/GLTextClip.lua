@@ -139,19 +139,22 @@ texto = {[[Música]],[[divertida]]}
 	-- print(i,texto:sub(i,i))
 -- end
 
-local GL = GLcanvas{H=1080,fps=60,aspect=3/2,profileNO="CORE",use_log=true}
+local GL = GLcanvas{H=1080,fps=60,aspect=3/2,profileNO="CORE",use_log=false}
 local texter = TextClipMaker(GL,"Silk RemingtonSBold",{italic=false,outlineonly=false})
 local texini = {texter,
 	size=AN({0.05,0.2,15}),
 	--size = 0.05,
-	--text={[[Palmeras]],"Huecas"},
-	text = {"D"},
+	text={[[Palmeras]],"Huecas"},
+	--text = {"D"},
 	--text = alltext,
 	--text = texto,
-	color={1,0,0},rot_speed = 30,centered=false,dontclear=false,shadow=false,shadowdist=0.01, posXN = AN{-0.75,-0.55,15},posYN = AN{-0.5,0,15},bright = AN({0,1,10},{1,1,20},{1,0,5})}
-local mssafbo
+	color={0.6,0.4,0},rot_speed = 10,centered=false,dontclear=false,shadow=false,shadowdist=0.01, posXN = AN{-0.75,-0.55,15},posYN = AN{-0.5,0,15},bright = AN({0,1,10},{1,1,20},{1,0,5})}
+local mssafbo, mblur
 function GL.init()
 	msaafbo = GL:initFBOMultiSample()
+		mblur = require"anima.plugins.motion_blur".make(GL)
+	mblur.NM.vars.alpha2[0] = 1
+	mblur.NM.vars.alpha[0] = 0.95
 end
 function GL.draw(t,w,h)
 					-- gl.glEnable(glc.GL_BLEND)
@@ -159,12 +162,13 @@ function GL.draw(t,w,h)
 				-- gl.glBlendFunc (glc.GL_SRC_ALPHA, glc.GL_ONE_MINUS_SRC_ALPHA);
 	gl.glClearColor(0,0,0, 1)
 	
-	msaafbo:Bind()
+	--msaafbo:Bind()
 	
 	ut.Clear()
-	texter:draw(t,w,h,texini)--{text="Pepito"})
+	--texter:draw(t,w,h,texini)--{text="Pepito"})
+	mblur:draw(t,w,h,{clip=texini})
 
-	msaafbo:Dump()
+	--msaafbo:Dump()
 end
 GL:start()
 

@@ -26,6 +26,7 @@ function getAspectViewport(width,height,w,h)
 end
 --loading several textures
 function LoadTextures(fileNames,GLparams,mipmaps)
+	print("== LoadTextures ==")
 	GetGLError"preLoadtextures"
 	local timebegin = os.clock()
 	GLparams.textures = ffi.new("GLuint[?]",#fileNames)
@@ -97,14 +98,47 @@ function LoadTextures(fileNames,GLparams,mipmaps)
 		-- gldata will be destroyed when the image object is destroyed
 		image:Destroy()
 	end
-	local resident_table = ffi.new("GLboolean[?]",#fileNames)
-	gl.glAreTexturesResident(#fileNames,GLparams.textures,resident_table)
-	for i=0,#fileNames do -- in ipairs(resident_table) do
-		print(i,resident_table[i],fileNames[i+1])
+	if GLparams.profile~="CORE" then
+		local resident_table = ffi.new("GLboolean[?]",#fileNames)
+		gl.glAreTexturesResident(#fileNames,GLparams.textures,resident_table)
+		print"-----------resident textures"
+		for i=0,#fileNames do -- in ipairs(resident_table) do
+			print(i,resident_table[i],fileNames[i+1])
+		end
 	end
 	GetGLError("LOADTEXTURES ")
 	print("LOADTEXTURES time",os.clock() -timebegin)
 	return aspect_ratio
+end
+
+--loading several textures
+function LoadTextures3(fileNames,GLparams,mipmaps)
+	print("== LoadTextures3 ==")
+	GetGLError"preLoadtextures"
+	local timebegin = os.clock()
+	GLparams.textures = ffi.new("GLuint[?]",#fileNames)
+	GLparams.texdata = {}
+	gl.glGenTextures(#fileNames,GLparams.textures)  -- Create The Texture
+	local texs = {}
+	local aniso = ffi.new"float[1]"
+	gl.glGetFloatv(glc.GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, aniso);
+	for i,fileName in ipairs(fileNames) do
+		print("\nbind",fileName)
+		local tex = GLparams:Texture(nil,nil,nil, GLparams.textures + (i-1) ):Load(fileName, nil, mipmaps)
+		texs[#texs + 1] = tex
+		print(tex.width, tex.height)
+	end
+	if GLparams.profile~="CORE" then
+		local resident_table = ffi.new("GLboolean[?]",#fileNames)
+		gl.glAreTexturesResident(#fileNames,GLparams.textures,resident_table)
+		print"-----------resident textures"
+		for i=0,#fileNames do -- in ipairs(resident_table) do
+			print(i,resident_table[i],fileNames[i+1])
+		end
+	end
+	GetGLError("LOADTEXTURES ")
+	print("LOADTEXTURES time",os.clock() -timebegin)
+	return texs
 end
 
 function CubeTexture(GL)
@@ -952,8 +986,18 @@ function Texture(w,h,formato,pTexor,args)
 	else
 		tex.pTex = pTexor
 		tex.tex = pTexor[0]
-		--print("new tex2d from pTexor",tex.tex,tex)
+		if args.init then
+		-- gl.glBindTexture(glc.GL_TEXTURE_2D, tex.pTex[0])
+		-- gl.glTexParameteri(glc.GL_TEXTURE_2D,glc.GL_TEXTURE_MIN_FILTER,glc.GL_LINEAR)
+		-- gl.glTexParameteri(glc.GL_TEXTURE_2D,glc.GL_TEXTURE_MAG_FILTER,glc.GL_LINEAR)
+		-- gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_WRAP_S, glc.GL_MIRRORED_REPEAT);
+		-- gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_WRAP_T, glc.GL_MIRRORED_REPEAT);
+		-- gl.glTexImage2D(glc.GL_TEXTURE_2D,0, formato, w, h, 0, glc.GL_RGB, glc.GL_UNSIGNED_BYTE, nil)
+		end
+		--print("new tex2d from pTexor",pTexor, tex.tex,tex)
+		--error"debug"
 	end
+	
 	--assert(tex.tex == tex.pTex[0])
 	function tex:is_texture()
 		return gl.glIsTexture(self.tex)==glc.GL_TRUE
@@ -1642,7 +1686,7 @@ end
 local lpData 
 local lpDataSize = 0
 function LoadCompressedImage(path)
-	--print("LoadCompressedImage",path)
+	--print("LoadCompressedImage",path,#path)
 	local pFile = ffi.C.fopen(path, "rb");
 	if (pFile == nil) then error("could not load "..tostring(path)) end
 

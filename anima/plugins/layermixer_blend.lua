@@ -41,6 +41,7 @@ void main()
 	if(set_alpha1)
 		color.a = 1;
 	color.a *= alpha;
+	color.a = clamp(color.a,0.0,1.0);
 	fcolor = color;
 
 }
@@ -188,6 +189,7 @@ function M.layers_mixer(GL,usemsaa, lm_args)
 			end
 			
 			if theseg.planer then
+				--print("cliptime",cliptime)
 				theseg.planer:set(cliptime)
 				local MVP = theseg.planer.camera:MVP()
 				local x,y,z = unpack(theseg.planer.pos)

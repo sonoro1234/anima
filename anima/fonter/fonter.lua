@@ -1,3 +1,37 @@
+local function codepoint_to_utf8(c)
+    if     c < 0x80 then
+        return                                                          string.char(c)
+    elseif c < 0x800 then
+        return                                     string.char(0xC0 + c/0x40, 0x80 + c%0x40)
+    elseif c < 55296 or (57343 < c and c < 65536) then
+
+    --elseif c < 65536 then
+        return                    string.char(0xE0 + c/0x1000, 0x80 + c/0x40%0x40, 0x80 + c%0x40)
+    elseif c >= 65536 and c < 0x110000 then
+        return string.char(0xF0 + c/0x40000, 0x80 + c/0x1000%0x40, 0x80 + c/0x40%0x40, 0x80 + c%0x40)
+    end
+	return ""
+end
+
+
+require"luapower.setluapower"
+local utf8 = require"utf8"
+--[[
+local format = string.format
+for i=0,0x10FFFF do
+	local str = utf8.encode_chars(i)
+	if not (str==codepoint_to_utf8(i)) then
+		print(i,"1",format("%q",utf8.encode_chars(i)),"2",format("%q",codepoint_to_utf8(i)))
+		error"debug"
+	end
+	for _,cp,b in utf8.chars(str) do
+		assert(cp==i)
+	end
+end
+print"done"
+do return end
+--]]
+
 local ft = require"freetype"
 local ffi = require"ffi"
 local CG3 = require"anima.CG3"
@@ -681,7 +715,9 @@ end
 function M.new_face(filename, args)
 
 	args = args or {}
-	local ranges = args.ranges or {{32,127}}
+	local ranges = args.ranges or {{0,0x10FFFF}}
+	--add 0 cp
+	table.insert(ranges,{0,0})
 	local size = args.size or 64*16
 	local steps = args.steps or 5
 	local outlinef = args.outlinef -- use ft outline functions
@@ -692,9 +728,9 @@ function M.new_face(filename, args)
 	T.library = M.ft()
 	T.face = M.library:face(filename)
 
-	T.has_kerning = bit.band(T.face.face_flags,ft.C.FT_FACE_FLAG_KERNING)
-	T.has_glyph_names = bit.band(T.face.face_flags,ft.C.FT_FACE_FLAG_GLYPH_NAMES)
-	print("T.has_glyph_names",T.has_glyph_names)
+	T.has_kerning = bit.band(T.face.face_flags,ft.C.FT_FACE_FLAG_KERNING)~=0
+	T.has_glyph_names = bit.band(T.face.face_flags,ft.C.FT_FACE_FLAG_GLYPH_NAMES)~=0
+	print("T.has_glyph_names",T.has_glyph_names,"T.has_kerning",T.has_kerning)
 	
 	T.face:select_charmap(ft.C.FT_ENCODING_UNICODE)
 	
@@ -934,6 +970,7 @@ function M.new_face(filename, args)
 		if not cha then
 			local k,v = next(self.chars)
 			cha  = v
+			
 		end
 		if not cha then return end
 		if cha.empty then return end
@@ -955,21 +992,31 @@ function M.new_face(filename, args)
 	end
 	
 	function T:cps_print(str ,MO1,ColV4)
+		--print("cps_print",str)
 		local MO1 = MO1 or mat.identity()
 		local advance = Vec(0,0,0)
 		local previndex 
-		for i=1,#str do
-			local ch = str:sub(i,i)
-			local cp = string.byte(ch)
+		--for i=1,#str do
+		for _, cp, b in utf8.chars(str) do
+			-- local ch = str:sub(i,i)
+			-- local cp = string.byte(ch)
+			cp = cp or b
+			if not self.chars[cp] then 
+				--print("failing",cp,b);
+				cp = 0 
+			end
 			local MO = MO1* mat.translate(advance)
 			T.cust_program.unif.MO:set(MO.gl)
+
 			self:cp_print(cp,ColV4)
-			-- if self.has_kerning and previndex then
-				-- local delta = self.face:kerning( previndex, self.chars[cp].glyph_index, ft.C.FT_KERNING_UNSCALED)
-				-- advance = advance + Vec(delta.x,delta.y,0)/T.size
-			-- end
+
+			if self.has_kerning and previndex then
+				local delta = self.face:kerning( previndex, self.chars[cp].glyph_index, ft.C.FT_KERNING_UNSCALED)
+				advance = advance + Vec(delta.x,delta.y,0)/T.size
+			end
 			advance = advance + self.chars[cp].advance
 			previndex = self.chars[cp].glyph_index
+
 		end
 	end
 	T.face:free()
@@ -988,16 +1035,21 @@ local function tester(filen)
 	
 	face:select_charmap(ft.C.FT_ENCODING_UNICODE)
 	local visrang, v2 = GetVisibleRanges(face);
-	--prtable(visrang, v2)
+	prtable(visrang, v2)
 	print("glyphs",#v2)
 	return face
 end
 	--T.face = M.library:face(filename)
 local face1 = tester[[C:\anima\lua\anima\fonts\SilkRemington-SBold.ttf]]
 
-local face2 = tester[[C:\anima\lua\anima\fonts\ProggyTiny.ttf]]
+--local face2 = tester[[C:\anima\lua\anima\fonts\ProggyTiny.ttf]]
 
 --]==]
-
-
+--[=[
+local filen = [[C:\anima\lua\anima\fonts\SilkRemington-SBold.ttf]]
+M.triangulator = "glu"
+--local ff = M.new_face(filen,{ranges = {{0,0x10FFFF}}})
+local ff = M.new_face(filen,{ranges = {{32,255}}})
+prtable(ff.chars[0])
+--]=]
 return M
