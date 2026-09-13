@@ -1073,6 +1073,9 @@ function GLcanvas(GL)
 					self.mouse_button_callbak(self.window,button.button,button.state,nil,button.x,button.y)
 				elseif event.type == sdl.MOUSEMOTION then
 					self.cursor_pos_callback(self.window,event.motion.x,event.motion.y)
+				elseif event.type == sdl.DROPFILE then
+					--print("SDL drop file",ffi.string(event.drop.file))
+					if self.drop_file_cb then self.drop_file_cb(ffi.string(event.drop.file)) end
 				end
 			end
 			
@@ -1311,7 +1314,7 @@ function GLcanvas(GL)
 		local gllib = require"gl"
 		gllib.set_loader(sdl)
 		gl, glc, glu, glext = gllib.libraries()
-		
+		swapped_glc = swap_keyvalue(glc)
 		if self.DEBUG then
 			gl = gllib.glErrorWrap(gl)
 			glext = gllib.glErrorWrap(glext)
@@ -1422,7 +1425,16 @@ function GLcanvas(GL)
 		
 		if self.vsync then lj_glfw.swapInterval(type(self.vsync)=="number" and self.vsync or 1) end
 		GetGLError"doinit ini"
-		
+		---drag and drop
+		local function drop_callback(window,count,paths)
+			if self.drop_file_cb then
+				for i=0,count-1 do
+					--print(i,ffi.string(paths[i]));
+					self.drop_file_cb(ffi.string(paths[i]))
+				end
+			end
+		end
+		lj_glfw.glfw.glfwSetDropCallback(window, drop_callback);
 
 		doinitCOMMON(self)
 	end

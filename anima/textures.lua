@@ -1522,8 +1522,13 @@ end
 function ListCompressedFormats()
 	local num = ffi.new("GLuint[1]")
 	gl.glGetIntegerv(glc.GL_NUM_COMPRESSED_TEXTURE_FORMATS, num)
-	local formats = ffi.new("GLuint[?]",num*4)
-	gl.glGetIntegerv(glc.GL_COMPRESSED_TEXTURE_FORMATS, num)
+	local formats = ffi.new("GLuint[?]",num[0])--*ffi.sizeof"GLuint")
+	print("GL_NUM_COMPRESSED_TEXTURE_FORMATS", num[0])
+	gl.glGetIntegerv(glc.GL_COMPRESSED_TEXTURE_FORMATS, formats)
+	for i=0,num[0]-1 do
+		print(i, formats[i],swapped_glc[formats[i]])
+	end
+	--return formats
 end
 function ImageConvertToCompressed(image,pathSave)
 

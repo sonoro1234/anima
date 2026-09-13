@@ -13,6 +13,7 @@ function clip(val,mini,maxi)
     return math.max(mini,math.min(val,maxi))
 end
 --values must be unique
+--if not keys go to table
 function swap_keyvalue(t)
 	local res={}
 	for k,v in pairs(t) do
