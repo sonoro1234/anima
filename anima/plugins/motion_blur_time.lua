@@ -27,7 +27,7 @@ void main()
 ]]
 local frag_shad3 = [[
 uniform sampler2D tex0,tex1;
-uniform float alpha,alpha2;
+uniform float alpha,mixfac;
 uniform int mode;
 in vec2 f_tc;
 out vec4 fcolor;
@@ -38,7 +38,7 @@ void main()
 	vec4 colorold = texture2D(tex1,f_tc);
 	vec4 colormax = max(colorold *alpha,color);
 	vec4 color1 = colorold * alpha + color*(1.0 - abs(alpha));
-	fcolor = mix(color1,colormax,alpha2);
+	fcolor = mix(color1,colormax,mixfac);
 }
 ]]
 local frag_shad2 = [[
@@ -52,8 +52,8 @@ void main()
 	
 	vec4 color = texture2D(tex0,f_tc);
 	vec4 colorold = texture2D(tex1,f_tc);
-	vec4 mix = colorold * alpha;// + color;
-	vec4 colormax = max(mix,color);
+	vec4 mix1 = colorold * alpha;
+	vec4 colormax = max(mix1,color);
 	fcolor = colormax;
 }
 ]]
@@ -65,12 +65,14 @@ function M.make(GL,args)
 	local Clip = plugin.new{res={args.W or GL.W,args.H or GL.H}}
 	local NM = GL:Dialog("mblur",
 {
-{"alpha",0.0,guitypes.val,{min=0.0,max=1}},
-{"alpha2",0,guitypes.val,{min=0,max=1}},
+{"time",0.0,guitypes.drag,{min=0.0,max=100}},
+{"mixfac",0,guitypes.val,{min=0,max=1}},
 {"mode",1,guitypes.valint,{min=1,max=3}},
 {"reset",false,guitypes.toggle},
-}
-)
+},
+function(this)
+	ig.TextUnformatted(tostring(math.pow(1/256,1/(GL.fps*this.time))))
+end)
 	Clip.NM = NM
 	local program
 	local fbo
@@ -104,8 +106,7 @@ function M.make(GL,args)
 		mixindex = (mixindex + 1)%2
 		mixfbos[mixindex]:UseTexture(1,0)
 		
-		local alphaT = NM.alpha
-		local alpha = math.pow(alphaT,25/GL.fps)
+		local alpha = math.pow(1/256,1/(GL.fps*NM.time))
 		if NM.reset then
 			alpha = 0
 			NM.vars.reset[0] = false
@@ -113,7 +114,7 @@ function M.make(GL,args)
 		program.unif.tex0:set{0}
 		program.unif.tex1:set{1}
 		program.unif.alpha:set{alpha}
-		program.unif.alpha2:set{NM.alpha2}
+		program.unif.mixfac:set{NM.mixfac}
 
 		gl.glClearColor(0.0, 0.0, 0.0, 0)
 		ut.Clear()
@@ -150,8 +151,8 @@ function M.make(GL,args)
 		mixindex = (mixindex + 1)%2
 		mixfbos[mixindex]:UseTexture(1,0)
 		
-		local alphaT = NM.alpha
-		local alpha = math.pow(alphaT,25/GL.fps)
+
+		local alpha = math.pow(1/256,1/(GL.fps*NM.time))
 		if NM.reset then
 			alpha = 0
 			NM.vars.reset[0] = false
@@ -159,7 +160,7 @@ function M.make(GL,args)
 		program.unif.tex0:set{0}
 		program.unif.tex1:set{1}
 		program.unif.alpha:set{alpha}
-		program.unif.alpha2:set{NM.alpha2}
+		program.unif.mixfac:set{NM.mixfac}
 
 		gl.glClearColor(0.0, 0.0, 0.0, 0)
 		gl.glViewport(0,0,w, h)
@@ -203,15 +204,14 @@ void main()
 require"anima"
 local GL = GLcanvas{H=800,aspect = 3/2,fps=25}
 
-local program,vao,camera
+local program,vao
 local mblur,fbo
 function GL.init()
 	mblur = M.make(GL)
-	mblur.NM.vars.alpha[0] = 0.972
+	mblur.NM.vars.time[0] = 2
 	program = GLSL:new():compile(vert_sh, frag_sh)
 	local quad = mesh.quad() -- -0.5,-0.5,0.5,0.5)
 	vao = quad:vao(program)
-	camera = newCamera(GL,"tps")
 	fbo = GL:initFBO()
 end
 
@@ -222,10 +222,10 @@ function GL.draw(t,w,h)
 	program:use()
 	local U = program.unif
 	local MVP = mat.ortho(-0.5*GL.aspect, 0.5*GL.aspect,-0.5, 0.5, -10, 100000);
-	--local MVP = camera:MVP()
 	U.MVP:set(MVP.gl)
 	local MO = mat.translate(0,0.3,0)*mat.scale(0.1)
-	MO = mat.rotate_axis(t*1,mat.vec3(0,0,1)) * MO
+	-- two giros per second
+	MO = mat.rotate_axis(t*math.pi,mat.vec3(0,0,1)) * MO
 	U.MO:set(MO.gl)
 	U.color:set{0.6,0.4,0,1}
 	vao:draw_elm()

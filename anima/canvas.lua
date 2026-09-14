@@ -1225,7 +1225,7 @@ function GLcanvas(GL)
 			if v.delete then
 				v:delete()
 			else
-				print("could not remove",k,v)
+				print("removeTextures could not remove",k,v)
 			end
 			self.chktextures[k] = nil
 		end
