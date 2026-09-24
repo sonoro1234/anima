@@ -6,9 +6,10 @@ local plugin = require"anima.plugins.plugin"
 local vert_shad = [[
 in vec3 Position;
 in vec2 texcoords;
+out vec4 tcoordf;
 void main()
 {
-	gl_TexCoord[0] = vec4(texcoords,0,1);
+	tcoordf = vec4(texcoords,0,1);
 	gl_Position = vec4(Position,1);
 }
 ]]
@@ -27,15 +28,16 @@ uniform bool bypass;
 float lutSize = textureSize(LUTx,0);
 float scale = (lutSize - 1.0) / lutSize;
 float offset = 1.0 / (2.0 * lutSize);
-
+in vec4 tcoordf;
+out vec4 fcolor;
 void main()
 {
-	vec4 tcolor = texture2D(tex0,gl_TexCoord[0].st);
+	vec4 tcolor = texture2D(tex0,tcoordf.st);
 	
 	if (bypass){
 		if(usealpha)
 			tcolor.a = 1.0;
-		gl_FragColor = tcolor;
+		fcolor = tcolor;
 		return;
 	}
 	
@@ -47,9 +49,9 @@ void main()
 	vec3 colhsv = RGB2HSV(color);
 	//vec3 colhsv = color;
 	
-	colhsv.x = texture1D(LUTx,colhsv.x*scale + offset).r;
-	colhsv.y = texture1D(LUTy,colhsv.y*scale + offset).r;
-	colhsv.z = texture1D(LUTz,colhsv.z*scale + offset).r;
+	colhsv.x = texture(LUTx,colhsv.x*scale + offset).r;
+	colhsv.y = texture(LUTy,colhsv.y*scale + offset).r;
+	colhsv.z = texture(LUTz,colhsv.z*scale + offset).r;
 	
 	color = HSV2RGB(colhsv);
 	//color = colhsv;
@@ -57,9 +59,9 @@ void main()
 	if(invert)
 		tcolor.a = 1.0 - tcolor.a;
 	if(usealpha)
-		gl_FragColor = mix(vec4(tcolor.rgb,1.0),vec4(color,1.0),tcolor.a);
+		fcolor = mix(vec4(tcolor.rgb,1.0),vec4(color,1.0),tcolor.a);
 	else
-		gl_FragColor = vec4(color,tcolor.a);
+		fcolor = vec4(color,tcolor.a);
 }
 ]]
 
@@ -259,7 +261,7 @@ M.make = M.photofx
 ---[=[
 if not ... then
 require"anima"
-local GL = GLcanvas{H=800,aspect=3/2}
+local GL = GLcanvas{H=800,aspect=3/2,profile="CORE"}
 local tex,slab,lch
 function GL.init()
 	tex = GL:Texture():Load[[c:\luagl\media\estanque3.jpg]]

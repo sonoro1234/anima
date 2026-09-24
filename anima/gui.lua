@@ -345,6 +345,8 @@ end
 function ToolBox(GL)
 	local toolbox = {}
 	local icons = GL.Ficons
+	GL.hist = gui.Histogram(GL,2^5)
+	GL.showhist = ffi.new("bool[?]",1,false)
 	function toolbox:draw()
 		if ig.BeginPopup("toolbox") then 
 			--if ig.Button("hand") then 
@@ -367,6 +369,7 @@ function ToolBox(GL)
 				ig.GetIO().ConfigFlags =  bit.band(ig.GetIO().ConfigFlags, bit.bnot(ig.lib.ImGuiConfigFlags_NoMouseCursorChange))
 				imgui.igCloseCurrentPopup() 
 			end
+			ig.Checkbox("histogram",GL.showhist)
 
 			ig.Checkbox("red",GL.colormasks.red)
 			ig.Checkbox("green",GL.colormasks.green)
@@ -415,6 +418,7 @@ end
 
 function gui.ImGui_Transport(GL)
 	local transport = {}
+	local toolbox = ToolBox(GL)
 	local filetypes = {png="PNG",tif="TIFF",jpg="JPEG"}
 	local save_image_browser = gui.FileBrowser(nil,{check_existence=true},function(fname) 
 				GL.save_image[0] = fname
@@ -481,8 +485,9 @@ function gui.ImGui_Transport(GL)
 			if GL.opentoolbox then ig.OpenPopup"toolbox";GL.opentoolbox=false end
 			if ig.Button("tools") then ig.OpenPopup("toolbox") end
 				ig.PushStyleVar_Float(imgui.ImGuiStyleVar_Alpha,1)
-				ToolBox(GL):draw()
+				toolbox:draw()
 				ig.PopStyleVar(1)
+				
 			ig.SameLine()
 			
 			ig.PushItemWidth(-1)
@@ -496,6 +501,7 @@ function gui.ImGui_Transport(GL)
 		
 		ig.End()
 		ig.PopStyleVar(1) --windowborder and alfa
+		
 	end
 	return transport
 end
@@ -953,7 +959,7 @@ function gui.FontIcons(GL,source,ranges,size)
 		
 		cps = cps or {hand=61606,glass=61442,glass_p=61454,glass_m=61456,pickcolor=0xF1FB,pen=61504,eraser=61741,arrow=62021}
 		--factor for hotspot
-		local hotspots = {eraser={0,1},pen={0,1}, hand= {0.5,0}}
+		local hotspots = {eraser={0,1},pen={0,1}, hand= {0.5,0},pickcolor={0,1}}
 		self.cursorcps = cps
 		
 		-- local img = ffi.new("unsigned char[?]",self.atlas.TexWidth * self.atlas.TexHeight * 4)
@@ -1201,6 +1207,7 @@ function gui.SetImGui(GL)
 	function GL:draw_imgui_not_modal()
 		maxx_needed = math.max(300,math.min(ig.GetIO().DisplaySize.x,maxx_needed))
 		if #self.imguimodals < 1 then return end
+		curr_notmodal = math.min(curr_notmodal,#self.imguimodals)
 		--ig.SetNextWindowSize(ig.ImVec2(maxx_needed,0))--, imgui.ImGuiCond_Once)
 		maxx_needed = 0
 		--ig.SetNextWindowSizeConstraints(ig.ImVec2(200,200),ig.ImVec2(ig.GetIO().DisplaySize.x,-1))
@@ -1246,8 +1253,10 @@ function gui.SetImGui(GL)
 					last_button_x2 = ig.GetItemRectMax().x;
 				end
 			end
+			--print("curr_notmodal",curr_notmodal,#self.imguimodals)
 			ig.Separator();
 			self.imguimodals[curr_notmodal]:draw()
+
 			--]]
 			--[[ TabBar
 			if ig.BeginTabBar("MyTabBar",0) then
@@ -1294,10 +1303,10 @@ function gui.SetImGui(GL)
 		ig.End()
 	end
 	
-	local function MainDockSpace()
+	function GL.MainDockSpace()
 		if not GL.has_imgui_viewport then return end
 		if (bit.band(ig.GetIO().ConfigFlags , imgui.ImGuiConfigFlags_DockingEnable)==0) then return end
-		
+
 		local dockspace_flags = bit.bor(ig.lib.ImGuiDockNodeFlags_NoDockingOverCentralNode, ig.lib.ImGuiDockNodeFlags_AutoHideTabBar, ig.lib.ImGuiDockNodeFlags_PassthruCentralNode) --ImGuiDockNodeFlags_NoSplit
 		ig.DockSpaceOverViewport(nil, nil, dockspace_flags);
 	end
@@ -1310,13 +1319,16 @@ function gui.SetImGui(GL)
 
 			self.Impl:NewFrame()
 			
-			MainDockSpace()
-
-			if self.Log then self.Log:Draw() end
+			-- if self.imgui then self:imgui() end
+			--MainDockSpace(GL)
 		
 			self:draw_imgui_not_modal()
+			
+			if self.Log then self.Log:Draw() end
 
 			if self.imgui then self:imgui() end
+			
+			if GL.showhist[0] then GL.hist() end
 
 			self.transport:draw()
 
@@ -1427,7 +1439,7 @@ function gui.SetImGui(GL)
 		self.imguimodals[#self.imguimodals + 1] = NM
 		local index = #self.imguimodals
 		NM.GL = self
-		function NM.close()
+		function NM.remove()
 			table.remove(self.imguimodals,index)
 		end
 		return NM
@@ -1441,45 +1453,93 @@ function gui.SetImGui(GL)
 	end
 end --SetImGui
 
-function gui.Histogram(GL,bins,linear)
+function gui.Histogram(GL,bins)
 	local Histogram1 = require"anima.plugins.histogram"(GL,bins)
 	local histovalues = ffi.new("float[?]",bins)
+
+	local hr = ffi.new("float[?]",bins)
+	local hg = ffi.new("float[?]",bins)
+	local hb = ffi.new("float[?]",bins)
+
 	local linearhistovalues = ffi.new("float[?]",bins)
 	local maxval = ffi.new("float[1]",1)
 	local automaxval = ffi.new("bool[1]",true)
-	local showlinear = ffi.new("bool[1]",linear or false)
+	local showlinear = ffi.new("bool[1]",true)
+	local rgb = ffi.new("bool[1]",true)
 	local frame = 0
-	return function()
+	local function hist()
 		if ig.Begin("histogram") then
 			if frame > 10 then
 				Histogram1:set_texture(GL.fbo:GetTexture())
-				Histogram1:calc()
-				--Histogram1.fbohist:get_pixels(glc.GL_RED,glc.GL_FLOAT,0,histovalues)
-				if GL.SRGB then
-					Histogram1.fbohist:get_pixels(glc.GL_RED,glc.GL_FLOAT,0,linearhistovalues)
-					for i=0,bins-1 do
-						local gm_bin 
-						if not showlinear[0] then gm_bin = math.pow(i/(bins-1),2.4)*(bins-1) else gm_bin = i end
-						histovalues[i] = linearhistovalues[gm_bin]
+				if rgb[0] then 
+					Histogram1:calc_rgb() 
+					local r,g,b = Histogram1:get_rgb()
+					r:get_pixels(glc.GL_RED,glc.GL_FLOAT,0,hr)
+					g:get_pixels(glc.GL_RED,glc.GL_FLOAT,0,hg)
+					b:get_pixels(glc.GL_RED,glc.GL_FLOAT,0,hb)
+				else 
+					Histogram1:calc() 
+					if GL.SRGB then
+						Histogram1.fbohist:get_pixels(glc.GL_RED,glc.GL_FLOAT,0,linearhistovalues)
+						for i=0,bins-1 do
+							local gm_bin 
+							if not showlinear[0] then gm_bin = math.pow(i/(bins-1),2.4)*(bins-1) else gm_bin = i end
+							histovalues[i] = linearhistovalues[gm_bin]
+						end
+					else
+						Histogram1.fbohist:get_pixels(glc.GL_RED,glc.GL_FLOAT,0,histovalues)
 					end
-				else
-					Histogram1.fbohist:get_pixels(glc.GL_RED,glc.GL_FLOAT,0,histovalues)
 				end
 				frame = 0
 			end
 			frame = frame + 1
-			ig.Checkbox("automax",automaxval)
-			ig.SameLine()
-			ig.Checkbox("showlinear",showlinear)
-			ig.SameLine()
-			ig.SliderFloat("max", maxval, 0, 0.1, "%0.4f");
-			if automaxval[0] then maxval[0] = ig.FLT_MAX end 
-			ig.PushItemWidth(-1)
-			ig.PlotLines("histo", histovalues, bins, 0, nil, 0,maxval[0], ig.ImVec2(0,200));
-			ig.PopItemWidth()
+			if rgb[0] then
+				ig.Checkbox("automax",automaxval)
+				-- ig.SameLine()
+				-- ig.SetNextItemWidth(100)
+				-- ig.SliderFloat("max", maxval, 0, 0.1, "%0.4f");
+				ig.SameLine()
+				if ig.Checkbox("rgb",rgb) then frame = 11 end
+				if automaxval[0] then ig.ImPlot_SetNextAxesToFit() end
+				local spec = ig.ImPlotSpec()
+				if ig.ImPlot_BeginPlot("histo", ig.ImVec2(-1,-1)) then
+					ig.ImPlot_SetupAxisLimitsConstraints(ig.lib.ImAxis_Y1,0, 1);
+					spec.LineColor = ig.ImVec4(1,0,0,1)
+					ig.ImPlot_PlotLine("R",hr,bins,nil,nil,spec[0])
+					spec.LineColor = ig.ImVec4(0,1,0,1)
+					ig.ImPlot_PlotLine("G",hg,bins,nil,nil,spec[0])
+					spec.LineColor = ig.ImVec4(0,0,1,1)
+					ig.ImPlot_PlotLine("B",hb,bins,nil,nil,spec[0])
+					ig.ImPlot_EndPlot();
+				end
+			else
+				ig.Checkbox("automax",automaxval)
+				ig.SameLine()
+				if GL.SRGB then ig.Checkbox("showlinear",showlinear) end
+				-- ig.SameLine()
+				-- ig.SetNextItemWidth(100)
+				-- ig.SliderFloat("max", maxval, 0, 0.1, "%0.4f");
+				ig.SameLine()
+				if ig.Checkbox("rgb",rgb) then frame=11 end
+				
+				--ig.PlotLines("histo", histovalues, bins, 0, nil, 0,automaxval[0] and ig.FLT_MAX  or maxval[0], ig.ImVec2(-1,-1));
+				--print("histovalues",histovalues[0],histovalues[bins-1])
+				if automaxval[0] then ig.ImPlot_SetNextAxesToFit() end
+				local spec = ig.ImPlotSpec()
+				if ig.ImPlot_BeginPlot("histo", ig.ImVec2(-1,-1)) then
+					ig.ImPlot_SetupAxisLimitsConstraints(ig.lib.ImAxis_Y1,0, 1);
+					spec.LineColor = ig.ImVec4(1,1,1,1)
+					ig.ImPlot_PlotLine("L",histovalues,bins,nil,nil,spec[0])
+					ig.ImPlot_EndPlot();
+				end
+				
+			end
 		end
 		ig.End()
-	end, Histogram1
+	end
+
+	return hist, Histogram1
+
 end
 
 

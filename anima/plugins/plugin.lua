@@ -142,7 +142,7 @@ pl_mt.__index = {
 		fbo:Bind()
 		self:process(srctex,fbo.w,fbo.h)
 		fbo:UnBind()
-		fbo:tex():inc_signature()
+		--fbo:tex():inc_signature()
 	end,
 	process_tex = function(self,srctex)
 		local fbo = self.GL:get_fbo()
@@ -183,19 +183,35 @@ pl_mt.__index = {
 	end,
 	init = function(self) end,
 	IsDirty = function(self)
+		local function is_dbox_dirty(dbox)
+			if dbox.dirty then return true end
+			for i,D in ipairs(dbox.dialogs) do
+				if D.dirty or (D.plugin and D.plugin.always_dirty) then
+					return true
+				elseif D.isDBox and is_dbox_dirty(D) then
+					return true
+				end
+			end
+			return false
+		end
 		--print("IsDirty",self.NM.name,"isDBox",self.NM.isDBox,"dirty",self.NM.dirty)
 		if self.NM.isDBox then
+		--[[
 			if self.NM.dirty then return true end
 			for i,D in ipairs(self.NM.dialogs) do
 				--print("    testing",D.name,D.dirty)
 				if D.dirty or (D.plugin and D.plugin.always_dirty) then
-					--print("dbox test:",D.name,D.dirty)
+					print("dbox:",self.NM.name,D.name,D.dirty)
 					return true 
 				end
 			end
 			return false
+			--]]
+			return is_dbox_dirty(self.NM)
 		else
-			return self.NM.dirty or self.always_dirty
+			local ret = self.NM.dirty or self.always_dirty
+			--if ret then print("NM",self.NM.name,self.NM.dirty) end
+			return ret
 		end
 	end,
 	set_texsignature = function(plug,tex)

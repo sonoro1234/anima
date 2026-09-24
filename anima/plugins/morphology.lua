@@ -22,7 +22,7 @@ void main()
 			valmax = max(valmax,val);
 		}
 	}
-	gl_FragColor = vec4(vec3(valmax),1);
+	gl_FragColor = vec4(vec4(valmax));
 }
 
 ]]
@@ -49,7 +49,7 @@ void main()
 			valmin = min(valmin,val);
 		}
 	}
-	gl_FragColor = vec4(vec3(valmin),1);
+	gl_FragColor = vec4(vec4(valmin));
 }
 
 ]]
@@ -62,9 +62,9 @@ void main()
 {
 	float val = texelFetch(tex,ivec2(gl_FragCoord.xy),0).r - texelFetch(tex2,ivec2(gl_FragCoord.xy),0).r;
 	if(doneg){
-		gl_FragColor = vec4(vec3(1.0 - val),1);
+		gl_FragColor = vec4(vec4(1.0 - val));
 	}else{
-		gl_FragColor = vec4(vec3(val),1);
+		gl_FragColor = vec4(vec4(val));
 	}
 }
 

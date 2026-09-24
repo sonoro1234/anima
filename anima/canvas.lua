@@ -665,6 +665,7 @@ function GLcanvas(GL)
 		if self.plugins then
 		for i,p in ipairs(self.plugins) do
 			p.res = {W,H}
+			if p.Set_WH then p.Set_WH() end
 		end
 		end
 	end
@@ -1089,6 +1090,9 @@ function GLcanvas(GL)
 		
 		self:removeTextures()
 		
+		collectgarbage()
+		collectgarbage()
+		
 		--self.window:destroy()
 		sdl.destroyWindow(self.window)
 		sdl.quit()
@@ -1122,6 +1126,9 @@ function GLcanvas(GL)
 		if not GL.not_imgui then self.Impl:destroy() end
 		
 		self:removeTextures()
+		
+		collectgarbage()
+		collectgarbage()
 		
 		self.window:destroy()
 		
@@ -1198,7 +1205,7 @@ function GLcanvas(GL)
 		self.offX, self.offY, self.scale = 0, 0, 1
 	end
 	
-	GL.chktextures = {}
+	GL.chktextures = setmetatable({},{__mode="v"})
 	function GL:addTexture(n,info)
 		if(self.chktextures[n]) then
 			print("texture ",n,"already present",info)
@@ -1208,15 +1215,19 @@ function GLcanvas(GL)
 		self.chktextures[n] = info
 	end
 	function GL:removeTexture(n,info)
+
 		if not self.chktextures[n] then
 			print("texture",n,"not present",info) 
 			--print(debug.traceback())
-			prtable(GL.chktextures)
+			--prtable(GL.chktextures)
 			error("iii",2)
 		end
+		--local dinfo = debug.getinfo(2)
+		--print("removeTexture",n,self.chktextures[n],dinfo.source,dinfo.currentline)
 		self.chktextures[n] = nil
 	end
 	function GL:removeTextures()
+		--print("removeTextures=============")
 		local countremove = 0
 		
 		for k,v in pairs(self.chktextures) do
@@ -1225,7 +1236,7 @@ function GLcanvas(GL)
 			if v.delete then
 				v:delete()
 			else
-				print("removeTextures could not remove",k,v)
+				--print("removeTextures could not remove",k,v)
 			end
 			self.chktextures[k] = nil
 		end
@@ -1233,7 +1244,29 @@ function GLcanvas(GL)
 		for k,v in pairs(self.chktextures) do
 			print("not removed",k,v)
 		end
-		
+		--print("end removeTextures=============")
+	end
+	function GL:init_plugins()
+		local GL = self
+		if GL.plugins then
+			for i,v in ipairs(GL.plugins) do
+				if not v.inited then
+				print("call init on plugin",v.name)
+				if not v.init then
+					prtable(v.plug)
+				else
+					v:init()
+				end
+				--self.window:makeContextCurrent()
+				self:makeContextCurrent()
+				--self:postdraw()
+				io.write(string.format("plug %d\n",i))
+				--self.window:swapBuffers()
+				self:swapBuffers()
+				v.inited = true
+				end
+			end
+		end
 	end
 	local function doinitCOMMON(self)
 		--require"anima.GLSL"
@@ -1276,25 +1309,7 @@ function GLcanvas(GL)
 		
 		if not self.not_imgui then GuiInit(self) end
 		
-		if GL.plugins then
-			for i,v in ipairs(GL.plugins) do
-				if not v.inited then
-				print("call init on plugin",v.name)
-				if not v.init then
-					prtable(v.plug)
-				else
-					v:init()
-				end
-				--self.window:makeContextCurrent()
-				self:makeContextCurrent()
-				--self:postdraw()
-				io.write(string.format("plug %d\n",i))
-				--self.window:swapBuffers()
-				self:swapBuffers()
-				v.inited = true
-				end
-			end
-		end
+		GL:init_plugins()
 		
 		if GL.use_fbo then self:set_WH() end
 		
@@ -1441,6 +1456,8 @@ function GLcanvas(GL)
 	
 	--GL.plugins will be used for calling init , for DirtyWrap and set_WH (not really done: sets p.res)
 	function GL:add_plugin(plugin,name)
+		--local dinfo = debug.getinfo(2)
+		--print("GL:add_plugin",dinfo.source,dinfo.currentline)
 		if not plugin.name then plugin.name = name end
 		if self.in_init then
 			plugin:init()
@@ -1504,13 +1521,14 @@ function GLcanvas(GL)
 	---------
 	-- wraps plugins.process and process_fbo functions to be called only if is dirty
 	-- because changed NM values or new texture provided
-	function GL:DirtyWrap()
+	function GL:DirtyWrap(plug1)
 		self.dirty_wrapped = true
 		self.plugins = self.plugins or {}
-		for i,p in ipairs(self.plugins) do
-			print("GL:DirtyWrap",i,p,p.name)
+		local allplugs = plug1 and {plug1} or self.plugins
+		for i,p in ipairs(allplugs) do
+			print("GL:DirtyWrap",i,p,p.name,getmetatable(p))
 		end
-		for i,p in ipairs(self.plugins) do
+		for i,p in ipairs(allplugs) do
 			--if not p.NM.isDBox then
 			print("DirtyWrap",p,p.NM,p.NM and p.NM.name or "unman")
 			--prtable(p)
@@ -1529,6 +1547,7 @@ function GLcanvas(GL)
 			end
 			p.oldprocess_fbo = p.process_fbo
 			p.process_fbo = function(self,fbo,tex)
+				--print("process_fbo",self.name,self,self.camera)
 				self:set_texsignature(tex)
 				if self:IsDirty() then
 					--print("call process_fbo",self.NM.name)

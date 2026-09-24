@@ -6,6 +6,7 @@ local function Masked_fx(GL,fx)
 
 	local MM = plugin.new{res={GL.W,GL.H}}
 	local mask = require"anima.plugins.SplineEditorBlur"(GL)
+	MM.maskpl = mask
 	print("mask",mask)
 	local fbofx,fbomask,tex
 	local tproc
@@ -49,7 +50,7 @@ local function Masked_fx(GL,fx)
 		--fbofx = GL:get_fbo()
 		fx:process_fbo(fbofx,tex)
 		--fbomask = GL:get_fbo()
-		mask:process_fbo(fbomask)
+		mask:process_fbo(fbomask,tex)
 	
 		--ut.Clear()
 		--tproc:set_textures{tex,fbofx:tex(),fbomask:tex()}
@@ -62,30 +63,46 @@ local function Masked_fx(GL,fx)
 	return MM
 end
 
---[=[
+if not ... then
 
-local GL = GLcanvas{H=600,aspect=3/2}
+---[=[
+
+local GL = GLcanvas{H=600,aspect=3/2,use_log=true}
 
 --GL.use_presets = true
 --local fxx = require"anima.plugins.gaussianblur3"(GL)
 --local fxx = require"anima.plugins.liquid".make(GL)
 --local fxx = require"anima.plugins.photofx".make(GL)
 --local fxx = require"anima.plugins.LABfx".make(GL)
-local fxx = require"anima.plugins.LCHfx".make(GL)
+local fxx 
 --local fxx = require"anima.plugins.local_histogramStarkLab"(GL)
 
-local masked_ed,tex
+local masked_ed,tex, fbo1
 function GL.init()
-	tex = GL:Texture():Load[[c:\luagl\media\estanque3.jpg]]
+	--tex = GL:Texture():Load[[c:\luagl\media\estanque3.jpg]]
+	tex = GL:Texture():Load[[c:\luagl\media\estanque-001.jpg]]
+	GL:set_WH(tex.width, tex.height)
+	fxx = require"anima.plugins.LCHfx".make(GL)
 	masked_ed = Masked_fx(GL,fxx)
+	fbo1 = GL:initFBO()
 	GL:DirtyWrap()
 end
-
+function GL.imgui()
+ig.Begin"dirty tests"
+	ig.TextUnformatted("masked_ed:Is"..tostring(masked_ed:IsDirty()))
+	ig.TextUnformatted("masked_ed:"..tostring(masked_ed.NM.dirty))
+	ig.TextUnformatted("fxx:"..tostring(fxx.NM.dirty))
+	ig.TextUnformatted("maskpl:"..tostring(masked_ed.maskpl:IsDirty()).." dirty:"..tostring(masked_ed.maskpl.NM.dirty))
+ig.End()
+end
 function GL.draw(t,w,h)
 	--masked_ed.NM.dirty = true
-	masked_ed:process(tex)
+	--masked_ed:process(tex)
+	masked_ed:process_fbo(fbo1,tex)
+	fbo1:tex():drawcenter()
 end
 GL:start()
 --]=]
+end
 
 return Masked_fx

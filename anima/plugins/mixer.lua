@@ -36,7 +36,8 @@ local function mixer(GL,numtex,codestr)
 end
 
 ----------------------
---[=[
+if not ... then
+---[=[
 local GL = GLcanvas{H=700,aspect=1}
 
 local mmm = mixer(GL,3)
@@ -59,4 +60,6 @@ end
 
 GL:start()
 --]=]
+end
+
 return mixer

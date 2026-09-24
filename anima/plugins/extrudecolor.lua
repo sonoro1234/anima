@@ -99,11 +99,18 @@ function M.make(GL)
 {"extfac",0,guitypes.val,{min=-2,max=2}},
 })
 
-	local P = {}
+	local P = plugin.new{res={GL.W,GL.H},name="extrudecolor"}--plug.new(nil,GL)
+	P.name = "xmajhgdu"
+	assert(getmetatable(P))
 	P.camera = newCamera(GL,true,"extrude")
-	P.NM = NM 
+	local DBox = GL:DialogBox("extruder")
+	DBox:add_dialog(NM)
+	DBox:add_dialog(P.camera.NMC)
+	P.NM = DBox 
+	-- P.NM = NM
 	local first, count, primcount
 	function P:init()
+		--self = P
 		self.fbo = GL:initFBO()
 		
 		self.program = GLSL:new()
@@ -119,6 +126,36 @@ function M.make(GL)
 		--local extfac = ut.get_var(t.extfac,timev,NM.extfac)
 		local camara = ut.get_var(t.camara,timev,P.camera)
 		return clip,camara
+	end
+	function P:process(texture,w,h)
+		-- self.NM.dirty = self.NM.dirty or self.camera.NMC.dirty
+		-- print(self.NM.dirty, self.camera.NMC.dirty)
+		w,h = w or self.res[1], h or self.res[2]
+		if not self.inited then self:init() end
+
+		
+		local old_framebuffer = self.fbo:Bind()
+		texture:draw(tim, w, h)
+		
+		glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, old_framebuffer);
+		self.fbo:UseTexture()
+		
+		self.program:use()
+		self.program.unif.tex0:set{0}
+		self.program.unif.extfac:set{NM.extfac}
+		
+		local TM = mat.translate(0.5, 0.5, 0)
+		TM = TM * mat.scale(h/w,1,1)
+		self.program.unif.TM:set(TM.gl)
+		
+		gl.glClearColor(0.0, 0, 0, 0)
+		ut.Clear()
+
+		self.program.unif.MVP:set(self.camera:MVP().gl)
+		gl.glViewport(0,0,w,h)
+	
+		self.vao:multi_draw(glc.GL_TRIANGLE_STRIP, first, count, primcount)
+		
 	end
 	function P:draw(tim,w,h,args)
 		if not self.inited then self:init() end
@@ -157,21 +194,30 @@ function M.make(GL)
 		-- gl.glMatrixMode(glc.GL_TEXTURE);
 		-- gl.glPopMatrix()
 	end
-	GL:add_plugin(P)
+	GL:add_plugin(P,"extrudecolor")
+	assert(getmetatable(P))
+	print("extrudecolor returning plugin")
 	return P
 end
 
 ---[=[
 if not ... then
 GL = GLcanvas{H=1080,viewH=700,aspect=1.5,profile="CORE",DEBUG=false}
-ext = M.make(GL)
+local fbo
 function GL.init()
 	textura = GL:Texture():Load[[c:\luagl\pelis\hadas\master1080\leslie_giro1\frame-0001.tif]]
+	GL:set_WH(textura.width, textura.height)
+	ext = M.make(GL)
+	fbo = GL:initFBO()
+	GL:DirtyWrap()
 end
 
 function GL.draw(t,w,h)
 	--textura:draw(t,w,h)
-	ext:draw(t,w,h,{clip={textura}})
+	--ext:draw(t,w,h,{clip={textura}})
+	ext:process_fbo(fbo,textura,w,h)
+	ut.Clear()
+	fbo:tex():drawcenter()
 end
 
 GL:start()

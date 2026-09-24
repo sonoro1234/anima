@@ -1,8 +1,9 @@
 
 local vert_shad = [[
-#version 130
+
 ]]..require"anima.GLSL.GLSL_color"..[[
 in vec3 position;
+out vec4 color;
 uniform sampler2D tex0;
 uniform float nposbinsX;
 uniform float nposbinsY;
@@ -21,7 +22,7 @@ void main()
 
 	vec4 col = texelFetch(tex0, ivec2(position.xy), 0);
 	
-	float lum;
+	float lum = 0;
 	if (color_mode == 0)
 		lum = dot(col.rgb,lumin);
 	else if(color_mode == 1){
@@ -46,22 +47,22 @@ void main()
 	//posbin /=(posbins - 1.0);
 	posbin = (posbin + 0.5)/(posbins);
 	gl_Position = vec4((lum -0.5)*2.0,(posbin - 0.5)*2.0,0.0,1.0);
-	gl_FrontColor = vec4(1.0/(xwidth*ywidth),0.0,0.0,1.0);
+	color = vec4(1.0/(xwidth*ywidth),0.0,0.0,1.0);
 }
 
 ]]
 local frag_shad = [[
-#version 130
-
+in vec4 color;
+out vec4 fcolor;
 void main()
 {
-	gl_FragColor = gl_Color;
+	fcolor = color;
 }
 ]]
 
 local frag_finish = [[
 uniform sampler2D hist;
-
+out vec4 fcolor;
 void main()
 {
 	ivec2 sz = textureSize(hist, 0);
@@ -69,26 +70,30 @@ void main()
 	for(int i=0;i<sz.s;i++)
 		tot += texelFetch(hist,ivec2(i,gl_FragCoord.t),0).r;
 
-	gl_FragColor = texelFetch(hist,ivec2(gl_FragCoord.s,gl_FragCoord.t),0)/tot;
+	fcolor = texelFetch(hist,ivec2(gl_FragCoord.s,gl_FragCoord.t),0)/tot;
 }
 
 ]]
 local vert_histoshow = [[
-#version 130
+uniform mat4 MVP;
+in vec3 position;
+in vec2 texcoords;
+out vec4 tcoordf;
 void main(){
-	gl_TexCoord[0] = gl_MultiTexCoord0;
-	gl_Position = ftransform();
+	tcoordf = vec4(texcoords,0,1);
+	gl_Position = MVP*vec4(position,1);
 }
 ]]
 local frag_histoshow = [[
-#version 130
+in vec4 tcoordf;
 uniform sampler2D tex0,hist;
 uniform float nposbins;
 uniform float nbins;
 uniform float scale =100.0;
+out vec4 fcolor;
 void main(){
 	float hh;
-	vec2 pos = gl_TexCoord[0].st;
+	vec2 pos = tcoordf.st;
 	//ivec2 sz = textureSize(tex0, 0);
 	
 	//vec4 colh = texture2D(tex0,vec2(pos.s,0));
@@ -96,7 +101,7 @@ void main(){
 	//vec4 colh = texelFetch(tex0, ivec2(floor(pos.s*(nbins-1)),floor(pos.t*(nposbins-1))), 0);
 	vec4 colh = texelFetch(tex0, ivec2(floor(pos.s*(nbins)),floor(pos.t*(nposbins))), 0);
 	//vec4 colh = texelFetch(tex0, ivec2(floor(gl_FragCoord.x/WW*nbins),floor(glFragCoord.y/WH*nposbins)), 0);
-	gl_FragColor = colh*scale;//vec4(hh,0,0,1);//col;
+	fcolor = colh*scale;//vec4(hh,0,0,1);//col;
 }
 ]]
 
@@ -117,7 +122,7 @@ local frag_cum2 = [[
 uniform sampler2D hist;
 uniform float alfa;
 uniform float beta;
-
+out vec4 fcolor;
 float Q(float d,float alfa){
 	return 0.5*sign(d)*pow(abs(2*d),alfa);
 }
@@ -140,8 +145,8 @@ void main()
 	if(acum.r > 1.0){
 		acum = vec4(1.0,acum.r - 1.0,1.0,1);
 	}
-	gl_FragColor = acum;
-	//gl_FragColor = vec4(1.0); //texelFetch(hist,ivec2(gl_FragCoord.s,0),0);
+	fcolor = acum;
+	//fcolor = vec4(1.0); //texelFetch(hist,ivec2(gl_FragCoord.s,0),0);
 }
 
 ]]
@@ -149,6 +154,7 @@ void main()
 local frag_stdev = [[
 uniform sampler2D hist;
 uniform float nbins;
+out vec4 fcolor;
 void main()
 {
 	vec4 mean = vec4(0.0);
@@ -161,8 +167,8 @@ void main()
 	//if(acum.r > 1.0){
 	//	acum = vec4(1.0,acum.r - 1.0,1.0,1);
 	//}
-	gl_FragColor = vec4(stdev.r,mean.r,0,1);
-	//gl_FragColor = vec4(1.0); //texelFetch(hist,ivec2(gl_FragCoord.s,0),0);
+	fcolor = vec4(stdev.r,mean.r,0,1);
+	//fcolor = vec4(1.0); //texelFetch(hist,ivec2(gl_FragCoord.s,0),0);
 }
 
 ]]
@@ -236,6 +242,7 @@ vec3 labscale = vec3(1.0/100.0,1.0/115.0,1.0/115.0);
 //a* is -79 to 94, and the range of b* is -112 to 93
 vec3 laboffset = vec3(0.0,0.5,0.5);
 uniform int  color_mode = 0;
+out vec4 fcolor;
 void main()
 {
 	vec2 pos = texcoord_f;
@@ -243,8 +250,8 @@ void main()
 	ivec2 sz = textureSize(cumhist,0);
 	vec3 col = texture2D(tex0, pos).rgb;
 	
-	float lum;
-	vec3 colspace;
+	float lum = 0;
+	vec3 colspace = vec3(0);
 	if (color_mode == 0){
 		lum = dot(col.rgb,lumin);
 		colspace = col.rgb;
@@ -369,17 +376,20 @@ void main()
 		color = vec4(col,1.0);
 	}
 		
-	gl_FragColor =color ;//+ vec4( stdevcol.r*2);// color;//vec4(stdevcol.r,0,0,1); //color + stdevcol;
+	fcolor = color ;//+ vec4( stdevcol.r*2);// color;//vec4(stdevcol.r,0,0,1); //color + stdevcol;
 }
 
 ]]
 
 local mat = require"anima.matrixffi"
 local mesh = require"anima.mesh"
+
 local function DoQuad(w,h,prog)
-	if not prog.vao then
+	if not prog.vao or w~=prog.w or h~=prog.h then
+		print"====new quuad"
 		local m = mesh.quad(0,0,w,h)
 		prog.vao = m:vao(prog)
+		prog.w,prog.h = w,h
 	end
 	--assert(vao.count)
 	prog.vao:draw_elm()
@@ -434,6 +444,8 @@ local function SetSRGB(srgb)
 end
 
 local function Histogram(GL,nbins,maxposbins)
+	maxposbins = maxposbins or 4800 --+ 3000
+	nbins = nbins or 400
 
 	local plugin = require"anima.plugins.plugin"
 	local hist = plugin.new{res={GL.W,GL.H}}
@@ -450,7 +462,7 @@ local NMamp = GL:Dialog("stark local hist",
 {"facadd2",0,guitypes.val,{min=0,max=0.5}},
 {"black",0,guitypes.val,{min=0,max=1}},
 {"white",1,guitypes.val,{min=0,max=1}},
-{"saturation",1,guitypes.val,{min=0,max=2}},
+--{"saturation",1,guitypes.val,{min=0,max=2}},
 {"do_postprocess",1,guitypes.toggle},
 {"fac",1,guitypes.val,{min=0,max=1}},
 {"posbins",maxposbins-1000,guitypes.drag,{min=1,max=maxposbins}},
@@ -479,12 +491,14 @@ end},
 	local squareszdirty = false
 	function hist:init()
 		if inited then return end
+		if not programfx then
 		programfx = GLSL:new():compile(vert_shad,frag_shad)
 		programhistoshow = GLSL:new():compile(vert_histoshow,frag_histoshow)
 		pr_cum = GLSL:new():compile(vert_cum,frag_cum2)
 		pr_finish = GLSL:new():compile(vert_cum,frag_finish)
 		pr_stdev = GLSL:new():compile(vert_cum,frag_stdev)
 		pr_he = GLSL:new():compile(vert_he,frag_he)
+		end
 		fbohist = GL:initFBO({no_depth=true},nbins,maxposbins)
 		fbohist0 = GL:initFBO({no_depth=true},nbins,maxposbins)
 		inited = true
@@ -510,10 +524,12 @@ end},
 		self:stdev_calc()
 	end
 	function hist:set_texture(text,newmesh)
+		--print("==set_texture",text,textura)
+		--print("==set_texture",text.width,text.height,textura and textura.width,textura and textura.height,textura and text.width == textura.width, textura and text.height == textura.height)
 		squaresz = nil --setposbins will trigger calc
 		if not textura or newmesh or text.width ~= textura.width or text.height ~= textura.height then
 			-- creates a gl list for a basic quad GPGPU 
-			print"create new mesh"
+			print("==create new mesh",text.width,text.height)
 			if quad_list then quad_list:delete() end
 			quad_list = DoMESH(text.width, text.height,programfx);
 		end
@@ -689,7 +705,7 @@ end},
 		pr_he.unif.ampR:set{args.ampR}
 		pr_he.unif.black:set{args.black}
 		pr_he.unif.white:set{args.white}
-		pr_he.unif.saturation:set{args.saturation}
+		--pr_he.unif.saturation:set{args.saturation}
 		pr_he.unif.color_mode:set{NMamp.color_mode}
 		--SetSRGB(srgb)
 		pr_he.unif.MVP:set(mat.ortho(0.0, 1, 0.0, posbins, -1, 1).gl)
@@ -703,13 +719,25 @@ end},
 		if not texsign or texsign~=srctex:get_signature() then
 			self:set_texture(srctex)
 			texsign = srctex:get_signature()
+			print("hist",texsign)
+			hist:setposbins()
 		end
-		hist:setposbins()
+		--hist:setposbins()
 		hist:HEq(argos)
 		--gl.glEnable(glc.GL_DEPTH_TEST);
 	end
 	GL:add_plugin(hist,"lhistStarkLab")
 	return hist
+end
+
+if not ... then
+require"anima"
+local he
+local GL = GLcanvas{H=800,aspect=1,profile="CORE"}
+function GL.init()
+	he = Histogram(GL)
+end
+GL:start()
 end
 
 return Histogram

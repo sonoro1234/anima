@@ -54,7 +54,7 @@ function mixer(GL,ntex,NM)
 		local m = mesh.quad()
 		M.vao = VAO({Position=m.points,texcoords = m.texcoords},self.program,m.indexes)
 	end
-	
+	--[[
 	local texsignatures = {}
 	function M:set_textures(t)
 		assert(#t == ntex)
@@ -66,8 +66,9 @@ function mixer(GL,ntex,NM)
 			-- end
 		-- end
 	end
-
+	--]]
 	function M:process(texs,w,h)
+		--print"doing"
 		gl.glDisable(glc.GL_DEPTH_TEST)
 		assert(#texs == ntex,"number of textures failing!!")
 		self.tex = texs
@@ -95,12 +96,15 @@ end
 
 ---[=[
 if not ... then
-GL = GLcanvas{H=900,aspect=1.5,SDL=true}
-NM = GL:Dialog("pp",{
+local GL = GLcanvas{H=900,aspect=1.5,SDL=false, use_log=true}
+local NM = GL:Dialog("pp",{
 {"alpha",0,guitypes.val,{min=0,max=1}},
 })
-pp = mixer(GL,2,NM)
-
+local pp = mixer(GL,2,NM)
+local NM2 = GL:Dialog("pp2",{
+{"col",0,guitypes.val,{min=0,max=1}},
+})
+local fbo,fbo2
 function GL.init()
 	print_glinfo(GL)
 	tex = GL:Texture():Load[[c:\luagl/media/estanque-001.jpg]]
@@ -109,10 +113,28 @@ function GL.init()
 		return mix(c1,c2,alpha);
 	}
 	]]
+	fbo = GL:initFBO()
+	fbo2 = GL:initFBO()
+	GL:DirtyWrap()
 end
 function GL.draw(t,w,h)
+	---[==[
+	--dirty wrap test
+	fbo2:Bind()
+	gl.glClearColor(NM2.col,1,0,1)
 	ut.Clear()
-	pp:process({tex,tex2})
+	fbo2:UnBind()
+	if NM2.dirty then
+	fbo2:tex():inc_signature()
+	NM2.dirty = false
+	end
+	pp:process_fbo(fbo,{fbo2:tex(),tex2})
+	fbo:tex():draw(0,w,h)
+	do return end
+	--]==]
+	
+	pp:process_fbo(fbo,{tex,tex2})
+	fbo:tex():draw(0,w,h)
 end
 
 GL:start()

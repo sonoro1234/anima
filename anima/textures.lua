@@ -2,7 +2,9 @@ local imffi = im.imffi
 
 local function set_table__gc(t, func)
 	local prox = newproxy(true)
-	getmetatable(prox).__gc = function() func(t) end
+	getmetatable(prox).__gc = function() 
+								--print("_gc texture",t,t.width,t.height,t.filename);
+								func(t) end
 	t.gcproxy = prox
 	return t --setmetatable(t, mt)
 end
@@ -725,11 +727,12 @@ local function make_tex_greyprog()
 	uniform sampler2D tex0;
 	uniform vec4 mask = vec4( 0.30, 0.59, 0.11,0.0);
 	in vec2 texcoordf;
+	out vec4 fcolor;
 	void main()
 	{
 		vec4 color = texture2D(tex0,texcoordf);
 		float lum = dot(color,mask);
-		gl_FragColor = vec4(vec3(lum),color.a);
+		fcolor = vec4(vec3(lum),color.a);
 	}
 	]]
 	
@@ -1008,7 +1011,7 @@ function Texture(w,h,formato,pTexor,args)
 		--assert(not self.isdeleted)
 		--print("tex:delete isdeleted", self.isdeleted,"contex good",GL:checkcontext(),"tex:",self.tex,self)
 		--prtable("tex:delete from", debug.getinfo(4,"Sl"))
-		--print"tex:delete"
+		--print("--tex:delete", tex, tex.filename)
 		if self.GL.chktextures[self.pTex[0]] then
 		gl.glDeleteTextures(1,tex.pTex) 
 		self.GL:removeTexture(tex.pTex[0])
@@ -1057,7 +1060,8 @@ function Texture(w,h,formato,pTexor,args)
 		return self
 	end
 	function tex:Load(filename,srgb,mipmaps)
-		srgb = srgb or (self.GL and self.GL.SRGB)
+		srgb = srgb==nil and (self.GL and self.GL.SRGB) or srgb
+		--print("Load srgb",srgb)
 		mipmaps = mipmaps or (self.GL and self.GL.mipmaps)
 		if self.GL and self.GL.loaded_files then
 			self.GL.loaded_files[filename] = true
@@ -1126,6 +1130,7 @@ function Texture(w,h,formato,pTexor,args)
 		gl.glBindTexture(glc.GL_TEXTURE_2D, self.tex)
 		--gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_WRAP_S, modewrap); 
 		--gl.glTexParameteri(glc.GL_TEXTURE_2D, glc.GL_TEXTURE_WRAP_T, modewrap);
+		return self
 	end
 
 	function tex:set_aniso(val)
@@ -1415,7 +1420,26 @@ function Texture(w,h,formato,pTexor,args)
 		local counts = {}
 		local data = self:get_pixels(glc.GL_FLOAT,glc.GL_RGB)
 		local pd = vicim.pixel_data(data,tex.width,tex.height,3)
-	
+		
+		local t1 = secs_now()
+		--[[
+		for np=0,pd.npix-1 do
+			local found = false
+			local pix = pd:lpix(np)
+			for i,c in ipairs(colors) do
+				if blob.compare_color(pix,c) then
+					found = true
+					counts[i] = counts[i] + 1
+					break
+				end
+			end
+			if not found then
+				colors[#colors+1] = ffi.new("float[3]",{pix[0],pix[1],pix[2]})
+				counts[#counts+1] = 1
+			end
+		end
+		--]]
+		---[[
 		for i,j,pix in pd:iterator() do
 			local found = false
 			for i,c in ipairs(colors) do
@@ -1430,6 +1454,9 @@ function Texture(w,h,formato,pTexor,args)
 				counts[#counts+1] = 1
 			end
 		end
+		--]]
+		
+		print("colors_table time", secs_now()-t1)
 		return colors, counts
 	end
 	function tex:inc_signature()
@@ -1437,7 +1464,7 @@ function Texture(w,h,formato,pTexor,args)
 		return self
 	end
 	function tex:get_signature()
-		return tostring(self)..self.instance
+		return tostring(self).."_"..self.instance
 	end
 	set_table__gc(tex,function(t) t:delete() end)
 	return tex

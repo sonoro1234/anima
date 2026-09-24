@@ -542,6 +542,8 @@ local function SetSRGB(srgb)
 end
 
 local function Histogram(GL,nbins,maxposbins)
+	maxposbins = maxposbins or 4800 --+ 3000
+	nbins = nbins or 400
 
 	local plugin = require"anima.plugins.plugin"
 	local hist = plugin.new{res={GL.W,GL.H}}
@@ -590,7 +592,8 @@ end},
 	local squaresz
 	local squareszdirty = false
 	function hist:init()
-		if inited then return end
+		--if inited then return end
+		if not programfx then
 		programfx = GLSL:new():compile(vert_shad,frag_shad)
 		programhistoshow = GLSL:new():compile(vert_histoshow,frag_histoshow)
 		pr_tex_show = GLSL:new():compile(vert_texshow,frag_texshow)
@@ -598,6 +601,7 @@ end},
 		pr_finish = GLSL:new():compile(vert_cum,frag_finish)
 		pr_stdev = GLSL:new():compile(vert_cum,frag_stdev)
 		pr_he = GLSL:new():compile(vert_he,frag_he)
+		end
 		fbohist = GL:initFBO({no_depth=true},nbins,maxposbins)
 		fbohist0 = GL:initFBO({no_depth=true},nbins,maxposbins)
 		inited = true

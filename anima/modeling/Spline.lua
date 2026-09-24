@@ -33,8 +33,10 @@ local function Editor(GL,updatefunc1,args)
 	M.alpha = {}
 	M.divs = {}
 	local action = 1
+	
 	--local updatefunc = updatefunc or function() end
 	local updatefunc = function(E,...)
+		M.NM.dirty = true
 			if updatefunc1 then updatefunc1(E, ...) end
 	end
 	
@@ -464,7 +466,9 @@ local contours_loader = gui.FileBrowser(nil,{filename="phfx",key="importcont",pa
 		ii = ii or NM.curr_spline
 		
 		local points = self.ps[ii]
-		if not points then print"No Spline:select spline" return end
+		if not points then 
+			--print"No Spline:select spline" 
+		return end
 		
 		--local points,indexes = CG.EarClipSimple2(points, true)
 		
@@ -759,13 +763,15 @@ local contours_loader = gui.FileBrowser(nil,{filename="phfx",key="importcont",pa
 		NM.vars.curr_spline[0] = 1
 		M:calc_all_splines()
 	end
-	M.draw = function() end --dummy value for plugin
+	M.draw = function() 
+		--M:spline2mask(maskfbo,{1,0,0,0},1) 
+	end --dummy value for plugin
 	--M:clearshape()
 	GL:add_plugin(M,"spliner")
 	return M
 end
 
----[=[
+--[=[
 if not ... then
 local GL = GLcanvas{H=900,aspect=1,DEBUG=true,use_imgui_viewport=false}
 local function update(n) end --print("update spline",n) end
@@ -784,9 +790,9 @@ GL:start()
 end
 --]=]
 
---[=[
+---[=[
 if not ... then
-local GL = GLcanvas{H=900,aspect=1,DEBUG=true,use_imgui_viewport=false}
+local GL = GLcanvas{H=900,aspect=1,use_log=true,use_imgui_viewport=false}
 local function update(n) end --print("update spline",n) end
 local edit = Editor(GL,update,{region=true})--,doblend=true})
 local plugin = require"anima.plugins.plugin"
@@ -796,18 +802,30 @@ local maskfbo
 function GL.init()
 	DBox:add_dialog(edit.NM)
 	maskfbo = GL:initFBO({no_depth=true})
+	GL:DirtyWrap()
 end
 function GL.imgui()
 	--ig.ShowDemoWindow()
 	--edit.NM:draw()
+	ig.TextUnformatted("edit:"..tostring(edit.NM.dirty))
+	ig.TextUnformatted("edit:"..tostring(edit:IsDirty()))
 end
 function GL.draw()
-	maskfbo:Bind()
+	-- maskfbo:Bind()
+	-- gl.glClearColor(0,0,1,0)
+	-- ut.Clear()
+	-- maskfbo:UnBind()
+	if edit.NM.dirty then
+		maskfbo:Bind()
 	gl.glClearColor(0,0,1,0)
 	ut.Clear()
 	maskfbo:UnBind()
-	edit:spline2mask(maskfbo,{1,0,0,0},1)
-	ut.Clear()
+	for i=1,edit:get_numsplines() do
+		edit:spline2mask(maskfbo,{1,0,0,0},i)
+	end
+	edit.NM.dirty = false
+	end
+	--ut.Clear()
 	maskfbo:tex():drawcenter()
 end
 GL:start()

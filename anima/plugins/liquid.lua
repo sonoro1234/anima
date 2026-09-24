@@ -69,6 +69,9 @@ function M.make(GL)
 	local LM = plugin.new{res={GL.W,GL.H},NM=NM}
 	local fbo, programfx
 	local lapse,oldtime,lapsesum = 0,0,0
+	function LM.Set_WH()
+		fbo = GL:initFBO()
+	end
 	function LM.init()
 		--if not GL.PPFBO then GL:init_PPFBO() end
 		fbo = GL:initFBO()
@@ -77,6 +80,7 @@ function M.make(GL)
 		LM.vao = VAO({Position=m.points,texcoords = m.texcoords},programfx,m.indexes)
 		LM.inited = true
 	end
+	
 	
 	local function get_args(t, timev)
 		local clip = t.clip

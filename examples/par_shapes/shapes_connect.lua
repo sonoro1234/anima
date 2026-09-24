@@ -148,7 +148,7 @@ function GL.init()
     camara.NMC.vars.ycamL[0]=-0.294
     
     -- set imgui dialog
-    NM = GL:Dialog("specular",{
+    NM = GL:Dialog("ilumination",{
 {"brightness",73,guitypes.val,{min=0,max=100}},
 {"specular",0.5,guitypes.val,{min=0,max=1}},
 {"ambient",0,guitypes.val,{min=0,max=0.1}},
@@ -161,8 +161,19 @@ function GL.init()
 
 end
 
+function GL.imgui()
+	if ig.Button("SRGB") then
+		GL.SRGB = not GL.SRGB
+	end
+	ig.TextUnformatted(string.format("%s",GL.SRGB))
+end
 
 function GL.draw(t,w,h)
+	gl.glClearColor(0.05, 0.05,0.05,1)
+	--gl.glClear()
+	ut.Clear()
+end
+function GL.drawMO(t,w,h)
 
     gl.glViewport(0,0,w,h)
 

@@ -10,7 +10,7 @@ local frag_findcenter = [[
 uniform sampler2D tex;
 uniform sampler2D texcenters;
 uniform int K=16;
-
+out vec4 fcolor;
 void main(){
 
 	vec3 color = texelFetch(tex,ivec2(gl_FragCoord.st),0).rgb;
@@ -24,7 +24,7 @@ void main(){
 			minK = i;
 		}
 	}
-	gl_FragColor = vec4(color,minK);
+	fcolor = vec4(color,minK);
 }
 
 ]]
@@ -33,7 +33,7 @@ local frag_findcenter_apply = [[
 uniform sampler2D tex;
 uniform sampler2D texcenters;
 uniform int K=16;
-
+out vec4 fcolor;
 void main(){
 
 	vec3 color = texelFetch(tex,ivec2(gl_FragCoord.st),0).rgb;
@@ -51,7 +51,7 @@ void main(){
 			minK = i;
 		}
 	}
-	gl_FragColor = vec4(mincentercolor,minK);
+	fcolor = vec4(mincentercolor,minK);
 }
 
 ]]
@@ -59,11 +59,11 @@ void main(){
 local frag_showcol=[[
 uniform sampler2D tex;
 uniform sampler2D texcenters;
-
+out vec4 fcolor;
 void main(){
 	vec4 color = texelFetch(tex,ivec2(gl_FragCoord.st),0);
 	vec4 colorquant = texelFetch(texcenters,ivec2(color.a,0),0);
-	gl_FragColor = colorquant;
+	fcolor = colorquant;
 }
 
 ]]
@@ -88,12 +88,13 @@ void main()
 local frag_updatecenters=[[
 in float centerind;
 in vec4 center;
+out vec4 fcolor;
 void main()
 {
 	/*if(centerind==2){
 		discard;
 	}else*/
-		gl_FragColor = center;
+		fcolor = center;
 }
 ]]
 
@@ -118,8 +119,9 @@ void main()
 
 local frag_loss=[[
 in vec4 dist;
+out vec4 fcolor;
 void main(){
-	gl_FragColor = dist;
+	fcolor = dist;
 }
 ]]
 
@@ -127,6 +129,7 @@ local frag_tolab = require"anima.GLSL.GLSL_color"..[[
 uniform sampler2D tex;
 uniform float Lfac;
 const float fac = 1.0/216.0; //-107.8 is maximum value
+out vec4 fcolor;
 void main()
 {
 	vec4 color = texelFetch(tex,ivec2(gl_FragCoord.st),0);
@@ -136,7 +139,7 @@ void main()
 	colorlab += vec3(0.0,0.5,0.5);
 	//colorlab = clamp(colorlab,vec3(0.0),vec3(1.0));
 	color = vec4(colorlab,color.a);
-	gl_FragColor = color;
+	fcolor = color;
 }
 ]]
 
@@ -144,6 +147,7 @@ local frag_fromlab = require"anima.GLSL.GLSL_color"..[[
 uniform sampler2D tex;
 uniform float Lfac;
 const float fac = 216.0;
+out vec4 fcolor;
 void main()
 {
 	vec4 colorlab = texelFetch(tex,ivec2(gl_FragCoord.st),0);
@@ -152,7 +156,7 @@ void main()
 	colorlab3 *= vec3(fac/Lfac,fac,fac);
 	vec3 color = RGB2sRGB(XYZ2RGB(LAB2XYZ(colorlab3,D65)));
 	//color = clamp(color,vec3(0.0),vec3(1.0));
-	gl_FragColor = vec4(color,colorlab.a);
+	fcolor = vec4(color,colorlab.a);
 }
 ]]
 
@@ -167,7 +171,7 @@ local function ColorKmeans(GL,K)
 {"th",3,guitypes.valint,{min=1,max=9}},
 --{"randominit",false,guitypes.toggle},
 {"maxiters",100,guitypes.valint,{min=50,max=200}},
-{"Lab",false,guitypes.toggle},
+{"Lab",true,guitypes.toggle},
 {"Lfac",1,guitypes.val,{min=1e-3,max=20}},
 
 })
@@ -352,8 +356,9 @@ local function ColorKmeans(GL,K)
 		
 		programupdatecenters.vaos = nil
 		DoMESH(texr.width,texr.height,programupdatecenters);
-		programloss.vaos = nil
-		DoMESH(texr.width,texr.height,programloss)
+		-- programloss.vaos = nil
+		-- DoMESH(texr.width,texr.height,programloss)
+		programloss.vaos = programupdatecenters.vaos
 		
 		self:setK()
 		self.texr = texr
@@ -629,24 +634,34 @@ local function ColorKmeans(GL,K)
 	end
 	local oldtexsignature
 	local algo = require"anima.algorithm.algorithm"
-	function M:process(texture)
-		
+	function M:process1(texture)
 		if not oldtexsignature or oldtexsignature~=texture:get_signature() then
+			print("============= ColorKmeans process1 colors_table==========================")
 			oldtexsignature=texture:get_signature()
-			local texr = texture:resample_fac(0.1, texture.resample_nearest)
+			local fac = math.min( math.sqrt(10000/(texture.width*texture.height)),1)
+			local texr = texture:resample_fac(fac, texture.resample_nearest)
+			print("fac",fac)
+			print("============= ColorKmeans process1 resample done==========================",texr.width*texr.height)
 			--limit maxim K to number of colors
 			M.colors_table, M.colors_count = texr:colors_table()
+			print("============= ColorKmeans process1 colors_table done==========================")
 			NM.vars.K[0] = math.min(NM.K, #M.colors_table)
 			NM.defs.K.args.max = NM.K
 			print("colors",#M.colors_table)
 			algo.quicksort_mirror(M.colors_count, M.colors_table, 1, #M.colors_count, function(a,b) return a>b end)
+			print("============= ColorKmeans process1 colors_table sorted==========================")
 			--prtable(M.colors_count)
 			self:set_texture(texr)
+			print("============= ColorKmeans process1 end  colors_table ==========================")
 		end
 		self:kmeans(M.colors_table)
 		self.texx = self:apply()
 		self.centerstex = self:getcenters()
 		self.texturax = self:find_apply(texture)
+	end
+	function M:process(textur,w,h)
+		self:process1(textur)
+		self.texturax:drawcenter(w,h)
 	end
 	function M:getcenters()
 		if NM.Lab then
@@ -675,6 +690,7 @@ local Dbox = GL:DialogBox()
 Dbox:add_dialog(NM)
 Dbox:add_dialog(ColorK.NM)
 local fileName = [[C:\LuaGL\frames_anima\edges_detection\flowers2.png]]
+fileName = [[C:\LuaGL\media\estanque8.jpg]]
 --local fileName = [[C:\LuaGL\frames_anima\edges_detection\bici.png]]
 --local fileName = [[C:\LuaGL\frames_anima\vectorize\dummy_color.tif]]
 --local fileName = [[C:\LuaGL\frames_anima\vectorize\dummy.png]]

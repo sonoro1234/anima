@@ -6,9 +6,10 @@
 local vert_shad = [[
 in vec3 Position;
 in vec2 texcoords;
+out vec4 tcoordf;
 void main()
 {
-	gl_TexCoord[0] = vec4(texcoords,0,1);
+	tcoordf = vec4(texcoords,0,1);
 	gl_Position = vec4(Position,1);
 }
 ]]
@@ -30,14 +31,16 @@ float offset = 1.0 / (2.0 * lutSize);
 const vec3 labscale = vec3(1.0/100.0,1.0/115.0,1.0/115.0);
 //a* is -79 to 94, and the range of b* is -112 to 93
 const vec3 laboffset = vec3(0.0,0.5,0.5);
+out vec4 fcolor;
+in vec4 tcoordf;
 void main()
 {
-	vec4 tcolor = texture2D(tex0,gl_TexCoord[0].st);
+	vec4 tcolor = texture2D(tex0,tcoordf.st);
 	
 	if (bypass){
 		if(usealpha)
 			tcolor.a = 1.0;
-		gl_FragColor = tcolor;
+		fcolor = tcolor;
 		return;
 	}
 	
@@ -50,9 +53,9 @@ void main()
 
 	collab = collab*labscale + laboffset;
 	
-	collab.x = texture1D(LUTx,collab.x*scale + offset).r;
-	collab.y = texture1D(LUTy,collab.y*scale + offset).r;
-	collab.z = texture1D(LUTz,collab.z*scale + offset).r;
+	collab.x = texture(LUTx,collab.x*scale + offset).r;
+	collab.y = texture(LUTy,collab.y*scale + offset).r;
+	collab.z = texture(LUTz,collab.z*scale + offset).r;
 	
 	collab = (collab - laboffset)/labscale;
 	
@@ -63,9 +66,9 @@ void main()
 	if(invert)
 		tcolor.a = 1.0 - tcolor.a;
 	if(usealpha)
-		gl_FragColor = mix(vec4(tcolor.rgb,1.0),vec4(color,1.0),tcolor.a);
+		fcolor = mix(vec4(tcolor.rgb,1.0),vec4(color,1.0),tcolor.a);
 	else
-		gl_FragColor = vec4(color,tcolor.a);
+		fcolor = vec4(color,tcolor.a);
 }
 ]]
 
@@ -160,17 +163,19 @@ function M.photofx(GL,args)
 			Luts[curr_curve]:set_data(cuus[curr_curve].LUT, glc.GL_RED)
 			NM.dirty = true
 		end
+		if ig.CollapsingHeader("whitepoint") then
 		if gui.pad("colorp",whitepoint) then 
-				cuus[3]:setpoints({[0]={x=0,y=0},{x=0.5,y= whitepoint[1]*0.5*0.5 + 0.5},{x=1,y=1}})
-				cuus[2]:setpoints({[0]={x=0,y=0},{x=0.5,y= whitepoint[0]*0.5*0.5 + 0.5},{x=1,y=1}})
-				cuus[1]:get_data()
-				cuus[2]:get_data()
-				cuus[3]:get_data()
-				LUTx:set_data(cuus[1].LUT, glc.GL_RED)
-				LUTy:set_data(cuus[2].LUT, glc.GL_RED)
-				LUTz:set_data(cuus[3].LUT, glc.GL_RED)
-				NM.dirty = true 
-			end
+			cuus[3]:setpoints({[0]={x=0,y=0},{x=0.5,y= whitepoint[1]*0.5*0.5 + 0.5},{x=1,y=1}})
+			cuus[2]:setpoints({[0]={x=0,y=0},{x=0.5,y= whitepoint[0]*0.5*0.5 + 0.5},{x=1,y=1}})
+			cuus[1]:get_data()
+			cuus[2]:get_data()
+			cuus[3]:get_data()
+			LUTx:set_data(cuus[1].LUT, glc.GL_RED)
+			LUTy:set_data(cuus[2].LUT, glc.GL_RED)
+			LUTz:set_data(cuus[3].LUT, glc.GL_RED)
+			NM.dirty = true 
+		end
+		end
 
 		fB.draw()
 		presets.draw()
@@ -178,7 +183,7 @@ function M.photofx(GL,args)
 	LM.NM = NM
 	NM.plugin = LM
 	function LM.init()
-	
+		if LM.inited then return end
 		programfx = GLSL:new():compile(vert_shad,frag_shad)
 		
 		cuus[1]:get_data()
@@ -270,13 +275,20 @@ M.make = M.photofx
 if not ... then
 ---[=[
 require"anima"
-local GL = GLcanvas{H=800,aspect=3/2}
+local GL = GLcanvas{H=800,aspect=3/2,profile="CORE",SRGB=false, use_log= true}
 local tex,slab,lch
-local Hist = gui.Histogram(GL,2^8)
+--local Hist = gui.Histogram(GL,2^5,true)
 function GL:imgui()
-	Hist()
+	if ig.Button("SRGB") then
+		GL.SRGB = not GL.SRGB
+		tex:Load(tex.filename)
+	end
+	ig.TextUnformatted(string.format("%s",GL.SRGB))
+	--Hist()
 end
 function GL.init()
+	--tex = GL:Texture():Load([[C:\LuaGL\frames_anima\pelis\humanoides_peli\compressed1080\ninos\ninos-001.cmp]])
+	--tex = GL:Texture():Load([[C:\LuaGL\media\BWramp.png]])
 	tex = GL:Texture():Load[[c:\luagl\media\estanque3.jpg]]
 	--slab = tex:make_slab()
 	GL:set_WH(tex.width,tex.height)

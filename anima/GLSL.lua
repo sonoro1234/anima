@@ -46,7 +46,9 @@ local t =
 
 local function set_table__gc(t, func)
 	local prox = newproxy(true)
-	getmetatable(prox).__gc = function() func(t) end
+	getmetatable(prox).__gc = function()  
+						-- print("_gc fbo",t);
+						func(t) end
 	t.gcproxy = prox
 	return t --setmetatable(t, mt)
 end
@@ -774,7 +776,7 @@ function initFBO(wFBO,hFBO,args)
 		end
 		if self.depth_rb and not depth_tex then
 			gl.glDeleteTextures(1, thefbo.depth_rb) 
-			self.GL:removeTexture(thefbo.depth_rb[0])
+			self.GL:removeTexture(thefbo.depth_rb[0],"depth_rb")
 		end
 		
 		--avoid _gc after manual delete
@@ -802,6 +804,7 @@ function MakeSlab(w,h,args,GL)
 	local slab = {isSlab=true}
 	slab.ping = GL:initFBO(args,w,h)
 	slab.pong = GL:initFBO(args,w,h)
+	local initping, initpong = slab.ping, slab.pong
 	function slab:swapt()
 		self.ping,self.pong = self.pong,self.ping
 	end
@@ -814,6 +817,9 @@ function MakeSlab(w,h,args,GL)
 	end
 	function slab:tex()
 		return slab.ping:tex()
+	end
+	function slab:init()
+		slab.ping, slab.pong = initping, initpong
 	end
 	return slab
 end

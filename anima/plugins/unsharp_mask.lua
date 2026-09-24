@@ -12,14 +12,18 @@ local function make(GL)
 	local blur = require"anima.plugins.gaussianblur3"(GL)
 	--blur3.NM.invisible = true
 	
-	local DBox = GL:DialogBox("um",true) --autosaved
+	local DBox = GL:DialogBox("u_mask",true) --autosaved
 	DBox:add_dialog(blur.NM)
 	DBox:add_dialog(texproc.NM)
 
 	M.NM = DBox
 	
 	local fbo
+	function M:Set_WH()
+		fbo = GL:initFBO({no_depth=true})
+	end
 	function M:init()
+		--blur:init()
 		fbo = GL:initFBO({no_depth=true})
 		texproc:set_process[[
 		vec4 process(vec2 pos){
@@ -44,13 +48,14 @@ GL = GLcanvas{H=600,aspect=1.5}
 local tex,um
 function GL:init()
 	tex = GL:Texture():Load[[c:\luagl/media/estanque-001.jpg]]
-	tex = tex:resample(GL.W,GL.H)
+	GL:set_WH(tex.width,tex.height)
+	--tex = tex:resample(GL.W,GL.H)
 	um = make(GL)
 	GL:DirtyWrap()
 end
-local Hist = gui.Histogram(GL,256)
+--local Hist = gui.Histogram(GL,256)
 function GL:imgui()
-	Hist()
+	--Hist()
 end
 function GL.draw(t,w,h)
 	--tex:inc_signature()

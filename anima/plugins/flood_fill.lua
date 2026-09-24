@@ -66,7 +66,8 @@ local function flood_fill_scanline(pd,pd2,x1,x2,y,th)
 	end
 	
 end
-local function flood_fill_queue(pd,pd2,x,y,th)
+
+local function flood_fill_queue(pd,pd2,x,y,th, toyield_t, fr_t)
 	local function Cond(x,y)
 		return pd2:pix(x,y)[0]~=1 and pd:pix(x,y)[0] <= th 
 	end
@@ -78,19 +79,29 @@ local function flood_fill_queue(pd,pd2,x,y,th)
 			local n = table.remove(Q)--,1)
 			if n.x > 0 and Cond(n.x-1,n.y) then
 				pd2:pix(n.x-1,n.y)[0] = 1
+				pd2:pix(n.x-1,n.y)[3] = 0.5
 				table.insert(Q,{x=n.x-1, y=n.y})
 			end
 			if n.x < pd.w-1 and Cond(n.x+1,n.y) then
 				pd2:pix(n.x+1,n.y)[0] = 1
+				pd2:pix(n.x+1,n.y)[3] = 0.5
 				table.insert(Q,{x=n.x+1,y=n.y})
 			end
 			if n.y > 0 and Cond(n.x,n.y-1) then
 				pd2:pix(n.x,n.y-1)[0] = 1
+				pd2:pix(n.x,n.y-1)[3] = 0.5
 				table.insert(Q,{x=n.x,y=n.y-1})
 			end
 			if n.y < pd.h-1 and Cond(n.x,n.y+1) then
 				pd2:pix(n.x,n.y+1)[0] = 1
+				pd2:pix(n.x,n.y+1)[3] = 0.5
 				table.insert(Q,{x=n.x,y=n.y+1})
+			end
+			
+			if (secs_now() - toyield_t) >= fr_t then
+				local co,is_main = coroutine.running()
+				if not is_main then print("yield");coroutine.yield(pd2) end
+				toyield_t = secs_now()
 			end
 		end
 
@@ -179,35 +190,14 @@ local function flood_fill_scanline_queue(pd,pd2,ix1,ix2,iy,th)
 	end --Q
 end
 
-local function flood_fill(pd,pd2,X,Y,threshold)
+local function flood_fill(pd,pd2,X,Y,threshold, toyield_t, fr_t)
 	--return flood_fill_scanline_queue(pd,pd2,X,X,Y,threshold) --0.9
 	--return flood_fill_scanline(pd,pd2,X,X,Y,threshold) --stack overflow
-	return flood_fill_queue(pd,pd2,X,Y,threshold) --0.25
+	return flood_fill_queue(pd,pd2,X,Y,threshold, toyield_t, fr_t) --0.25
 	--return flood_fill_recurse(pd,pd2,X,Y,threshold) -- stack overflow
 end
 
-local function Flood_fill(tex,tex2,point,threshold)
-	local ini_ti = secs_now()
-	local X,Y = math.floor(point[0]+0.5),math.floor(point[1]+0.5)
-	local data = tex:get_pixels(glc.GL_FLOAT,glc.GL_RED)
-	--print("tex dims",tex.width,tex.height)
-	local pd = vicim.pixel_data(data,tex.width,tex.height,1)
-	local pd2 = vicim.pixel_data(nil,pd.w, pd.h, 4)
-	
-	threshold = threshold or pd:get_pix(X,Y)[0]
-	--print("pd:get_pix(X,Y)[0]",pd:get_pix(X,Y)[0])
-	--assert(pd:get_pix(X,Y)[0]==0)
-	flood_fill(pd,pd2,X,Y,threshold)
-	
-	--set alpha 0.5 for R > 0
-	for i,j,pix in pd2:iterator() do
-		if pix[0]>0 then pix[3] = 0.5 end
-	end
-	
-	tex2:set_data(pd2.data, 4, 4)
-	print("flood_fill time",secs_now()-ini_ti)
-	return pd2
-end
+
 
 local vert_coldist=[[
 in vec3 position;
@@ -257,7 +247,7 @@ local function FloodF(GL)
 	local plugin = require"anima.plugins.plugin"
 	local M = plugin.new{res={GL.W,GL.H}}
 	
-	local DOFINDCOMPONENTS
+	local DOFINDCOMPONENTS, CALCDISTANCES
 	local fbo, adder
 	local picking = false
 	local NM = GL:Dialog("flood_fill",{
@@ -268,13 +258,14 @@ local function FloodF(GL)
 		picking = true
 		GL.mouse_pick = {action=function(X,Y)
 							
-							print("t1",GL:ScreenToViewport(X,Y))
+							print("point",GL:ScreenToViewport(X,Y))
 							--this.vars.color:set{pUD[0],pUD[1],pUD[2]} 
 							this.vars.point:set{GL:ScreenToViewport(X,Y)} 
 							GL.mouse_pick = nil
 							--GL.fbo_nearest = false
 							--this.vars.orig[0] = false
 							DOFINDCOMPONENTS = true
+							CALCDISTANCES = true
 							this.dirty = true
 							GL:SetCursor(nil)
 							picking = false
@@ -289,15 +280,47 @@ end},
 end)
 	M.NM = NM
 	NM.plugin = M
-	
-	
+	-----------------------------
+	local corut
+	local function Flood_fill_finish(tex2,pd2)
+		print"FF_finish"
+
+		tex2:set_data(pd2.data, 4, 4)
+
+		return pd2
+	end
+	local function Flood_fill(tex,tex2,point,threshold)
+		local ini_ti = secs_now()
+		local fr_t = 1/10
+		local toyield_t = ini_ti
+		local X,Y = math.floor(point[0]+0.5),math.floor(point[1]+0.5)
+		local data = tex:get_pixels(glc.GL_FLOAT,glc.GL_RED)
+		--print("tex dims",tex.width,tex.height)
+		local pd = vicim.pixel_data(data,tex.width,tex.height,1)
+		local pd2 = vicim.pixel_data(nil,pd.w, pd.h, 4)
+		
+		threshold = threshold or pd:get_pix(X,Y)[0]
+		--print("pd:get_pix(X,Y)[0]",pd:get_pix(X,Y)[0])
+		--assert(pd:get_pix(X,Y)[0]==0)
+		flood_fill(pd,pd2,X,Y,threshold, toyield_t, fr_t)
+		
+		Flood_fill_finish(tex2,pd2)
+		print("flood_fill time",secs_now()-ini_ti)
+		return pd2, true
+	end
+	-----------------------------
+	function M:Set_WH()
+		fbo = GL:initFBO({no_depth=true})
+		--M.fbo = fbo
+		M.mask = GL:Texture(GL.W,GL.H)
+	end
 	function M:init()
 		if not progcoldist then
 			progcoldist = GLSL:new():compile(vert_coldist,frag_coldist)
 			mesh.quad():vao(progcoldist)
 		end
-		fbo = GL:initFBO()
-		M.fbo = fbo
+		fbo = GL:initFBO({no_depth=true})
+		--M.fbo = fbo
 		M.mask = GL:Texture(GL.W,GL.H)
 		adder = require"anima.plugins.texture_processor"(GL,2,NM)
 		adder:set_process[[vec4 process(vec2 pos){
@@ -315,54 +338,77 @@ end)
 			}
 		}]]
 	end
-	
+
 	local texsign
+	local texF,fboF
 	function M:process(texture)
 		if GL.dirty_wrapped and (not texsign or texsign~=texture:get_signature()) then
-			DOFINDCOMPONENTS = true
+			--DOFINDCOMPONENTS = true
 			texsign = texture:get_signature()
 		end
-		if DOFINDCOMPONENTS then
-			fbo:Bind()
-			ut.Clear()
-			progcoldist:use()
-			local U = progcoldist.unif
-			U.tex:set{0}
-			U.point:set(NM.point)
-			texture:Bind()
-			fbo:viewport()
-			progcoldist.vaos[1]:draw_elm()
-			fbo:UnBind()
-		
-			local texF,fboF
-			if NM.op>1 then
-				texF = GL:Texture(GL.W,GL.H)
-				fboF = GL:initFBO{no_depth=true}
-			else
-				texF = self.mask
+		if corut or DOFINDCOMPONENTS then
+			if DOFINDCOMPONENTS then
+				print"----pick"
+				if CALCDISTANCES then
+					print("CALCDISTANCES---")
+					fbo:Bind()
+					ut.Clear()
+					progcoldist:use()
+					local U = progcoldist.unif
+					U.tex:set{0}
+					U.point:set(NM.point)
+					texture:Bind()
+					fbo:viewport()
+					progcoldist.vaos[1]:draw_elm()
+					fbo:UnBind()
+					CALCDISTANCES = false
+				end
+			
+				if NM.op>1 then
+					texF = GL:Texture(GL.W,GL.H)
+					fboF = GL:initFBO{no_depth=true}
+				else
+					texF = self.mask
+				end
+				print("texF = self.mask",texF == self.mask,texF, self.mask)
+				--Flood_fill(fbo:tex(),texF, NM.point,NM.threshold)
+				corut = coroutine.create(Flood_fill)
+				self.always_dirty = true
+				local ok,pd22,finished = coroutine.resume(corut, fbo:tex(),texF, NM.point,NM.threshold ) 
+				if not ok then 
+					print(pd22, "status:", coroutine.status(corut))
+					self.always_dirty = nil
+					corut = nil
+				elseif finished then --finished
+					self.always_dirty = nil
+					corut = nil
+				else --doing
+					Flood_fill_finish(texF, pd22)
+				end
+			elseif corut and coroutine.status(corut)~="dead" then
+				print("resumme")
+				print("texF = self.mask",texF == self.mask,texF, self.mask)
+				local ok,pd22,finished = coroutine.resume(corut, fbo:tex(),texF, NM.point,NM.threshold ) 
+				if not ok then 
+					print(pd22, "status:", coroutine.status(corut))
+					self.always_dirty = nil
+					corut = nil
+				elseif finished then --finished
+					self.always_dirty = nil
+					corut = nil
+				else --doing
+					Flood_fill_finish(texF, pd22)
+				end
 			end
-			Flood_fill(fbo:tex(),texF, NM.point,NM.threshold)
 			if NM.op>1 then
+				print"adding"
+				print("texF = self.mask",texF == self.mask,texF, self.mask)
 				adder:process_fbo(fboF,{self.mask,texF})
-				self.mask = fboF:tex()
+				self.mask = fboF:texcopy()
 			end
 			self.mask:inc_signature()
 			DOFINDCOMPONENTS = false
 		end
-		--[[
-		ut.Clear()
-		--if NM.show_image then
-			texture:drawcenter()
-			ut.ClearDepth()
-			gl.glEnable(glc.GL_BLEND)
-			gl.glBlendFunc(glc.GL_SRC_ALPHA, glc.GL_ONE_MINUS_SRC_ALPHA)
-			glext.glBlendEquation(glc.GL_FUNC_ADD)
-			self.mask:drawcenter()
-			gl.glDisable(glc.GL_BLEND)
-		--else
-			--self.mask:drawcenter()
-		--end
-		--]]
 	end
 	function M:show_mask()
 		ut.ClearDepth()
@@ -378,7 +424,7 @@ end
 ---------------------
 ---[=[
 if not ... then
-local GL = GLcanvas{H=700,aspect=1,DEBUG=false,fbo_nearest=false}
+local GL = GLcanvas{H=800,aspect=1,DEBUG=false,fbo_nearest=false}
 
 
 local path = require"anima.path"
@@ -388,7 +434,9 @@ fileName = [[C:\luaGL\frames_anima\im_test\Cosmos_original.jpg]]
 --fileName=[[C:\luagl\animacion\resonator6\resonator-038.jpg]]
 --fileName = [[C:\LuaGL\frames_anima\flood_fill\dummy.png]]
 --fileName = [[C:\LuaGL\frames_anima\edges_detection\flowers2.png]]
-fileName = [[C:/anima64/examples/inpaint/twozones.png]]
+--fileName = [[C:/anima64bueno/examples/inpaint/twozones.png]]
+fileName = [[c:\luagl\media\estanque-001.jpg]]
+ -- fileName = "c:/luagl/media/piscina.tif"
 local texture
 local FF,mixer,fbo
 function GL.init()
@@ -403,13 +451,15 @@ function GL.init()
 end
 
 function GL.draw(t,w,h)
---gl.glClearColor(0,0,0,0)
+gl.glClearColor(0,0,0,0)
 	ut.Clear()
 	--FF:process_fbo(fbo,texture)
 	--fbo:tex():drawcenter()
 	FF:process(texture)
 	texture:drawcenter()
 	FF:show_mask()
+	-- ut.ClearDepth()
+	-- FF.mask:drawcenter()
 	-- mixer.NM.dirty = true
 	-- ut.Clear()
 	-- mixer:process{texture,FF.tex2}

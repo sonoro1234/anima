@@ -145,12 +145,13 @@ function M.make(GL,name)
 	return LM
 end
 
---[=[
+if not ... then
+---[=[
 require"anima"
 GL = GLcanvas{H=700,aspect = 1.5}
 mask = M.make(GL)
 function GL:init()
-	textura = Texture():Load[[C:\luaGL\media\juncos.tif]]
+	textura = GL:Texture():Load[[C:\luaGL\media\juncos.tif]]
 end
 function GL.draw(t,w,h)
 	gl.glClearColor(0,0,0,1)
@@ -163,6 +164,7 @@ function GL.draw(t,w,h)
 end
 GL:start()
 --]=]
+end
 
 return M
 
