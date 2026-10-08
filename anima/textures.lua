@@ -1243,7 +1243,7 @@ function Texture(w,h,formato,pTexor,args)
 		type = type or glc.GL_UNSIGNED_BYTE
 		format = format or glc.GL_RGBA
 		local types = {[glc.GL_FLOAT] = "float[?]", [glc.GL_UNSIGNED_SHORT]="unsigned short[?]",[glc.GL_UNSIGNED_BYTE]="unsigned char[?]"}
-		local formats = {[glc.GL_RED]=1,[glc.GL_RGB]=3,[glc.GL_RGBA]=4}
+		local formats = {[glc.GL_RED]=1,[glc.GL_GREEN]=1,[glc.GL_BLUE]=1,[glc.GL_RGB]=3,[glc.GL_RGBA]=4}
 		local ncomponents = formats[format]		
 		local allocstr = types[type]
 		
@@ -1256,10 +1256,14 @@ function Texture(w,h,formato,pTexor,args)
 		gl.glGetTexImage(glc.GL_TEXTURE_2D, 0, format, type, pixelsUserData)
 		return pixelsUserData
 	end
-	function tex:save(filename,formato)
+	function tex:save(filename,formato, type, chformat)
 		formato = formato or "PNG"
-		local pixelsUserData = self:get_pixels()
-		local image = im.ImageCreateFromOpenGLData(w, h, glc.GL_RGBA, pixelsUserData); 
+		chformat = chformat or glc.GL_RGBA
+		local pixelsUserData = self:get_pixels(type,  chformat)
+		
+		local chformatim = (chformat==glc.GL_RED or chformat==glc.GL_GREEN or chformat==glc.GL_BLUE) and glc.GL_LUMINANCE or chformat
+		
+		local image = im.ImageCreateFromOpenGLData(w, h, chformatim, pixelsUserData); 
 		local err = image:FileSave(filename,formato)
 		if (err and err ~= im.ERR_NONE) then
 			print("saved",filename)

@@ -105,8 +105,8 @@ function M.photofx(GL,args)
 		self.NM.dirty = true
 	end
 	
-	local fB = plugin.serializer(LM)
-	local presets = plugin.presets(LM)
+	--local fB --= plugin.serializer(LM)
+	local presets --= plugin.presets(LM)
 	
 	local sz = 300
 	local curr_curve = 1
@@ -158,11 +158,14 @@ function M.photofx(GL,args)
 			NM.dirty = true
 		end
 
-		fB.draw()
+		-- fB.draw()
 		presets.draw()
 	end)
 	LM.NM = NM
 	NM.plugin = LM
+	fB = plugin.serializer(LM)
+	presets = plugin.presets(LM)
+	
 	
 	function LM.init()
 		if args.use_fbo then

@@ -465,7 +465,7 @@ local NMamp = GL:Dialog("stark local hist",
 --{"saturation",1,guitypes.val,{min=0,max=2}},
 {"do_postprocess",1,guitypes.toggle},
 {"fac",1,guitypes.val,{min=0,max=1}},
-{"posbins",maxposbins-1000,guitypes.drag,{min=1,max=maxposbins}},
+{"posbins",maxposbins-1000,guitypes.val,{min=1,max=maxposbins,integer=true,olddrag=true,power=2},function() hist:setposbins() end},
 {"doit",1,guitypes.toggle},
 {"color_mode",2,guitypes.combo,{"rgb","hsv","Lab"},function(val) 
 	hist:calc()
@@ -507,8 +507,10 @@ end},
 		return fbocumhist
 	end
 	function hist:setposbins(pbins)
+		
 		pbins = pbins or NMamp.posbins
 		pbins = math.floor(pbins)
+		print("setposbins",pbins)
 		local sqsz = math.sqrt(textura.width*textura.height/pbins)
 		if sqsz == squaresz then return end
 		print("posbins",sqsz,squaresz)
@@ -719,10 +721,11 @@ end},
 		if not texsign or texsign~=srctex:get_signature() then
 			self:set_texture(srctex)
 			texsign = srctex:get_signature()
-			print("hist",texsign)
+			print("hist set posbins",texsign)
 			hist:setposbins()
 		end
 		--hist:setposbins()
+		--print("bksdfbasdfk")
 		hist:HEq(argos)
 		--gl.glEnable(glc.GL_DEPTH_TEST);
 	end
@@ -732,10 +735,16 @@ end
 
 if not ... then
 require"anima"
-local he
+local he, textura
 local GL = GLcanvas{H=800,aspect=1,profile="CORE"}
+fileName = [[C:\LuaGL\media\estanque8.jpg]]
 function GL.init()
+	textura = GL:Texture():Load(fileName)
+	GL:set_WH(textura.width, textura.height)
 	he = Histogram(GL)
+end
+function GL.draw(t,w,h)
+	he:process(textura)
 end
 GL:start()
 end

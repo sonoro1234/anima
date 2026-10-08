@@ -189,7 +189,7 @@ local function flow_player(GL)
 		gl.glDisable(glc.GL_BLEND)
 		--]]
 		end
-		
+		gl.glPointSize(1)
 		gl.glEnable(glc.GL_DEPTH_TEST)
 	end
 	

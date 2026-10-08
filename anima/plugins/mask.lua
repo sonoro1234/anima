@@ -161,8 +161,8 @@ function M.make(GL,name)
 	return LM
 end
 
-
---[=[
+if not ... then
+---[=[
 require"anima"
 GL = GLcanvas{H=700,aspect = 1.5}
 mask = M.make(GL)
@@ -176,7 +176,7 @@ function GL.draw(t,w,h)
 end
 GL:start()
 --]=]
-
+end
 return M
 
 

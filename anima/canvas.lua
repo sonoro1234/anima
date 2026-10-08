@@ -649,8 +649,10 @@ function GLcanvas(GL)
 	end
 	
 	function GL:set_WH(W,H)
+		if (W and H) and (W==self.W) and (H==self.H) then return end
 		W = W or self.W
 		H = H or self.H
+
 		print("set_WH",W,H)
 		self.W = W 
 		self.H = H 

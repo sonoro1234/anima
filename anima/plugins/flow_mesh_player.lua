@@ -178,7 +178,7 @@ local function flow_player(GL)
 		self.vao1:draw_elm()
 
 		gl.glDisable(glc.GL_BLEND)
-
+		gl.glPointSize(1)
 		gl.glEnable(glc.GL_DEPTH_TEST)
 	end
 	

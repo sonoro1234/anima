@@ -96,6 +96,25 @@ local function check2poly_crossings(poly1,poly2,crossings)
 	end
 	return crossings
 end
+local function check2poly_crossings_rep(poly1,poly2,crossings)
+	crossings = crossings or {}
+	for i=1,#poly1 do
+		local ai,bi = i,mod(i+1,#poly1)
+		local a,b = poly1[ai],poly1[bi]
+		for j=1,#poly2 do
+			local ci,di = j,mod(j+1,#poly2)
+			local c,d = poly2[ci],poly2[di]
+			if CG.SegmentIntersect(a,b,c,d) --CG.SegmentIntersectC(a,b,c,d) 
+			then
+				--print("poly1-poly2 crossing",ai,bi,ci,di)
+				--error"self crossing"
+				local pt = CG.IntersecPoint(a,b,c,d)
+				table.insert(crossings,{pt,ai,ci})
+			end
+		end
+	end
+	return crossings
+end
 
 
 
@@ -252,6 +271,109 @@ local function check_self_crossings(poly,crossings)
 	end
 	return crossings
 end
+------------- function that will allow rep consecutive points --------
+-- reparing generates reps also
+
+
+-- preparing reparation
+local function calc_len_cross(pt,a,c,pol3)
+	local npol3 = #pol3
+	assert(c>a)
+	-- local len1 = (c-a)>0 and (c-a) or (c+#pol3-a)
+	-- local len2 = (a-c)>0 and (a-c) or (a+#pol3-c)
+	local len1 = (c-a) 
+	local len2 = (a-c+npol3)
+	-- cacl l area
+	local pol1 = {pt}
+	for i=1,len1 do pol1[i+1] = pol3[a+i] end
+	local pol2 = {pt}
+	for i=1,len2 do pol2[i+1] = pol3[mod(c+i,npol3)] end
+	local L1 = math.abs(CG.signed_area(pol1))
+	local L2 = math.abs(CG.signed_area(pol2))
+	local ini,end_,lenn
+	--if len1<len2 then
+	if L1<L2 then
+		lenn = len1
+		ini,end_ = a,c
+		--L = L1
+		assert(end_ == a+lenn)
+	else
+		lenn = len2
+		ini,end_ = c,a
+		assert(end_ == mod(c + lenn, npol3))
+	end
+	--ini = mod(ini,#pol3)
+	--end_ = mod(end_,#pol3)
+
+	return {pt,a,c,lenn,ini,end_}
+end
+local function check_self_crossings_rep(poly, dontrepair)
+	-- reparator
+	local function fun(pol3,pt,a,c,lenn,ini,end_)
+		for j=1,lenn do
+			local j1 = mod(ini+j,#pol3)
+			pol3[j1] = pt
+		end
+		-- for j= ini,end_ do
+			-- local j1 = mod(j,#pol3)
+			-- pol3[j1] = pt
+		-- end
+	end
+	local crossings, badcrossings =  {}, {}
+	for i=1,#poly do
+		local ai,bi = i,mod(i+1,#poly)
+		local a,b = poly[ai],poly[bi]
+		if a==b then goto CONTINUE1 end
+		local lim = math.min(i + #poly - 2,#poly)
+		local cross1 = {}
+		for j=i+2,lim do
+		-- local lim = math.min(i + #poly - 1,#poly)
+		-- for j=i+1,lim do
+			local ci,di = j,mod(j+1,#poly)
+			local c,d = poly[ci],poly[di]
+			if c==d then goto CONTINUE2 end
+			if CG.SegmentIntersectC(a,b,c,d) 
+			--CG.SegmentIntersect(a,b,c,d)
+			then
+				local pt,good,t = CG.IntersecPoint2(a,b,c,d)
+				if good then 
+					table.insert(crossings, calc_len_cross(pt,ai,ci,poly))
+				else
+					if a == c then
+						table.insert(badcrossings,{a,ai,ci})
+					else
+						table.insert(badcrossings,{a,ai,ci})
+						--table.insert(crossings,{c,poly,ai,poly,ci})
+					end
+					--print("bad crossing",pt,ai,bi,ci,di)
+					--print(a,b,c,d)
+				end
+			end
+			::CONTINUE2::
+		end
+		::CONTINUE1::
+	end
+	table.sort(crossings, function(a,b) return a[4]<b[4] end)
+	if not dontrepair then
+		for i,cr in ipairs(crossings) do
+			local pt,a,c,lenn,ini,end_ = unpack(cr)
+			fun(poly,unpack(cr))
+		end
+	end
+	return crossings,badcrossings
+end
+local function check_poly_edge_cross(poly,c,d)
+	for i=1,#poly do
+		local ai,bi = i,mod(i+1,#poly)
+		local a,b = poly[ai],poly[bi]
+		if a==b then goto CONTINUE1 end
+		if CG.SegmentIntersect(a,b,c,d) then
+			return true
+		end
+		::CONTINUE1::
+	end
+	return false
+end
 ----------------------------------
 local function merge_on_cross(cr)
 	local pt,poly1,ai,poly2,ci = unpack(cr)
@@ -389,7 +511,110 @@ local function check_repair_self_crossings(poly)
 	return {poly}
 end
 M.check_repair_self_crossings = check_repair_self_crossings
-
+------------------ check_repair_self_crossings_rep
+-- as check_repair_self_crossings but with consec repetitions
+--receives poly and 1 cross and returns 2 polys in a polyset
+local function  split_on_cross_rep(poly, cr)
+	print("split_on_cross_rep",unpack(cr))
+	local printD = function() end
+	local typ = ffi.typeof(poly[1]) --could be vec3 or vec2
+	local pt, a, c = typ(cr[1]), cr[2], cr[3]
+	local b, d = mod(a + 1, #poly), mod(c + 1, #poly)
+	local P1, P2 = {},{} --{poly[a]}, {poly[c]}
+	--- set points to pt from b to c
+	local i = b
+	while(i~=d) do
+		P1[i] = pt
+		i = mod(i+1,#poly)
+	end
+	local i = d
+	while(i ~= b) do
+		P1[i] = poly[i]
+		i = mod(i+1,#poly)
+	end
+	-- set points to pt from d to a
+	local i = d
+	while(i~=b) do
+		P2[i] = pt
+		i = mod(i+1,#poly)
+	end
+	local i = b
+	while(i ~= d) do
+		P2[i] = poly[i]
+		i = mod(i+1,#poly)
+	end
+	--prtable("split_on_cross_rep",poly,P1,P2)
+	assert(#poly==#P1)
+	assert(#poly==#P2)
+	return {P1, P2}
+end
+local function check_repair_self_crossings_rep(poly)
+	--print("check_repair_self_crossings",#poly)
+	-- local remr,remc = CG.degenerate_poly_repair(poly,false)
+	-- print("degenerate repairs in check_repair_self_crossings",remr,remc)
+	local crossings = {}
+	for i=1,#poly do
+		local ai,bi = i,mod(i+1,#poly)
+		local a,b = poly[ai],poly[bi]
+		if a==b then goto CONTINUE1 end
+		local lim = math.min(i + #poly - 2,#poly)
+		for j=i+2,lim do
+			local ci,di = j,mod(j+1,#poly)
+			local c,d = poly[ci],poly[di]
+			if c==d then goto CONTINUE2 end
+			--local ok,err = pcall(CG.SegmentIntersectC,a,b,c,d)
+			--if not ok then prtable(ai,bi,ci,di,poly) end
+			if CG.SegmentIntersect(a,b,c,d) then
+				local pt,good,t = CG.IntersecPoint2(a,b,c,d)
+				if good then 
+					table.insert(crossings,{pt,ai,ci})
+				else
+					print("bad intersecpoint",a,b,c,d)
+					if a == c then
+						table.insert(crossings,{a,ai,ci})
+					else
+						table.insert(crossings,{a,ai,ci})
+					end
+					--print("bad crossing",pt,ai,bi,ci,di)
+					--print(a,b,c,d)
+				end
+				goto REPAIR
+			end
+			::CONTINUE2::
+		end
+		::CONTINUE1::
+	end
+	::REPAIR::
+	--print("#crossings",#crossings)
+	if #crossings > 0 then
+		local BI = split_on_cross_rep(poly,crossings[1])
+		local res1, res2 = {}, {}
+		if #BI[1] > 2 then res1 = check_repair_self_crossings_rep(BI[1]) end
+		if #BI[2] > 2 then res2 = check_repair_self_crossings_rep(BI[2]) end
+		for i,v in ipairs(res2) do
+			table.insert(res1, v)
+		end
+		--------------
+		--[[
+		local cross = {}
+		for i=1,#res1-1 do
+			for j=i+1,#res1 do
+				local cross = check2poly_crossingsInt(res1[i],res1[j],cross)
+				--print(#cross ,"after check_repair_self_crossings")
+				--prtable(cross)
+				for k,cr in ipairs(cross) do
+					local pol = merge_on_cross(cr)
+				end
+			end
+		end
+		--]]
+		--------------
+		return res1
+	end
+	return {poly}
+end
+M.check_repair_self_crossings_rep = check_repair_self_crossings_rep
+-------------------------------------------------------
 local function check_crossings(poly,crossings)
 	crossings = crossings or {}
 	local cross = check_self_crossings(poly)
@@ -489,6 +714,9 @@ end
 M.CHECKPOLY=CHECKPOLY
 M.CHECKCOLIN=check_collinear
 M.check_self_crossings=check_self_crossings
+M.check_self_crossings_rep=check_self_crossings_rep
+M.check_poly_edge_cross=check_poly_edge_cross
 M.check2poly_crossings=check2poly_crossings
+M.check2poly_crossings_rep=check2poly_crossings_rep
 M.check_polyset_crossings=check_polyset_crossings
 return M

@@ -297,12 +297,7 @@ function M.SegmentIntersecPoint(a,b,c,d,interior)
 		end
 	end
 end
--- local a = mat.vec2(0,0)
--- local b = mat.vec2(1,0)
--- local c = mat.vec2(0.5,0)
--- local d = mat.vec2(1.5,0)
--- print(M.SegmentIntersectC(a,b,c,d))
---print(M.IntersecPoint2(a,b,c,d))
+
 --tries to get the same as calling IntersecPoint2 twice
 function M.IntersecPoint3(a,b,c,d)
 	local den = (a.x - b.x)*(c.y - d.y) - (a.y - b.y)*(c.x - d.x)
@@ -316,7 +311,17 @@ function M.IntersecPoint3(a,b,c,d)
 	--assert(t2.x==t2.y,t2)
 	return pt, true, t, t2.x
 end
-
+--[[
+local a = mat.vec2(0,0)
+local b = mat.vec2(1,0)
+-- local c = mat.vec2(0.5,0)
+-- local d = mat.vec2(1.5,0)
+local c = mat.vec2(0.5,-1)
+local d = mat.vec2(1.5,1)
+print(M.SegmentIntersectC(a,b,c,d))
+print(M.IntersecPoint2(a,b,c,d))
+print(M.IntersecPoint3(a,b,c,d))
+--]]
 -- as IsPointInTri but including closure
 local function IsPointInTriC( pt,  v1,  v2,  v3)
 	

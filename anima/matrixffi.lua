@@ -620,7 +620,7 @@ function M.vec2vao(t,n)
 	elseif n==4 then
 		for i=0,#t-1 do
 			local v = t[i+1]
-			lp[i*3],lp[i*3+1],lp[i*3+2],lp[i*3+3] = v.x,v.y,v.z,v.w
+			lp[i*4],lp[i*4+1],lp[i*4+2],lp[i*4+3] = v.x,v.y,v.z,v.w
 		end
 	elseif n==2 then
 		for i=0,#t-1 do
@@ -679,4 +679,14 @@ print(aa,bb,cc)
 --print(vec3(vec2(1,2)),vec3(1,2,3))
 --print(vec4(1,2,3,4),vec4(vec3(1,2,3),4))
 --print(M.rotAB(vec3(-1,0,-1.2246063538224e-16),vec3(1,0,0)))
+--[[
+local red = vec4(1,0,1,1)
+local colors = {red,red,red}
+require"anima.utils"
+prtable(colors)
+local lp = M.vec2vao(colors)
+for i=0,(3*4)-1 do
+	print(i,lp[i])
+end
+--]]
 return M

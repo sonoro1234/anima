@@ -391,11 +391,12 @@ local function Histogram(GL,nbins)
 	
 		gl.glClearColor(0.0, 0.0, 0.0, 0)
 		gl.glClear(bit.bor(glc.GL_COLOR_BUFFER_BIT,glc.GL_DEPTH_BUFFER_BIT))
-gl.glPointSize(1.5)
+		gl.glPointSize(1.5)
 		quad_list:draw(glc.GL_POINTS)
 
 		gl.glDisable(glc.GL_BLEND)
 		glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, old_framebuffer[0]);
+		gl.glPointSize(1)
 	end
 	function hist:Show(w,h,scale,fbo)
 		scale = scale or 1

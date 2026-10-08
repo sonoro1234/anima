@@ -123,6 +123,7 @@ local function flow_player(GL)
 		gl.glDisable(glc.GL_BLEND)
 		
 		gl.glEnable(glc.GL_DEPTH_TEST)
+		gl.glPointSize(1)
 	end
 	
 	GL:add_plugin(fplay)

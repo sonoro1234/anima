@@ -5,7 +5,7 @@ local function Editor(GL)
 	local plugin = require"anima.plugins.plugin"
 	local M = plugin.new{res={GL.W,GL.H}}
 
-	local  splinefbo, blurfbo, acumfbo
+	local  splinefbo, blurfbo
 	local blur3 = require"anima.plugins.gaussianblur3"(GL)
 	blur3.NM.invisible = true
 	local function update() blur3.NM.dirty = true end
@@ -13,25 +13,28 @@ local function Editor(GL)
 	local spline = require"anima.modeling.Spline"(GL,update,{region=true})
 	local FF = require"anima.plugins.flood_fill"(GL)
 	FF.NM.remove() --remove from GL.imguimodals
-	local morpho = require"anima.plugins.morphology"(GL)
-	morpho.NM.invisible = true
 	
 	M.FF = FF
 	M.blur3 = blur3
 	M.spline = spline
-	
-	local DBox = GL:DialogBox("blurmask")
-	local mNM = DBox:Dialog("maskblur",
-		{{"feather",0,guitypes.val,{min=0,max=50}},
-		{"fac",0.25,guitypes.val,{min=0,max=1}},
-		{"kind",1,guitypes.slider_enum,{"spline","flood_fill"},function(n)
-			if n == 1 then
+	local DBox
+	local function set_mask_kind(n)
+		if n == 1 then
 			DBox.dialogs[2] = spline.NM 
-			else -- 2
+		else -- 2
 			DBox.dialogs[2] = FF.NM 
-			end
-		end}})
-	DBox:add_dialog(spline.NM)
+		end
+	end
+	
+	DBox = GL:DialogBox("mask_maker")
+	local mNM = DBox:Dialog("mask_feather",
+		{
+			{"feather",0,guitypes.val,{min=0,max=100}},
+			{"mask_kind",1,guitypes.slider_enum,{"spline","flood_fill"},function(n) set_mask_kind(n) end}
+		})
+	mNM.uncollapsible = true
+	mNM.indent = 1
+	DBox:add_dialog(spline.NM,10)
 	M.NM = DBox
 	M.NM.plugin = M
 	DBox.dialogs[1].plugin = M
@@ -40,14 +43,13 @@ local function Editor(GL)
 	function M:init()
 		splinefbo = GL:initFBO({no_depth=true})
 		blurfbo = GL:initFBO({no_depth=true})
-		acumfbo = GL:initFBO({no_depth=true})
 	end
 
 	function M:process(textur,w,h)
 
 		w,h = w or self.res[1],h or self.res[2]
 		
-		if mNM.kind == 1 then --spline
+		if mNM.mask_kind == 1 then --spline
 			if spline.NM.dirty then
 				splinefbo:Bind()
 				gl.glClearColor(0,0,0,0)
@@ -69,36 +71,34 @@ local function Editor(GL)
 		end
 
 		blur3.NM.vars.stdevs[0] = 3.5
-		--local radio = math.min(39*2,math.max(1,DBox.dialogs[1].feather*GL.W))
-		local radio = DBox.dialogs[1].feather
+		--local radio = math.min(39*2,math.max(1,mNM.feather*GL.W))
+		local radio = mNM.feather
 		blur3.NM.vars.radio[0] = radio
 		blur3:update()
 
-		if DBox.dialogs[1].feather == 0 then
+		if mNM.feather == 0 then
 			splinefbo:tex():drawcenter(w,h)
 		else
-
-			morpho.NM:SetValues{op="dilate",kernelsize=math.floor(0.5+radio*DBox.dialogs[1].fac)}
-			morpho:process_fbo(acumfbo,splinefbo:tex(),w,h)
-			blur3:process(acumfbo:tex(),w,h)
-			
-			-- blur3:process_fbo(blurfbo,splinefbo:tex(),w,h)
-			-- blurfbo:tex():drawcenter(w,h)
+			blur3:process_fbo(blurfbo,splinefbo:tex(),w,h)
+			blurfbo:tex():drawcenter(w,h)
 		end
 
-		DBox.dialogs[1].dirty = false 
+		mNM.dirty = false 
 	end
 	--M.process = M.draw
 	function M:save()
 		local pars = {}
 		pars.spline = spline:save()
-		pars.dial = NM:GetValues()
+		pars.FF = FF:save()
+		pars.dial = mNM:GetValues()
 		return pars
 	end
 	function M:load(params)
 		if not params then return end
-		NM:SetValues(params.dial or {})
+		mNM:SetValues(params.dial or {})
+		set_mask_kind(mNM.mask_kind)
 		spline:load(params.spline)
+		FF:load(params.FF)
 	end
 	GL:add_plugin(M,"maskblur")
 	return M
@@ -116,6 +116,7 @@ fileName = [[C:\luaGL\frames_anima\im_test\Cosmos_original.jpg]]
 --fileName=[[C:\luagl\animacion\resonator6\resonator-038.jpg]]
 --fileName = [[C:\LuaGL\frames_anima\flood_fill\dummy.png]]
 fileName = [[C:\LuaGL\frames_anima\edges_detection\flowers2.png]]
+fileName = [[c:\luagl\media\estanque-001.jpg]]
 local fbo,texture
 function GL.init()
 	texture = GL:Texture():Load(fileName)

@@ -818,6 +818,9 @@ function MakeSlab(w,h,args,GL)
 	function slab:tex()
 		return slab.ping:tex()
 	end
+	function slab:texcopy()
+		return slab.ping:texcopy()
+	end
 	function slab:init()
 		slab.ping, slab.pong = initping, initpong
 	end
@@ -1101,7 +1104,7 @@ function VAO(t,program,indices,tsize,isize)
 		end
 		att_names[k] = #attribs
 	end
-	
+	--prtable(attribs)
 	--make vao
 	local vao = ffi.new("GLuint[1]")
 	glext.glGenVertexArrays(1, vao);
@@ -1146,7 +1149,28 @@ function VAO(t,program,indices,tsize,isize)
 	end
 	assert(allcount, "no present attributes found")
 	tVao.count = allcount
-	
+	---------------------------
+	--prtable(attribs)
+	--[[
+	for i,at in ipairs(attribs) do
+		print("=====",at.name)
+		for j=0,at.vbo.count-1 do
+			local str = {"item "..tostring(j+1)..":"}
+			for k=0,at.typesize-1 do
+				table.insert(str,tostring(at.ffivalues[j*at.typesize+k]))
+			end
+			print(table.concat(str,","))
+			-- print"ffivalues"
+			-- local str = {}
+			-- local cc = at.b_size/ffi.sizeof"float"
+			-- for cc1=0,cc-1 do
+				-- table.insert(str,tostring(at.ffivalues[cc1]))
+			-- end
+			-- print(table.concat(str,","))
+		end
+	end
+	--]]
+	--------------------------
 	--bind vaos that are in program
 	for i,v in ipairs(attribs) do
 		if v.present then

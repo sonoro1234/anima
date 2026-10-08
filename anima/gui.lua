@@ -692,8 +692,8 @@ function gui.Dialog(name,vars,func, invisible)
 		self.dirty = true
 	end
 	function NM:draw()
-		--if self.invisible then return end
-		if invisible then return end
+		if self.invisible then return end
+		--if invisible then return end
 		--if (imgui.igBegin(name,nil,0)) then
 		local namevar
 		for i,v in ipairs(vars) do
@@ -710,11 +710,23 @@ function gui.Dialog(name,vars,func, invisible)
 			
 			if v[3] == guitypes.val then
 				local flag = (v[4].power and v[4].power ~=1) and imgui.ImGuiSliderFlags_Logarithmic or imgui.ImGuiSliderFlags_None
+				
 				if ig.SliderFloat(v[1], pointers[v[1]], v[4].min, v[4].max, v[4].format or "%.3f",flag) then
+				if not v[4].is_deactivated then
 					self.dirty = true
 					namevar = v[1]
 					if v[5] then 
 						v[5](pointers[v[1]][0],self) 
+					end
+				end
+				end
+				if v[4].is_deactivated then
+					if ig.IsItemDeactivatedAfterEdit() then
+						self.dirty = true
+						namevar = v[1]
+						if v[5] then 
+							v[5](pointers[v[1]][0],self) 
+						end
 					end
 				end
 			elseif v[3] == guitypes.drag then
@@ -740,11 +752,21 @@ function gui.Dialog(name,vars,func, invisible)
 					end
 				else
 					local pp = defs[v[1]].size > 1 and pointers[v[1]].data or pointers[v[1]]
-					if defs[v[1]].MVE:Draw(pp,v[4].min, v[4].max,v[4].precission or 0.1,formatst,nil) then
-						self.dirty = true
-						namevar = v[1]
-						if v[5] then 
-							v[5](pointers[v[1]],self) 
+					if v[4].integer then
+						if defs[v[1]].MVE:DrawInt(pp,v[4].min, v[4].max,v[4].precission or 0.1,formatst,nil) then
+							self.dirty = true
+							namevar = v[1]
+							if v[5] then 
+								v[5](pointers[v[1]],self) 
+							end
+						end
+					else
+						if defs[v[1]].MVE:Draw(pp,v[4].min, v[4].max,v[4].precission or 0.1,formatst,nil) then
+							self.dirty = true
+							namevar = v[1]
+							if v[5] then 
+								v[5](pointers[v[1]],self) 
+							end
 						end
 					end
 				end
@@ -858,16 +880,17 @@ end
 
 function gui.DialogBox(name,autosaved)
 	local DB = {name=name,dialogs={},isDBox=true}
-	function DB:add_dialog(D, dontremove)
+	function DB:add_dialog(D, indent)
+		D.indent = indent
 		--quitar de imguimodals
 		assert(D.name)
 		if self.GL then --if was created with GL:DialogBox
-		for i,v in ipairs(self.GL.imguimodals) do
-			if v == D then
-				table.remove(self.GL.imguimodals,i)
-				break;
+			for i,v in ipairs(self.GL.imguimodals) do
+				if v == D then
+					table.remove(self.GL.imguimodals,i)
+					break;
+				end
 			end
-		end
 		end
 		D.dboxed = true
 		table.insert(self.dialogs,D)
@@ -877,18 +900,28 @@ function gui.DialogBox(name,autosaved)
 		table.insert(self.dialogs,D)
 		return D
 	end
+	local function drawD(D)
+		--ig.Indent(D.indent or 5)
+		ig.PushID(D.name)
+		D.collapsed = false
+		D:draw()
+		ig.PopID()
+		--ig.Unindent(D.indent or 5)
+	end
 	function DB:draw()
+		if DB.invisible then return end
 		for i,D in ipairs(self.dialogs) do
-			if ig.CollapsingHeader(D.name) then
-				ig.Indent(5)
-				ig.PushID(D.name)
-				D.collapsed = false
-				D:draw()
-				ig.PopID()
-				ig.Unindent(5)
-			else
-				D.collapsed = true
+			ig.Indent(D.indent or 5)
+			if not D.uncollapsible then
+				if ig.CollapsingHeader(D.name) then
+					drawD(D)
+				else
+					D.collapsed = true
+				end
+			else -- uncollapsible
+				drawD(D)
 			end
+			ig.Unindent(D.indent or 5)
 		end
 		if self.func then self:func() end
 	end
@@ -1319,14 +1352,16 @@ function gui.SetImGui(GL)
 
 			self.Impl:NewFrame()
 			
-			-- if self.imgui then self:imgui() end
+			-- best for docking submission
+			if self.imgui then self:imgui() end
 			--MainDockSpace(GL)
 		
 			self:draw_imgui_not_modal()
 			
 			if self.Log then self.Log:Draw() end
-
-			if self.imgui then self:imgui() end
+			
+			-- best for debug DirtyWrap
+			--if self.imgui then self:imgui() end
 			
 			if GL.showhist[0] then GL.hist() end
 

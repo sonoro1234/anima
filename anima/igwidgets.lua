@@ -63,6 +63,7 @@ function W.SingleValueEdit()
         
         --- A horrible ImGui work around to have button that stays active while its label changes.  
         function SVE:DrawButtonWithDynamicLabel(label, size)
+			--print(label, size)
             --local color1 = ig.GetColorU32(ig.lib.ImGuiCol_Text);
             --local keepPos = ig.GetCursorScreenPos();
             --ig.Button("##dial"..tostring(self), size);
@@ -72,7 +73,9 @@ function W.SingleValueEdit()
             ig.InputText("##dial"..tostring(self),ttt,20,ig.lib.ImGuiInputTextFlags_ReadOnly)
         end
         
-        function SVE:DrawInt(value, min, max, scale, size)
+        function SVE:DrawInt(value, min, max, scale, format, size)
+			--print("drawint",value, min, max, scale, format, size)
+			size = size or ig.CalcTextSize("xxxxxx") + ig.GetStyle().FramePadding*2
             local doubleValue = ffi.new("int[1]",value[0])
             local result = self:Draw(doubleValue, min, max, scale, "%.0f", size);
             value[0] = doubleValue[0];
@@ -253,6 +256,16 @@ function W.MultiValueEdit(label,n)
         local ret = false
         for i=1,n do 
             local ret1 = MVE[i]:Draw(val + (i-1),...); ig.SameLine() 
+            ret = ret or ret1
+        end
+        ig.Text(label)      
+        return ret
+    end
+
+    function MVE:DrawInt(val,...)
+        local ret = false
+        for i=1,n do 
+            local ret1 = MVE[i]:DrawInt(val + (i-1),...); ig.SameLine() 
             ret = ret or ret1
         end
         ig.Text(label)      

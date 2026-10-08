@@ -29,7 +29,7 @@ void main()
 --linear versions
 local fragH2 = [[
 
-#define MAXSIZE 40
+#define MAXSIZE 51
 uniform sampler2D image;
 uniform float w;
 uniform float h;
@@ -55,7 +55,7 @@ void main(void)
 
 local fragV2 = [[
 
-#define MAXSIZE 40
+#define MAXSIZE 51
 uniform sampler2D image;
 uniform float w;
 uniform float h;
@@ -102,6 +102,7 @@ local function genlinearkernel(radio,nstdevs)
 		kk[#kk+1] = kernel[i] + kernel[i+1]
 		off2[#off2 +1] = ((i-1)*kernel[i] + i*kernel[i+1])/kk[#kk]
 	end
+	--print("kk,off2",#kk,#off2)
 	return kk,off2
 end
 local function BlurClipMaker(GL)
@@ -116,7 +117,7 @@ local function BlurClipMaker(GL)
 			--kernel,offs = genlinearkernel(this.radio,val) 
 			Clip:update()
 		end},
-	{"radio",10,guitypes.val,{min=1,max=39*2},function(val,this) 
+	{"radio",10,guitypes.val,{min=1,max=100},function(val,this) 
 			--kernel,offs = genlinearkernel(val,this.stdevs) 
 			Clip:update()
 		end},

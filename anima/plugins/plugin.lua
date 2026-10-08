@@ -31,6 +31,7 @@ function plugin.serializer(M,args)
 	fb.loader = gui.FileBrowser(nil,{filename="phfx",key="loadps",pattern=M.NM and M.NM.name,curr_dir=args.curr_dir},fb.load)
 	fb.saver = gui.FileBrowser(nil,{check_existence=true,filename="phfx",key="saveps",pattern=M.NM and M.NM.name,addext=true},fb.save)
 	function fb.draw()
+		ig.Separator()
 		if ig.SmallButton("save") then
 			fb.saver.open()
 		end
@@ -231,7 +232,12 @@ pl_mt.__index = {
 				end
 			end
 		end
-	end
+	end,
+	save = function(self) if self.NM then return self.NM:GetValues() end end,
+	load = function(self,pars) 
+				if self.NM then self.NM:SetValues(pars) end
+				if self.update then self:update() end
+			end
 	}
 	
 function plugin.new(o,GL,NM)

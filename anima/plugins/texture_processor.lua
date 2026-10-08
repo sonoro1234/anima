@@ -94,7 +94,7 @@ function mixer(GL,ntex,NM)
 	return M
 end
 
----[=[
+--[=[
 if not ... then
 local GL = GLcanvas{H=900,aspect=1.5,SDL=false, use_log=true}
 local NM = GL:Dialog("pp",{
@@ -135,6 +135,24 @@ function GL.draw(t,w,h)
 	
 	pp:process_fbo(fbo,{tex,tex2})
 	fbo:tex():draw(0,w,h)
+end
+
+GL:start()
+end
+--]=]
+
+---[=[
+if not ... then
+local GL = GLcanvas{H=900,aspect=1.5,SDL=false, use_log=true}
+local pp = mixer(GL,0)
+function GL.init()
+	pp:set_process[[vec4 process(vec2 pos){
+		return vec4(1.0-length(pos));
+	}
+	]]
+end
+function GL.draw(t,w,h)
+	pp:process{}
 end
 
 GL:start()

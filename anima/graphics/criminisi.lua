@@ -748,7 +748,7 @@ NM = GL:Dialog("inpaint",{
 {"mostrar",0, guitypes.combo,{"orig","canvas","mask","contour","isophote","confidence","prio","dist"}},
 {"doblend",true,guitypes.toggle},
 {"blend_size",5,guitypes.drag,{min=1,max=10}},
-{"win_halfsize",10,guitypes.drag,{min=3,max=30}},
+{"win_halfsize",10,guitypes.drag,{min=3,max=100}},
 {"use_coroutine",true,guitypes.toggle},
 {"use_GPUreduction",false,guitypes.toggle},
 {"use_step",false, guitypes.toggle},

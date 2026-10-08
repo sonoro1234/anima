@@ -12,7 +12,7 @@ local plugins_chain_dirty = false
 
 local plugins = {
 "LABfxW2",
-"local_histogramStarkLabCORE",
+"StarkHistEq",
 "gaussianblur2",
 "gaussianblur3",
 "liquid",
@@ -24,13 +24,13 @@ local plugins = {
 }
 
 local plugins_chain_p = {}
-local chain_slab
+
 local chain_fbo
 
 local function MakeChainFBO(GL,n)
 	local ch = {}
 	ch[0] = GL:initFBO({no_depth=true})
-	for i=1,n do
+	for i=1,n+1 do -- +1 for global mask
 		ch[i] = GL:initFBO({no_depth=true})
 	end
 	return ch
@@ -88,18 +88,17 @@ local function SetPluginsChain(GL)
 end
 
 local anchor = {}
+local global_mask = ffi.new("bool[?]",1,false)
+local mask_plugin
 local chain_active = ffi.new("bool[?]",1,true)
 local function Open_plugins_chain(GL)
-	--local dockid = GL.Dock()
-	local child_flags = bit.bor(--ig.lib.ImGuiChildFlags_AutoResizeY, ig.lib.ImGuiChildFlags_AutoResizeY, 
-ig.lib.ImGuiChildFlags_FrameStyle)
+
+	local child_flags = ig.lib.ImGuiChildFlags_FrameStyle
 	local p_open = ffi.new("bool[?]",1,true)
-	ig.SetNextWindowSizeConstraints(ig.ImVec2(400, 350), ig.ImVec2(600, 450))-- ig.ImVec2(ig.FLT_MAX, ig.FLT_MAX))
+	ig.SetNextWindowSizeConstraints(ig.ImVec2(400, 350), ig.ImVec2(600, 450))
 	if ig.Begin("plug chains", p_open) then
-		--if ig.BeginChild("origin",ig.ImVec2(ig.GetContentRegionAvail().x * 0.5, -1), child_flags) then
-		if ig.BeginChild("origin",ig.ImVec2(ig.GetContentRegionAvail().x * 0.5, -ig.GetFrameHeightWithSpacing()*2), child_flags) then
+		if ig.BeginChild("origin",ig.ImVec2(ig.GetContentRegionAvail().x * 0.5, -ig.GetFrameHeightWithSpacing()*3), child_flags) then
 			ig.SeparatorText("Plugins")
-			--ig.Separator()
 			for i=1,#plugins do
 				ig.Selectable(plugins[i])
 				if ig.IsItemClicked() then print(i) end
@@ -113,9 +112,8 @@ ig.lib.ImGuiChildFlags_FrameStyle)
 		end
 		ig.EndChild()
 		ig.SameLine()
-		if ig.BeginChild("dest",ig.ImVec2(0,-ig.GetFrameHeightWithSpacing()*2),child_flags) then
+		if ig.BeginChild("dest",ig.ImVec2(0,-ig.GetFrameHeightWithSpacing()*3),child_flags) then
 			ig.SeparatorText("chain (drag plugins)")
-			--ig.Separator()
 			local canvas_pos = ig.GetCursorScreenPos();
 			ig.SetNextItemAllowOverlap()
 			ig.InvisibleButton("drop_target",ig.ImVec2(-1,-1))
@@ -166,7 +164,13 @@ ig.lib.ImGuiChildFlags_FrameStyle)
 		end
 		ig.EndDragDropTarget();
 	end
-
+	if gui.ToggleButton("global mask", global_mask) then
+		if global_mask[0] then
+			mask_plugin.NM.invisible = false
+		else
+			mask_plugin.NM.invisible = true
+		end
+	end
 	gui.ToggleButton("chain active", chain_active)
 	ig.SameLine()
 	ig.Text("plugins_chain:"..tonumber(#plugins_chain))
@@ -182,13 +186,10 @@ local function ImageFrame(image,sz,pre,selected)
 	local label = pre..image.filename
 	local tex = image.tex
 	local picked = image.picked
-	--print("ImageFrame",label)
+
 	ig.BeginGroup()
 	local canvas_pos = ig.GetCursorScreenPos();
-	--ig.PushClipRect(canvas_pos, canvas_pos + ig.ImVec2(sz, sz), false)
 
-		--ig.Checkbox(label, picked)
-		--ig.SetCursorScreenPos(canvas_pos)
 	ig.SetNextItemAllowOverlap()
 	local ret = ig.InvisibleButton(label..(tostring(tex.tex)).."t", ig.ImVec2(sz, sz), ig.lib.ImGuiButtonFlags_EnableNav) 
 	local is_active = ig.IsItemActive()
@@ -208,20 +209,14 @@ local function ImageFrame(image,sz,pre,selected)
 
 	local bgcolor = selected and ig.U32(0.75,0.75,0.75,1) or ig.U32(0.25,0.25,0.25,1)
 	draw_list:AddRectFilled(canvas_pos, canvas_pos + ig.ImVec2(sz, sz), bgcolor,5)
-	--draw_list:AddImage( ffi.cast("void*",tex.tex),pos, pos+ig.ImVec2(wi,hi),ig.ImVec2(0,1),ig.ImVec2(1,0));
+
 	draw_list:AddImage( ig.ImTextureRef(tex.tex)[0],pos, pos+ig.ImVec2(wi,hi),ig.ImVec2(0,1),ig.ImVec2(1,0));
-	--local labsize = ig.CalcTextSize(label,nil,false)
-	--local texpos = ig.ImVec2(canvas_pos.x, canvas_pos.y + sz - labsize.y)
-	--draw_list:AddText(texpos,ig.U32(1,1,1,1), label)--, const char* text_end = NULL)
 	
-		---[[
 	ig.SetCursorScreenPos(canvas_pos)
 	ig.Checkbox("##"..label, picked)
 	local canvas_pos3 = ig.GetCursorScreenPos();
 	ig.Dummy(canvas_pos + ig.ImVec2(sz, sz) - canvas_pos3)
 	
-	--]]
-	--ig.PopClipRect()
 	ig.EndGroup()
 	return ret
 end 
@@ -246,7 +241,7 @@ local function load_texture(filename, GL)
 	if ok then 
 		curr_tex_name = filename
 		GL:set_WH(texture.width, texture.height)
-		--chain_slab = GL:make_slab()
+
 		chain_fbo = MakeChainFBO(GL,#plugins_chain_p)
 	end
 	print("=========== end load texture ================")
@@ -264,18 +259,13 @@ local function AddImage(GL,filename, name)
 	local maxsize = math.max(tex.width, tex.height)
 	image.tex = tex:resample_fac(300/maxsize)
 	tex:delete()
-	--print("mmmm",tex.filename)
+
 	insert(images, image)
 	butnum[#butnum + 1] = #butnum + 1
-	--print("AddImage loaded",filename, butnum[#butnum])
+
 end
 
 local function preparedir(GL,pathdir)
-
-	--delete texs
-	--for i,v in ipairs(images) do v.tex:delete() end
-	-- images = {}
-	-- butnum = {} 
 	
 	local imagesN = {}
 	local imagesFile = {}
@@ -312,15 +302,23 @@ end
 
 local help_txt = 
 [[
-Select folder to create thumnails.
-Drop image files to add thumbs.
-Click thumb for image edit.
-F1 for full screen toggle.
-F2 for imgui toggle.
+- Select folder to create thumnails.
+- Drop image files to add thumbs.
+- Click thumbnail for image edit.
+- Drag and drop plugins to chain for processing.
+- F1 for full screen toggle.
+- F2 for imgui toggle..
+- F3 for dock toggle.
+- Click on image makes dock off (full image mode) to allow drawing, picking,etc...
+- Right click on full image mode for options.
+- Mouse on screen bottom for more options.
 ]]
 local showhelp = false
 local show_chain = false
 local view_thumbs = ffi.new("bool[?]",1,true)
+local view_dock = ffi.new("bool[?]",1,true)
+local dock_id_right_bottom = ffi.new("ImGuiID[?]",1,0);
+
 local function renderMenuFile(win)
 	local openfilepopup = false
     if (ig.BeginMainMenuBar()) then
@@ -345,7 +343,7 @@ local function renderMenuFile(win)
                 ig.EndMenu();
             end
 			if ig.BeginMenu("thumbs") then
-				--ig.Checkbox("thumbnails",view_thumbs)
+				gui.ToggleButton("view_dock",view_dock)
 				gui.ToggleButton("thumbnails",view_thumbs)
 				if ig.MenuItem"select all" then
 					for i,im in ipairs(images) do
@@ -388,12 +386,6 @@ local function renderMenuFile(win)
 				end
 				ig.EndMenu()
 			end
-			if ig.BeginMenu("plugins") then
-				if ig.MenuItem"Edit Chain" then
-					show_chain = true
-				end
-				ig.EndMenu()
-			end
 			if ig.BeginMenu("Help") then
 				showhelp = true
 				ig.EndMenu()
@@ -401,16 +393,12 @@ local function renderMenuFile(win)
             ig.EndMainMenuBar()
         end
 
-    -- if ig.Shortcut(bit.bor(ig.lib.ImGuiMod_Ctrl, ig.lib.ImGuiKey_S)) then
-        -- local doc = opendocs[curr_opendoc]
-        -- doc:Save(doc.file_name)
-    -- end
 
     if openfilepopup then fB.open() end
     fB.draw()
 	
     if showhelp then
-        ig.SetNextWindowSize(ig.ImVec2(500,200));
+        ig.SetNextWindowSize(ig.ImVec2(500,0));
         ig.OpenPopup("Help##p")
         if ig.BeginPopupModal("Help##p") then 
             ig.TextWrapped(help_txt)
@@ -421,12 +409,7 @@ local function renderMenuFile(win)
             ig.EndPopup()
         end
     end
-	
-	if show_chain then
-		show_chain = Open_plugins_chain(win)
-	end
-    -- if savefilepopup then fbs.open() end
-    -- fbs.draw()
+
 end
 
 local inipath = [[C:\Users\Carmen\Pictures\Iphone\2014-07-31 Primera Importación]]
@@ -438,7 +421,7 @@ inipath = [[C:\LuaGL\frames_anima\pelis\humanoides_peli\NEVERA\ninos_master1080]
 --inipath = path.chain(path.this_script_path(),
 --inipath = [[C:\LuaGL\gitsources\anima\examples\LuaJIT-IPOL\opticflow\exports\peli1]]
 print(inipath)
-currdir = inipath
+
 
 function GL.init()
 	--ListCompressedFormats()
@@ -449,74 +432,62 @@ ig.GetIO().IniFilename = nil
             style.GrabRounding = round
             style.WindowRounding = round
             style.FrameBorderSize = 1
-	--chain_slab = GL:make_slab()
+
+	mask_plugin = require"anima.plugins.masks"(GL)
+	mask_plugin.NM.invisible = true
+	GL:DirtyWrap()--mask_plugin)
 	chain_fbo = MakeChainFBO(GL,0)
 	texture = GL:Texture()
-	preparedir(GL,inipath)
+	-- preparedir(GL,inipath)
+	-- currdir = inipath
 end
+
 
 function GL.Dock()
 
-	local dockspace_chains_id = ig.GetID("dockspace_chains_id")
+	local dockspace_id = ig.GetID("dockspace_id")
 	local viewport = ig.GetMainViewport();
 	
-	if (ig.DockBuilderGetNode(dockspace_chains_id) == nil) then
-    local dock_id_left = ffi.new("ImGuiID[?]",1,dockspace_chains_id);
-	local dock_id_bottom = ffi.new("ImGuiID[?]",1,0);
-	ig.DockBuilderAddNode(dock_id_left[0],ig.lib.ImGuiDockNodeFlags_DockSpace);
-	ig.DockBuilderSetNodeSize(dock_id_left[0], viewport.Size);
-	ig.DockBuilderSplitNode(dock_id_left[0], ig.lib.ImGuiDir_Up, 0.50, dock_id_left, dock_id_bottom);
+	if (ig.DockBuilderGetNode(dockspace_id) == nil) then
+	ig.DockBuilderAddNode(dockspace_id,ig.lib.ImGuiDockNodeFlags_DockSpace);
+	ig.DockBuilderSetNodeSize(dockspace_id, viewport.Size);
+    local dock_id_main = ffi.new("ImGuiID[?]",1,dockspace_id);
+	local dock_id_left = ffi.new("ImGuiID[?]",1,0);
+	local dock_id_left_up = ffi.new("ImGuiID[?]",1,0);
+	local dock_id_left_bottom = ffi.new("ImGuiID[?]",1,0);
+	local dock_id_right = ffi.new("ImGuiID[?]",1,0);
+	local dock_id_right_up = ffi.new("ImGuiID[?]",1,0);
 
-    ig.DockBuilderDockWindow("plug chains", dock_id_left[0]);
-	ig.DockBuilderDockWindow("params", dock_id_bottom[0]);
-    ig.DockBuilderFinish(dockspace_chains_id);
+	
+	ig.DockBuilderSplitNode(dock_id_main[0], ig.lib.ImGuiDir_Left, 0.80, dock_id_left, dock_id_right);
+	ig.DockBuilderSplitNode(dock_id_right[0], ig.lib.ImGuiDir_Up, 0.50, dock_id_right_up, dock_id_right_bottom);
+	ig.DockBuilderSplitNode(dock_id_left[0], ig.lib.ImGuiDir_Up, 0.80, dock_id_left_up, dock_id_left_bottom);
+	
+    ig.DockBuilderDockWindow("plug chains", dock_id_right_up[0]);
+	ig.DockBuilderDockWindow("params", dock_id_right_bottom[0]);
+	ig.DockBuilderDockWindow("image", dock_id_left_up[0]);
+	ig.DockBuilderDockWindow("thumbnails", dock_id_left_bottom[0]);
+    ig.DockBuilderFinish(dockspace_id);
 	end
-	local p_open = ffi.new("bool[?]",1,true)
-	ig.Begin("plug chains2",p_open)
-	ig.DockSpace(dockspace_chains_id)
-	ig.End()
-	return dockspace_chains_id
+	
+	ig.DockSpaceOverViewport(dockspace_id, viewport, ig.lib.ImGuiDockNodeFlags_PassthruCentralNode + ig.lib.ImGuiDockNodeFlags_NoTabBar);
+
+	return dock_id_right_bottom[0]
 end
 local anchor1 ={}
 
-local host_window_flags = bit.bor( --ig.lib.ImGuiWindowFlags_NoTitleBar , 
---ig.lib.ImGuiWindowFlags_NoCollapse,
--- ig.lib.ImGuiWindowFlags_NoResize ,
+local thumbs_window_flags = bit.bor( ig.lib.ImGuiWindowFlags_NoTitleBar , ig.lib.ImGuiWindowFlags_NoCollapse, ig.lib.ImGuiWindowFlags_NoResize ,
     --ig.lib.ImGuiWindowFlags_NoMove , 
-    --ig.lib.ImGuiWindowFlags_NoBringToFrontOnFocus, --, --ig.lib.ImGuiWindowFlags_NoNavFocus,
-    ig.lib.ImGuiWindowFlags_MenuBar
-	)
-local host_window_flags = bit.bor( ig.lib.ImGuiWindowFlags_NoTitleBar , ig.lib.ImGuiWindowFlags_NoCollapse, ig.lib.ImGuiWindowFlags_NoResize ,
-    --ig.lib.ImGuiWindowFlags_NoMove , 
-    ig.lib.ImGuiWindowFlags_NoBringToFrontOnFocus)--, --ig.lib.ImGuiWindowFlags_NoNavFocus,
+    ig.lib.ImGuiWindowFlags_NoBringToFrontOnFocus)--, ig.lib.ImGuiWindowFlags_NoDocking)--, --ig.lib.ImGuiWindowFlags_NoNavFocus,
     --ig.lib.ImGuiWindowFlags_MenuBar)
-function GL.imgui()
-	--ig.ShowDemoWindow()
-	--GL.MainDockSpace()
-	--GL.Dock()
-	--print(ig.DockBuilderGetNode(ig.GetID("main_anima_dockspace")))
-	 --print(ig.GetID("main_dock"))
-	renderMenuFile(GL)
-	if view_thumbs[0] then
-	local igio = ig.GetIO()
-	ig.SetNextWindowPos(ig.ImVec2(0, ig.GetTextLineHeight()))--ig.GetFrameHeight()))
-	ig.SetNextWindowSize(ig.ImVec2(igio.DisplaySize.x,0))
-	if ig.Begin("thumbnails", nil, host_window_flags) then
-	--renderMenuFile(GL)
+local function Thumbnails()
+	if ig.Begin("thumbnails", nil, thumbs_window_flags) then
+
 	local wsize = ig.GetContentRegionAvail()
-	
-	-- if ig.SmallButton("load") then
-		-- fB:open()
-	-- end
-	-- fB:draw()
-	ig.SameLine()
-	ig.Text(currdir)
-	-- ig.SetNextItemWidth(200)
-    -- ig.DragFloat("size",size)
-	--ig.SameLine()
-	ig.TextUnformatted(string.format("%s width:%d height:%d aspect %f",curr_tex_name,texture.width,texture.height, texture.aspect))
+	ig.Text("Last folder:"..tostring(currdir))
+	ig.TextUnformatted(string.format("Image: %s width:%d height:%d aspect %f",curr_tex_name,texture.width,texture.height, texture.aspect))
 	local cols = math.floor(wsize.x/(size[0]+ig.GetStyle().ItemSpacing.x))
-	--print(wsize.x,cols)
+
     for i = 1,#butnum do
 		local imnum = butnum[i]
 		if ImageFrame(images[imnum],size[0],nil,curr_image_num == imnum) then
@@ -545,53 +516,46 @@ function GL.imgui()
         end
         if (((i-1) % cols) < (cols-1)) then ig.SameLine() end
     end
-
 	end
 	ig.End()
-	end --view_thumbs
+end
+
+function GL.imgui()
+	--ig.ShowDemoWindow()
+
+    if ig.IsKeyPressed(ig.lib.ImGuiKey_F3,false) then
+		view_dock[0] = not view_dock[0]
+		if view_dock[0] then
+			ig.DockBuilderDockWindow("params", dock_id_right_bottom[0]);
+		end
+    end
+
+	if view_dock[0] then
+		renderMenuFile(GL)
+		GL.Dock()
+	Open_plugins_chain(GL)
+	if view_thumbs[0] then
+		Thumbnails()
+	end 
+	if ig.Begin"image" then
+		local canvas_pos = ig.GetCursorScreenPos();
+		local sz = ig.GetContentRegionAvail()
+		local tex = GL.fbo:tex() --texture
+		local posx,posy,wi,hi = getAspectViewport(sz.x,sz.y,tex.width,tex.height)
+		local pos = ig.ImVec2(posx,posy)+ canvas_pos
+		local draw_list = ig.GetWindowDrawList();
+		draw_list:AddImage( ig.ImTextureRef(tex.tex)[0],pos, pos+ig.ImVec2(wi,hi),ig.ImVec2(0,1),ig.ImVec2(1,0));
+		if ig.InvisibleButton("current_image", sz, ig.lib.ImGuiButtonFlags_EnableNav) then
+			view_dock[0] = false
+		end
+	end
+	ig.End()
+	end
 	if corut_load and coroutine.status(corut_load)~="dead" then
 		local ret,err = coroutine.resume(corut_load)
 		if not ret then print("coroutine error",err) end
 	end
 	
-end
-
-function GL.drawOO(t,w,h)
-	
-	ut.Clear()
-	if chain_active[0] then
-		chain_slab:init()
-		chain_slab:Bind()
-		texture:drawcenter()
-		chain_slab:UnBind()
-		for i,pl in ipairs(plugins_chain_p) do
-			chain_slab:Bind()
-			pl:process(chain_slab:tex())
-			chain_slab:UnBind()
-		end
-		chain_slab:tex():drawcenter()
-	else
-		texture:drawcenter()
-	end
-end
-function GL.drawNNN(t,w,h)
-	
-	ut.Clear()
-	if chain_active[0] then
-		chain_slab:init()
-		chain_slab:Bind()
-		texture:drawcenter()
-		chain_slab:UnBind()
-		for i,pl in ipairs(plugins_chain_p) do
-			--chain_slab:Bind()
-			pl:process_fbo(chain_slab.pong,chain_slab:tex())
-			--chain_slab:UnBind()
-			chain_slab:swapt()
-		end
-		chain_slab:tex():drawcenter()
-	else
-		texture:drawcenter()
-	end
 end
 
 function GL.draw(t,w,h)
@@ -604,7 +568,12 @@ function GL.draw(t,w,h)
 		for i,pl in ipairs(plugins_chain_p) do
 			pl:process_fbo(chain_fbo[i],chain_fbo[i-1]:tex())
 		end
-		chain_fbo[#chain_fbo]:tex():drawcenter()
+		if global_mask[0] then
+			mask_plugin:process_fbo(chain_fbo[#chain_fbo],{texture,chain_fbo[#chain_fbo-1]:tex()})
+			chain_fbo[#chain_fbo]:tex():drawcenter()
+		else
+			chain_fbo[#chain_fbo-1]:tex():drawcenter()
+		end
 	else
 		texture:drawcenter()
 	end

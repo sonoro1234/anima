@@ -11,22 +11,40 @@ local vert_sh = [[
 
 local frag_sh = [[
 	uniform vec4 color = vec4(1);
+	out vec4 fcolor;
 	void main(){
-		gl_FragColor = color;
+		fcolor = color;
 	}]]
+	
+local vert_pad_sh = [[
+	in vec2 position;
+	in vec4 color;
+	out vec4 colorf;
+	void main(){
+		colorf = color;//vec4(1,0,0,0);
+		gl_Position = vec4(position,-1,1);
+	}]]
+
+local frag_pad_sh = [[
+	in vec4 colorf;
+	out vec4 fcolor;
+	void main(){
+		fcolor = colorf;
+	}]]
+
 
 local function mod(a,b)
 	return ((a-1)%b)+1
 end
 
-local maskprog 
+local maskprog, maskprog_pad 
 
 local function Editor(GL,updatefunc1,args)
 	args = args or {}
 	
 	local plugin = require"anima.plugins.plugin"
 	local M = plugin.new{res={GL.W,GL.H}}
-	
+
 	local numsplines = 0
 	M.sccoors = {}
 	M.ps = {}
@@ -97,6 +115,14 @@ local function Editor(GL,updatefunc1,args)
 		local dl = ig.GetBackgroundDrawList(ig.GetMainViewport())
 		local keepflags = dl.Flags
 		dl.Flags = bit.band(dl.Flags,bit.bnot(ig.lib.ImDrawListFlags_AntiAliasedLines))
+		-- triangulations
+		if M.triangulation then
+			if M.triangulation[NM.curr_spline] then 
+				if (not M.triangulation[NM.curr_spline].error) and   M.triangulation[NM.curr_spline].points then
+					M:DrawTriangulation(M.triangulation[NM.curr_spline],nil,NM.curr_spline) 
+				end
+			end
+		end
 		--polylines
 		for i=1,numsplines do
 			if #M.ps[i] < 2 then goto ENDPOLYLINES end
@@ -403,10 +429,32 @@ local contours_loader = gui.FileBrowser(nil,{filename="phfx",key="importcont",pa
 	M.NM = NM
 	NM.plugin = M
 	
+	function M:Set_WH()
+		for i,sc in ipairs(M.sccoors) do
+			for i,v in ipairs(sc) do
+				sc[i] = v/vec2(M.oldW/GL.W, M.oldH/GL.H)
+			end
+			if sc.holes then
+				for k,hole in ipairs(sc.holes) do
+					for l,v in ipairs(hole) do
+						hole[l] = v/vec2(M.oldW/GL.W, M.oldH/GL.H)
+					end
+				end
+			end
+		end
+		M.oldW = GL.W
+		M.oldH = GL.H
+		M:calc_all_splines()
+	end
+	
 	function M:init()
+			plugin.serializer(M)
 		if not maskprog then
 			maskprog = GLSL:new():compile(vert_sh,frag_sh)
+			maskprog_pad = GLSL:new():compile(vert_pad_sh,frag_pad_sh)
 		end
+		M.oldW = GL.W
+		M.oldH = GL.H
 	end
 	
 	local function Tess2tesselate(points1)
@@ -497,6 +545,128 @@ local contours_loader = gui.FileBrowser(nil,{filename="phfx",key="importcont",pa
 		fbo:UnBind()
 	end
 	
+	function M:spline2mask_pad(fbo, front_color, pad,square,tol,dontrepair, ii)
+		if pad==0 then return M:spline2mask(fbo, front_color, ii) end
+		ii = ii or NM.curr_spline
+		
+		local points = self.ps[ii]
+		if not points then return end
+		
+		local points, indexes, pol2copy,polycross2 = CG.PolygonPad(self.ps[ii], pad, square, tol , true,dontrepair) --square, tol, do_triang
+		
+		local ndc = {}
+		local color = {}
+		local npol = #self.ps[ii]
+		for i=1,#points do
+			ndc[i] =  (points[i] + mat.vec2(0.5,0.5))*2/mat.vec2(GL.W,GL.H) - mat.vec2(1,1)
+			if i>npol then
+				color[i] = mat.vec4(0,0,0,front_color[4])
+			else
+				color[i] = mat.vec4(front_color[1], front_color[2], front_color[3], front_color[4])
+			end
+		end
+		
+		M.triangulation = M.triangulation or {}
+		M.triangulation[ii] = {points=points,tr=indexes}
+		
+		local vaoT = VAO({position=ndc,color=color},maskprog_pad,indexes)
+		--local vaoT = VAO({position=ndc},maskprog,indexes)
+		
+		gl.glPointSize(4)
+		maskprog_pad:use()
+		--maskprog.unif.color:set(front_color)
+		fbo:Bind()
+		ut.ClearDepth()
+		gl.glDisable(glc.GL_DEPTH_TEST)
+		fbo:viewport()
+		vaoT:draw_elm()
+		--vaoT:draw(glc.GL_LINE_LOOP)
+		--vaoT:draw(glc.GL_POINTS)
+		vaoT:draw_mesh()
+		--vaoT:draw()
+		fbo:UnBind()
+		gl.glPointSize(1)
+		
+		for i=self:get_numsplines(),2,-1 do self:deletespline(i) end
+		if polycross2 and #polycross2 > 1 then
+			local n = self:newspline(pol2copy)
+	
+			self:calc_spline(n)
+			for i=1,#polycross2 do
+				local pol = polycross2[i]
+				local n = self:newspline(pol)
+				self:calc_spline(n)
+			end
+			
+			self:set_current(2)
+		end
+		--[[
+		local curr = NM.curr_spline
+		local spline = self
+		spline:deletespline(2)
+		spline:newspline(pointspad)
+		--spline:newhole(pointsR)
+		spline:calc_spline(2)
+		spline:set_current(curr)
+		--]]
+	end
+	function M:spline2mask_pad_glu(fbo, front_color, pad, ii)
+		ii = ii or NM.curr_spline
+		
+		local points = self.ps[ii]
+		if not points then return end
+		
+		local points = {}--deepcopy(spline.ps[ii])
+		for i,v in ipairs(self.ps[ii]) do
+			points[i] = ffi.new("GLdouble[6]",v.x,v.y, front_color[1], front_color[2], front_color[3], front_color[4])
+		end
+		local _,pointspad,ppad3 = CG.PolygonPad(self.ps[ii], pad, false)
+		for i,v in ipairs(pointspad) do
+			pointspad[i] = ffi.new("GLdouble[6]",v.x,v.y, 0,0,0,1)
+			--pointspad[i] = ffi.new("GLdouble[6]",v.x,v.y, front_color[1], front_color[2], front_color[3], front_color[4])
+		end
+		local contours = {points,pointspad}
+		local function do_attr(meshes)
+			return function(pointer)
+				print("vertexCallback",pointer[0],pointer[1],pointer[2],pointer[3],pointer[4],pointer[5])
+				table.insert(meshes[#meshes],{p=mat.vec2(pointer[0],pointer[1]),attr={pointer[2],pointer[3],pointer[4],pointer[5]}})
+			end,
+			function(tobj, vertex, pp)
+				glu.gluTessVertex(tobj, vertex, pp);
+			end
+		end
+		local glu_tesselator = require"anima.fonter.glu_tesselator"
+		local meshes = glu_tesselator.tesselate_set(contours,glc.GLU_TESS_WINDING_ODD,true, do_attr)
+		--meshes[1].triangles = CG.Delaunay( meshes[1].points,meshes[1].triangles)
+		local points, indexes = meshes[1].points, meshes[1].triangles
+		
+		local ndc = {}
+		local color = {}
+		for i=1,#points do
+			ndc[i] =  (points[i].p + mat.vec2(0.5,0.5))*2/mat.vec2(GL.W,GL.H) - mat.vec2(1,1)
+			color[i] = mat.vec4(unpack(points[i].attr))
+			--color[i] = mat.vec4(1,0,0,1)
+		end
+
+		-- local vaoT = VAO({position=ndc,color=color},maskprog_pad,indexes)
+		local vaoT = VAO({position=ndc},maskprog,indexes)
+		
+		gl.glPointSize(4)
+		maskprog:use()
+		maskprog.unif.color:set(front_color)
+		fbo:Bind()
+		ut.ClearDepth()
+		gl.glDisable(glc.GL_DEPTH_TEST)
+		fbo:viewport()
+		--vaoT:draw_elm()
+		--vaoT:draw(glc.GL_LINE_LOOP)
+		--vaoT:draw(glc.GL_POINTS)
+		vaoT:draw_mesh()
+		--vaoT:draw()
+		fbo:UnBind()
+		gl.glPointSize(1)
+	end
+	
 	local function box2d(points)
 		local floor = math.floor
 	
@@ -560,6 +730,7 @@ local contours_loader = gui.FileBrowser(nil,{filename="phfx",key="importcont",pa
 	end
 	
 	function M:deletespline(ii)
+		if ii==0 then return 0 end
 		ii = ii or NM.curr_spline
 		if ii > numsplines then return numsplines end
 		table.remove(M.sccoors,ii)
@@ -724,7 +895,25 @@ local contours_loader = gui.FileBrowser(nil,{filename="phfx",key="importcont",pa
 		end
 		return pts, contours
 	end
-	
+	function M:DrawTriangulation(trian,color,i)
+		--if i~=1 then return end
+		local dl = ig.GetBackgroundDrawList(ig.GetMainViewport())
+		color = color or ig.U32(0.75,1,0,0.1)
+		--print"DrawTriangulation"
+		if #trian.points == 0 then return end
+		local pointsI = {}
+		for i=1,#trian.points do local p = trian.points[i];pointsI[i-1] = ViewportToScreen(p.x, p.y) end
+		local tr = trian.tr
+		--for i=1,math.min(#tr,3*NM.triangs),3 do
+		if #trian.tr > 0 then
+		for i=1,#tr,3 do 
+			dl:AddTriangleFilled(pointsI[tr[i]], pointsI[tr[i+1]], pointsI[tr[i+2]],color) 
+		end
+		end
+		--for i=1,#tr do dl:AddText(pointsI[tr[i]]+ig.ImVec2(0,-16),ig.U32(1,1,1,1),tostring(tr[i]+1)) end
+		--for i=1,#tr,3 do dl:AddTriangle(pointsI[tr[i]], pointsI[tr[i+1]], pointsI[tr[i+2]],color) end
+		for i=0,#pointsI do dl:AddText(pointsI[i]+ig.ImVec2(0,-16),ig.U32(1,1,1,1),tostring(i+1)) end
+	end
 	function M:save()
 		local pars = {sccoors=self.sccoors,VP={GL.W,GL.H}}
 		pars.alpha = self.alpha
@@ -760,7 +949,7 @@ local contours_loader = gui.FileBrowser(nil,{filename="phfx",key="importcont",pa
 		numsplines = params.numsplines
 		NM.defs.curr_spline.args.max=numsplines
 		action=1 --no edit acction
-		NM.vars.curr_spline[0] = 1
+		NM.vars.curr_spline[0] = numsplines
 		M:calc_all_splines()
 	end
 	M.draw = function() 
@@ -771,13 +960,13 @@ local contours_loader = gui.FileBrowser(nil,{filename="phfx",key="importcont",pa
 	return M
 end
 
---[=[
+---[=[
 if not ... then
 local GL = GLcanvas{H=900,aspect=1,DEBUG=true,use_imgui_viewport=false}
 local function update(n) end --print("update spline",n) end
 local edit = Editor(GL,update,{region=true})--,doblend=true})
 local plugin = require"anima.plugins.plugin"
-edit.fb = plugin.serializer(edit)
+--edit.fb = plugin.serializer(edit)
 local DBox = GL:DialogBox("Spline demo",true)
 function GL.init()
 	DBox:add_dialog(edit.NM)
@@ -790,7 +979,7 @@ GL:start()
 end
 --]=]
 
----[=[
+--[=[
 if not ... then
 local GL = GLcanvas{H=900,aspect=1,use_log=true,use_imgui_viewport=false}
 local function update(n) end --print("update spline",n) end
@@ -798,9 +987,14 @@ local edit = Editor(GL,update,{region=true})--,doblend=true})
 local plugin = require"anima.plugins.plugin"
 edit.fb = plugin.serializer(edit)
 local DBox = GL:DialogBox("Spline demo",true)
+local NMpad
 local maskfbo
 function GL.init()
 	DBox:add_dialog(edit.NM)
+	NMpad = DBox:Dialog("padd",{{"pad",0,guitypes.drag,{min=-50,max=150},function() edit.NM.dirty = true end},
+	{"square",false,guitypes.toggle,function() edit.NM.dirty = true end},
+	{"tol",10,guitypes.val,{min=0.1,max=30},function() edit.NM.dirty = true end},
+	{"dontrepair",false,guitypes.toggle,function() edit.NM.dirty = true end},})
 	maskfbo = GL:initFBO({no_depth=true})
 	GL:DirtyWrap()
 end
@@ -820,8 +1014,8 @@ function GL.draw()
 	gl.glClearColor(0,0,1,0)
 	ut.Clear()
 	maskfbo:UnBind()
-	for i=1,edit:get_numsplines() do
-		edit:spline2mask(maskfbo,{1,0,0,0},i)
+	for i=1,1 do --edit:get_numsplines() do
+		edit:spline2mask_pad(maskfbo,{1,0,0,0},NMpad.pad, NMpad.square, NMpad.tol, NMpad.dontrepair,i)
 	end
 	edit.NM.dirty = false
 	end

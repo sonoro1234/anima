@@ -24,7 +24,7 @@ end
 local cb_errorCallback = ffi.cast("void (*)()", ffi.cast("void (*)(GLenum)", errorCallback))
 
 function vertexCallback(pointer)
-	printD("vertexCallback",pointer[0],pointer[1],pointer[2],pointer[3],pointer[4],pointer[5])
+	printD("vertexCallback",pointer,"vals",pointer[0],pointer[1],pointer[2],pointer[3],pointer[4],pointer[5])
    --const GLdouble *pointer;
 
    --pointer = (GLdouble *) vertex;
@@ -73,7 +73,7 @@ local cb_combineCallback = ffi.cast("void (*)()", ffi.cast("void (*)(GLdouble[3]
 
 local M = {}
 
-local function get_Meshes(meshes, get_indexes)
+local function get_Meshes(meshes, get_indexes, do_attr)
    local Meshes = {}
    local tr = {}
    for i=1,#meshes do
@@ -119,7 +119,12 @@ local function get_Meshes(meshes, get_indexes)
 			for j=1,#tr[i] do table.insert(trs, tr[i][j] + last_tr) end
 			last_tr = last_tr + #meshes[i]
 		end
-		local m = mesh.mesh{points=Points, triangles=trs}
+		local m
+		if do_attr then
+			m = {points=Points, triangles=trs}
+		else
+			m = mesh.mesh{points=Points, triangles=trs}
+		end
 		table.insert(Meshes, m)
    end
    return Meshes
@@ -136,7 +141,7 @@ function M.init()
    glu.gluTessCallback(tobj, glc.GLU_TESS_ERROR, cb_errorCallback);
    glu.gluTessCallback(tobj, glc.GLU_TESS_COMBINE, cb_combineCallback);
    --only triangles are generated
-   glu.gluTessCallback(tobj, glc.GLU_TESS_EDGE_FLAG_DATA, function() end)
+  -- glu.gluTessCallback(tobj, glc.GLU_TESS_EDGE_FLAG_DATA, function() end)
 end
 function M.uninit()
 	glu.gluDeleteTess(M.tobj);
@@ -150,11 +155,13 @@ function M.tesselate(poly, winding, get_indexes)
    glu.gluTessProperty(tobj, glc.GLU_TESS_WINDING_RULE,winding or glc.GLU_TESS_WINDING_ODD);
    glu.gluTessNormal(tobj, 0,0,1)
   -- for ii,poly in ipairs(polyset) do
-   glu.gluTessBeginPolygon(tobj, NULL);
+   glu.gluTessBeginPolygon(tobj, nil);
         glu.gluTessBeginContour(tobj);
 		for i,v in ipairs(poly) do
 			local vertex = ffi.new("GLdouble[3]",v.x,v.y,0)
 			insert(anchor, vertex)
+			-- local vertex2 = ffi.new("GLdouble[6]",v.x,v.y,0,1,1,1)
+			-- insert(anchor, vertex2)
             glu.gluTessVertex(tobj, vertex, vertex);
 		end
 		glu.gluTessEndContour(tobj);
@@ -185,11 +192,19 @@ function M.tesselate(poly, winding, get_indexes)
       return get_Meshes(meshes, get_indexes)
 end
 --polyset no poly.holes
-function M.tesselate_set(polyset,winding,get_indexes)
+function M.tesselate_set(polyset,winding,get_indexes, do_attr)
 	--print("tesselate_set winding", winding)
 	meshes = {}
     if not M.tobj then M.init() end
 	local tobj = M.tobj 
+	
+	local set_vertex
+	if do_attr then
+		local vertexCallback
+		vertexCallback, set_vertex = do_attr(meshes)
+		local cb_vertexCallback = ffi.cast("void (*)()", ffi.cast("void (*)(GLdouble*)", vertexCallback))
+		glu.gluTessCallback(tobj, glc.GLU_TESS_VERTEX, cb_vertexCallback);
+	end
 
    glu.gluTessProperty(tobj, glc.GLU_TESS_WINDING_RULE, winding or glc.GLU_TESS_WINDING_ODD);
    glu.gluTessNormal(tobj, 0,0,1)
@@ -197,18 +212,29 @@ function M.tesselate_set(polyset,winding,get_indexes)
    glu.gluTessBeginPolygon(tobj, nil);
    for ii,poly in ipairs(polyset) do
         glu.gluTessBeginContour(tobj);
-		for i,v in ipairs(poly) do
-			local vertex = ffi.new("GLdouble[3]",v.x,v.y,0)
-			insert(anchor, vertex)
-            glu.gluTessVertex(tobj, vertex, vertex);
+		if do_attr then
+			for i,pp in ipairs(poly) do
+				local vertex = ffi.new("GLdouble[3]",pp[0],pp[1],0)
+				insert(anchor, vertex)
+				--glu.gluTessVertex(tobj, vertex, vertex);
+				set_vertex(tobj, vertex, pp)
+			end
+		else
+			for i,v in ipairs(poly) do
+				local vertex = ffi.new("GLdouble[3]",v.x,v.y,0)
+				insert(anchor, vertex)
+				glu.gluTessVertex(tobj, vertex, vertex);
+			end
 		end
 		glu.gluTessEndContour(tobj);
     end
 		glu.gluTessEndPolygon(tobj);
   -- end
    --glu.gluDeleteTess(tobj);
-
+   -- in case do_attr
+	glu.gluTessCallback(tobj, glc.GLU_TESS_VERTEX,cb_vertexCallback1);
+	
 	anchor = {}
-   return get_Meshes(meshes, get_indexes)
+   return get_Meshes(meshes, get_indexes, do_attr)
 end
 return M
