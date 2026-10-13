@@ -131,18 +131,20 @@ local blurmaker = require"anima.plugins.gaussianblur3"
 local M = {}
 function M.make(GL)
 	local bloomer = {}
-	local NM = NotModal("bloom",
+	local NM = GL:Dialog("bloom", --NotModal("bloom",
 	{
 	{"bloomlevel",1.0,guitypes.val,{min=0,max=1}},
 	{"bloomfac",1.0,guitypes.val,{min=0,max=2}},
 	{"bloom_size",3.0,guitypes.val,{min=2,max=8}},
 	{"iters",3.0,guitypes.val,{min=0,max=10}},
+	{"bypass",false,guitypes.toggle},
 	},function(n,v)  end)
 	
 	bloomer.NM = NM
 
 	local blurer
 	function bloomer:init()
+		print"bloomer:init======================================================================="
 		self.clipfbo = GL:initFBO()
 		self.light_fbo = GL:initFBO()
 		self.bloom_fbo = GL:initFBO()
@@ -163,9 +165,12 @@ function M.make(GL)
 		if not self.inited then self:init() end
 		local theclip,bloomlevel,bloomfac = get_args(args,t)
 		
+		if not NM.bypass then
+		
 		local old_framebuffer = self.clipfbo:Bind()
 		ut.Clear()
 		theclip[1]:draw(t, w, h,theclip)
+		
 
 		---------get lights
 		self.light_fbo:Bind()
@@ -197,19 +202,26 @@ function M.make(GL)
 		ut.Clear()
 		ut.project(w,h)
 		ut.DoQuad(w,h)
+		else --bypass
+			ut.Clear()
+			theclip[1]:draw(t, w, h,theclip)
+		
+		end --bypass
 	end
 	GL:add_plugin(bloomer)
 	return bloomer
 end
 
---[=[
+if not ... then
+---[=[
 --test
 
-GL = GLcanvas{fps=250,RENDERINI=0,RENDEREND=208,H=700,aspect = 1.5}
+local GL = GLcanvas{fps=250,RENDERINI=0,RENDEREND=208,H=700,aspect = 1.5}
 --texter = require"anima.plugins.GLTextClip"(GL)
 --texini = {texter,size=AN({0.05,0.2,15}),text={[[Palmeras]],"Huecas"},color={1,1,1},rot_speed = 30,centered=true,dontclear=true,shadow=true,shadowdist=0.01, posX = AN{-0.75,-0.55,15},posY = AN{-0.5,0,15},bright = AN({0,1,1},{1,1,20},{1,0,3})}
 
 function GL.init()
+	print("GL example init =======================================================================",GL)
 	textura2 = GL:Texture():Load([[c:\luaGL\media\estanque-001.jpg]])
 	theblommer = M.make(GL)
 	--GL.animation:add_animatable(AN1(theblommer.NM.vars.bloomlevel,{1,0.85,40,unit_maps.sinemapf(40*2)}))
@@ -224,5 +236,7 @@ function GL.draw(t,w,h)
 end
 GL:start()
 --]=]
+end
+
 
 return M

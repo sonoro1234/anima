@@ -68,34 +68,67 @@ void main()
 ]]
 local function make(GL,name)
 	name = name or "skybox"
-local SK = {sphere_point_to_texcoords=sphere_point_to_texcoords}
+	local plugin = require"anima.plugins.plugin"
+local SK = plugin.new{res={GL.W,GL.H},sphere_point_to_texcoords=sphere_point_to_texcoords}
 local glmatrix = require"anima.glmatrix"
 local par_shapes = require"par_shapes"
 
-local NM = GL:Dialog(name,{
+local DBox = GL:DialogBox("skyboxx")
+local NM = DBox:Dialog(name,{
 	{"morph_fac",1,guitypes.val,{min=0,max=1}},
 	{"scale",3.1,guitypes.val,{min=0.5,max=20}},
 	{"texscale",0.666,guitypes.val,{min=0.5,max=2}},
 	{"texscale2",0.8,guitypes.val,{min=0.5,max=2}},
 	})
-SK.NM = NM
+SK.NM = DBox
 function SK:init(args)
+	print("SKinit")
 	args = args or {}
 	local slices = 30
 	self.fbo = GL:initFBO()
-	self.camera = args.camera or newCamera(GL,true)
+	self.camera = args.camera or newCamera(GL,"tps")
+	self.camera.NMC.vars.distfac[0] = 1
+	self.camera.NMC.vars.focal[0] = 50
+	DBox:add_dialog(self.camera.NMC)
 	local mesh1 = par_shapes.create.plane(slices,slices)
 	self.program = GLSL:new():compile(vert_sh,frag_sh)
 	self.vao1 = VAO({texc=mesh1.tcoords},self.program, mesh1.triangles,{texc=mesh1.npoints*2},mesh1.ntriangles*3)
 	self.vao1:UnBind()
 	print(ffi.typeof(mesh1),ffi.typeof(mesh1.tcoords),ffi.sizeof(mesh1.tcoords))
 	print("camara:GetHeightForZ(3)",self.camera:GetHeightForZ(self.camera.NMC.dist))
-	self.NM.vars.scale[0] = (self.camera:GetHeightForZ(self.camera.NMC.dist)*2.05)
+	NM.vars.scale[0] = (self.camera:GetHeightForZ(self.camera.NMC.dist)*2.05)
 	self.inited = true
 end
 local function mix(a,b,fac)
 	return a * (1-fac) + b * fac
 end
+
+function SK:process(texture)
+
+	local MM = glmatrix.scale_mat(NM.scale)
+
+	self.program:use()
+	self.program.unif.tex:set{0}
+	self.program.unif.MM:set(MM:table())
+	
+	texture:Bind()
+
+	self.program.unif.morph_fac:set{NM.morph_fac}
+
+	self.program.unif.MVP:set(self.camera:MVP().gl)
+
+	local m1 = mat.translate(-0.5,-0.5, 0)
+	local m2 = mat.translate(1,1, 0)
+	local m3 = mat.scale(mix(NM.texscale,1,NM.morph_fac),mix(NM.texscale2,1,1-NM.morph_fac),1)
+	local m4 = mat.translate(-1,-1, 0)
+	local TM = m1*m2*m3*m4
+	self.program.unif.TextureMatrix:set(TM.gl)
+
+	ut.Clear()
+	self.vao1:draw_elm()
+
+end
+
 function SK:draw(t,w,h,args)
 
 	if not self.inited then self:init() end
@@ -136,27 +169,15 @@ function SK:draw(t,w,h,args)
 	
 	self.program.unif.morph_fac:set{NM.morph_fac}
 
-	--args.camera:Set()
 	self.program.unif.MVP:set(args.camera:MVP().gl)
 
---[[
-	gl.glMatrixMode(glc.GL_TEXTURE);
-	gl.glLoadIdentity();
-	gl.glTranslated(-0.5,-0.5, 0);
-	gl.glTranslated(1,1, 0);
-	--gl.glScaled(mix(NM.texscale,1,NM.morph_fac),1,1)
-	--gl.glScaled(mix(NM.texscale,NM.texscale2,NM.morph_fac),1,1)
-	gl.glScaled(mix(NM.texscale,1,NM.morph_fac),mix(NM.texscale2,1,1-NM.morph_fac),1)
-	gl.glTranslated(-1,-1, 0);
---]]
----[[
 	local m1 = mat.translate(-0.5,-0.5, 0)
 	local m2 = mat.translate(1,1, 0)
 	local m3 = mat.scale(mix(NM.texscale,1,NM.morph_fac),mix(NM.texscale2,1,1-NM.morph_fac),1)
 	local m4 = mat.translate(-1,-1, 0)
 	local TM = m1*m2*m3*m4
 	self.program.unif.TextureMatrix:set(TM.gl)
---]]
+
 	
 	ut.Clear()
 	self.vao1:draw_elm()
@@ -165,30 +186,33 @@ function SK:draw(t,w,h,args)
 	--self.vao1:draw(glc.GL_POINTS,32*32)
 	--self.vao1:draw_mesh()
 end
+	GL:add_plugin(SK,"skybox2")
 	return SK
 end
 
 if not ... then
 ---[=[
 require"anima"
-GL = GLcanvas{fps=60,aspect=1.5,H=700}
+GL = GLcanvas{fps=60,aspect=1.5,H=700,profile="CORE"}
 local SK = make(GL)
 local textura
 function GL.init()
 
-	camara = newCamera(GL,"tps")
-	camara.NMC.vars.distfac[0] = 1
-	camara.NMC.vars.focal[0] = 50
+	-- camara = newCamera(GL,"tps")
+	-- camara.NMC.vars.distfac[0] = 1
+	-- camara.NMC.vars.focal[0] = 50
 	
 	--textura = Texture():Load[[C:\Users\Carmen\Desktop\humanoides f\ajetreo\ajetreo-001.jpg]]
 	--textura = Texture():Load[[C:\luaGL\media\juncos.tif]]
 	--textura = Texture():Load[[C:\luaGL\media\estanque-001.jpg]]
 	--textura = Texture():Load[[C:\luaGL\media\estanque-002.jpg]]
 	textura = GL:Texture():Load[[C:\luaGL\media\estanque7.jpg]]
-	SK:init({camera=camara})
+	--SK:init({camera=camara})
+	GL:DirtyWrap()
 end
 function GL.draw(t,w,h)
-	SK:draw(t,w,h,{textura=textura,camera=camara})
+	--SK:draw(t,w,h,{textura=textura,camera=camara})
+	SK:process(textura)
 end
 
 GL:start()

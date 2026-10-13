@@ -211,7 +211,8 @@ end},
 	return LM
 end
 
---[=[
+if not ... then
+---[=[
 require"anima"
 GL = GLcanvas{H=1080,viewH=700,aspect=1.5}
 --GLSL.default_version = "#version 120\n"
@@ -233,6 +234,7 @@ end
 
 GL:start()
 --]=]
+end
 
 return make
 

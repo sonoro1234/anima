@@ -234,7 +234,8 @@ function ES.make(GL)
 	return Clip
 end
 
---[=[
+if not ... then
+---[=[
 --test
 
 GL = GLcanvas{fps=250,RENDERINI=0,RENDEREND=208,H=700,aspect = 1.5}
@@ -250,4 +251,6 @@ function GL.draw(t,w,h)
 end
 GL:start()
 --]=]
+end
+
 return ES

@@ -232,15 +232,15 @@ end
 
 if not ... then
 ---[=[
-local GL = GLcanvas{H=700,aspect=1,fbo_nearest=true}
+local GL = GLcanvas{H=700,aspect=1,fbo_nearest=true,profile="CORE"}
 
 NM = GL:Dialog("test",{
 	{"orig",false,guitypes.toggle},
 	{"rep",false,guitypes.toggle},
 })
 
---fileName = [[C:\luaGL\frames_anima\msquares\imagen2.tif]]
-fileName = [[C:\luaGL\frames_anima\im_test\Cosmos_original.jpg]]
+fileName = [[C:\luaGL\frames_anima\msquares\imagen2.tif]]
+--fileName = [[C:\luaGL\frames_anima\im_test\Cosmos_original.jpg]]
 --fileName = [[C:\luaGL\frames_anima\flood_fill\dummy.png]]
 --fileName = [[C:\luaGL\frames_anima\im_test\unnamed0.jpg]]
 local im = require"imffi"

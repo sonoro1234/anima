@@ -18,7 +18,7 @@ im = require"imffi"
 gui = require"anima.gui"
 
 --hack for old style iup NotModal
---must be used after GL definition
+--must be used after global GL definition
 function NotModal(...)
 	return GL:Dialog(...)
 end

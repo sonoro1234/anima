@@ -51,7 +51,8 @@ void main(){
 			minK = i;
 		}
 	}
-	fcolor = vec4(mincentercolor,minK);
+	//fcolor = vec4(mincentercolor,minK); //for debugging
+	fcolor = vec4(mincentercolor,1.0);
 }
 
 ]]
@@ -113,7 +114,7 @@ void main()
 	
 	vec3 v = col.rgb - colcenter.rgb;
 	dist = vec4(dot(v,v));
-	gl_Position = vec4(-1,0,0.0,1.0);
+	gl_Position = vec4(0,0,0.0,1.0);
 }
 ]]
 
@@ -164,10 +165,11 @@ void main()
 require"anima"
 local plugin = require"anima.plugins.plugin"
 local function ColorKmeans(GL,K)
-	K = K or 100
+	local MaxK = 100
+	K = K or MaxK
 	local M = {}
-	local NM=GL:Dialog("ColorKmeans",{
-{"K",K,guitypes.valint,{min=1,max=100}},--function(val) M:setK(val) end},
+	local NM = GL:Dialog("ColorKmeans",{
+{"K",K,guitypes.valint,{min=1,max=K}},--function(val) M:setK(val) end},
 {"th",3,guitypes.valint,{min=1,max=9}},
 --{"randominit",false,guitypes.toggle},
 {"maxiters",100,guitypes.valint,{min=50,max=200}},
@@ -331,6 +333,7 @@ local function ColorKmeans(GL,K)
 		
 		pfromlab = GLSL:new():compile(vert_std,frag_fromlab)
 		mesh.quad():vao(pfromlab)
+		self.inited = true
 	end
 	local fbo1,centersfbo,fbo
 	function M:check()
@@ -342,7 +345,7 @@ local function ColorKmeans(GL,K)
 		print"check done"
 	end
 	function M:setK(K)
-		print"setK--------------------"
+		print("setK--------------------",K,NM.K)
 		if K and NM.K~=K then NM.vars.K[0] = K end
 		if centersfbo==nil or centersfbo.width ~= NM.K then
 			if centersfbo then centersfbo:delete(true) end --keep tex centerstex
@@ -476,8 +479,10 @@ local function ColorKmeans(GL,K)
 		ut.Clear()
 		fbo1:UnBind()
 		local countiters = 0
-		--print"first check"
-		--prtable(check(fbo1:tex()))
+		
+		-- print"first check"
+		-- prtable(check(fbo1:tex()))
+		
 		repeat
 			updated = false
 			gl.glDisable(glc.GL_BLEND)
@@ -494,9 +499,9 @@ local function ColorKmeans(GL,K)
 			programfindcenters.vaos[1]:draw_elm()
 			fbo1:UnBind()
 			
-			--print"check 2"
-			--prtable(check(fbo1:tex()))
-			--print("checknan fbo1 tex",checknan(fbo1:tex()))
+			-- print"check 2"
+			-- prtable(check(fbo1:tex()))
+			-- print("checknan fbo1 tex",checknan(fbo1:tex()))
 			
 			programupdatecenters:use()
 			local U = programupdatecenters.unif
@@ -556,13 +561,15 @@ local function ColorKmeans(GL,K)
 			U.tex:set{0}
 			U.texcenters:set{1}
 			fbo1:tex():Bind()
+			centersfbo:tex():Bind(1)
 			gl.glViewport(0,0,1,1)
 			ut.Clear()
 			programloss.vaos[1]:draw(glc.GL_POINTS)
 			lossfbo:UnBind()
 			local data = lossfbo:tex():get_pixels(glc.GL_FLOAT,glc.GL_RED)
 			
-			--print("loss",data[0],(oldloss-data[0])/data[0])
+			-- print("loss",data[0],(oldloss-data[0])/data[0],0.1^NM.th)
+			-- print(data[0],data[1],data[2],data[3])
 			updated = true
 			--if data[0] == oldloss then updated=false end
 			if math.abs(oldloss-data[0])/data[0] <= 0.1^NM.th then updated=false end
@@ -637,6 +644,7 @@ local function ColorKmeans(GL,K)
 	function M:process1(texture)
 		if not oldtexsignature or oldtexsignature~=texture:get_signature() then
 			print("============= ColorKmeans process1 colors_table==========================")
+			print(oldtexsignature,texture:get_signature())
 			oldtexsignature=texture:get_signature()
 			local fac = math.min( math.sqrt(10000/(texture.width*texture.height)),1)
 			local texr = texture:resample_fac(fac, texture.resample_nearest)
@@ -645,8 +653,8 @@ local function ColorKmeans(GL,K)
 			--limit maxim K to number of colors
 			M.colors_table, M.colors_count = texr:colors_table()
 			print("============= ColorKmeans process1 colors_table done==========================")
-			NM.vars.K[0] = math.min(NM.K, #M.colors_table)
-			NM.defs.K.args.max = NM.K
+			NM.vars.K[0] = math.min(NM.K,MaxK, #M.colors_table)
+			NM.defs.K.args.max = MaxK
 			print("colors",#M.colors_table)
 			algo.quicksort_mirror(M.colors_count, M.colors_table, 1, #M.colors_count, function(a,b) return a>b end)
 			print("============= ColorKmeans process1 colors_table sorted==========================")
@@ -676,7 +684,7 @@ end
 
 if not ... then
 ---[=[
-GL = GLcanvas{fps=25,H=700,aspect = 1.5,DEBUG=true,fbo_nearest=true,SDL=false}
+GL = GLcanvas{fps=25,H=700,aspect = 1.5,DEBUG=true,fbo_nearest=true,SDL=false,profile="CORE"}
 
 local textura
 local ColorK = ColorKmeans(GL)
@@ -691,11 +699,13 @@ Dbox:add_dialog(NM)
 Dbox:add_dialog(ColorK.NM)
 local fileName = [[C:\LuaGL\frames_anima\edges_detection\flowers2.png]]
 fileName = [[C:\LuaGL\media\estanque8.jpg]]
---local fileName = [[C:\LuaGL\frames_anima\edges_detection\bici.png]]
+local fileName = [[C:\LuaGL\frames_anima\edges_detection\bici.png]]
 --local fileName = [[C:\LuaGL\frames_anima\vectorize\dummy_color.tif]]
 --local fileName = [[C:\LuaGL\frames_anima\vectorize\dummy.png]]
 --local fileName = [[C:\anima\examples\vectorize\letraO.png]]
---local fileName = [[C:\LuaGL\media\gradient.tif]]
+local fileName = [[C:\LuaGL\media\gradient.tif]]
+local fileName = [[C:\LuaGL\media\_MG_2305.jpg]]
+local fbo
 function GL.init()
 	--GLSL.default_version = "#version 330\n"
 	--textura = GL:Texture():Load([[C:\luaGL\frames_timeline2\media\fiestaafrica.tif]],srgb)
@@ -704,7 +714,7 @@ function GL.init()
 	--textura = GL:Texture():Load([[D:\VICTOR\pelis\loopmar\master1080\loop1\frame-0001.tif]],srgb)
 	--textura = GL:Texture():Load[[D:\VICTOR\pelis\mixolidian\animacion\mixxxx\frame-0029.tif]]
 	GL:set_WH(textura.width, textura.height)
-	
+	fbo = GL:initFBO({no_depth=true})
 	GL:DirtyWrap()
 end
 
@@ -715,7 +725,9 @@ function GL.draw(tim,w,h)
 		textura:drawcenter()
 	else
 		ColorK:process(textura)
-		
+		-- ColorK:process_fbo(fbo,textura)
+		-- fbo:tex():drawcenter()
+		---[[
 		assert(ColorK.texx:is_texture())
 		if not ColorK.centerstex:is_texture() then prtable(GL.textures) end
 		assert(ColorK.centerstex:is_texture(),"not texture centers "..ColorK.centerstex.tex)
@@ -735,6 +747,7 @@ function GL.draw(tim,w,h)
 			ColorK.texx:drawcenter(w,h)
 			--ColorK.texr:drawcenter(w,h)
 		end
+		--]]
 	end
 
 	collectgarbage()

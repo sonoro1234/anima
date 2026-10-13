@@ -3,7 +3,7 @@ require"anima"
 local vert_shad = [[
 in vec3 Position;
 in vec2 texcoords;
-out vec2 texCoord;
+ noperspective out vec2 texCoord;
 void main()
 {
 	texCoord = texcoords;
@@ -13,8 +13,9 @@ void main()
 
 local frag_shad = [[
 
-in vec2 texCoord;
+noperspective in vec2 texCoord;
 out vec4 fcolor;
+
 void main(){
 	loadtextures(texCoord);
 	fcolor = process(texCoord);
@@ -26,7 +27,7 @@ function mixer(GL,ntex,NM)
 	local plugin = require"anima.plugins.plugin"
 	local M = plugin.new({res={GL.W,GL.H}},GL)
 	M.NM = NM or {}
-	local frag = ""
+	local frag = "uniform vec2 viewport_dims;"
 	if NM then
 		local typev = " float "
 		for k,v in pairs(NM.vars) do
@@ -69,6 +70,7 @@ function mixer(GL,ntex,NM)
 	--]]
 	function M:process(texs,w,h)
 		--print"doing"
+		w = w or self.res[1];h = h or self.res[2]
 		gl.glDisable(glc.GL_DEPTH_TEST)
 		assert(#texs == ntex,"number of textures failing!!")
 		self.tex = texs
@@ -78,14 +80,14 @@ function mixer(GL,ntex,NM)
 			t:Bind(i-1)
 			U["tex"..tostring(i)]:set{i-1}
 		end
-		
+		U.viewport_dims:set{w,h}
 		if NM then
 		for k,v in pairs(NM.vars) do
 			U[k]:set{NM[k]}
 		end
 		end
 		
-		gl.glViewport(0,0,w or self.res[1], h or self.res[2])
+		gl.glViewport(0,0,w, h)
 		ut.Clear()
 		self.vao:draw_elm()
 		--gl.glEnable(glc.GL_DEPTH_TEST)
@@ -143,7 +145,7 @@ end
 
 ---[=[
 if not ... then
-local GL = GLcanvas{H=900,aspect=1.5,SDL=false, use_log=true}
+local GL = GLcanvas{H=900,aspect=1.5,SDL=false, use_log=false}
 local pp = mixer(GL,0)
 function GL.init()
 	pp:set_process[[vec4 process(vec2 pos){

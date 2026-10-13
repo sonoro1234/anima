@@ -5,9 +5,12 @@ local vert_shad = [[
 //version 130
 uniform sampler2D tex0;
 uniform float nbins;
+float binwidth = 1.0/nbins;
+float halfbw = binwidth*0.5;
 uniform vec3 lumin = vec3( 0.30, 0.59, 0.11);
 in vec3 position;
 out vec4 color;
+//float minpos = -1+2.0/nbins;
 void main()
 {
 
@@ -15,8 +18,11 @@ void main()
 	float lum = dot(col.rgb,lumin);
 	//lum = lum*(nbins-1.0)/nbins; //from [0,1] to [0,1)
 	//lum = lum - (lum/nbins); //from [0,1] to [0,1)
-	gl_Position = vec4((lum - 0.5)*2.0, 0, 0.0, 1.0); //from [0.1] to [-1.1] ndc glpointsize=1.5 needed
-	//gl_Position = vec4(1, 0, 0.0, 1.0); //from [0.1) to [-1.1) ndc
+	lum = clamp(lum, halfbw, 1.0-halfbw); //clamp to center of first and last bins
+	gl_Position = vec4((lum - 0.5)*2.0, 0, 0.0, 1.0); //from [0.1] to [-1.1] 
+	//float pos = max(minpos,lum*2.0-1.0);//,-1) ;
+	//gl_Position = vec4(pos, 0, 0.5, 1.0);
+	//gl_Position = vec4(0, 0, 0.0, 1.0); //from [0.1) to [-1.1) ndc
 	color = vec4(1.0,0.0,0.0,1.0);
 }
 
@@ -391,7 +397,7 @@ local function Histogram(GL,nbins)
 	
 		gl.glClearColor(0.0, 0.0, 0.0, 0)
 		gl.glClear(bit.bor(glc.GL_COLOR_BUFFER_BIT,glc.GL_DEPTH_BUFFER_BIT))
-		gl.glPointSize(1.5)
+		gl.glPointSize(1)
 		quad_list:draw(glc.GL_POINTS)
 
 		gl.glDisable(glc.GL_BLEND)
@@ -475,7 +481,7 @@ end
 ---[=[
 if not ... then
 require"anima"
-local GL = GLcanvas{H=800,aspect=1,profile="CORE",use_log=true}
+local GL = GLcanvas{H=2^10,aspect=1,profile="CORE",use_log=true}
 local Histogram1 --= Histogram(GL,400)
 local archivo = [[C:\LuaGL\frames_anima\pelis\humanoides_peli\compressed1080\ninos\ninos-001.cmp]]
 --archivo = [[C:\LuaGL\media\BWramp.png]]
@@ -489,6 +495,8 @@ local NM = GL:Dialog("hist",{
 -- function GL.imgui()
   -- Hist()
 -- end
+local TP = require"anima.plugins.texture_processor"(GL,0)
+local fbo
 function GL.init()
 	local textura1 = GL:Texture():Load(archivo)--,srgb)
 	GL:set_WH(textura1.width,textura1.height)
@@ -496,16 +504,33 @@ function GL.init()
 	Histogram1:set_texture(textura1)
 	Histogram1:calc()
 	--Histogram1:cum_calc()
+	fbo = GL:initFBO({no_depth=true})
+	TP:set_process[[vec4 process(vec2 pos){
+		return vec4(vec3(pos.x),1.0);
+	}
+	]]
 end
-local val = 0.5
+
 function GL.draw(t,w,h)
 	gl.glClearColor(NM.val,NM.val,NM.val,1)
 	ut.Clear()
+	TP:process{}
+end
+function GL.drawNN(t,w,h)
+	gl.glClearColor(NM.val,NM.val,NM.val,1)
+	fbo:Bind()
+	ut.Clear()
+	fbo:UnBind()
+	gl.glClearColor(1,1,1,1)
+	ut.Clear()
 	--Histogram1:HEq(w,h,1)
-	Histogram1:ShowTex(w,h,NM.fac)
-	-- Histogram1:Show(w,h,NM.scale)
+	Histogram1:set_texture(fbo:tex())
+	Histogram1:calc()
+	--Histogram1:ShowTex(w,h,NM.fac)
+	Histogram1:Show(w,h,NM.scale)
 end
 GL:start()
 end
---]=]			  
+--]=]
+ 
 return Histogram

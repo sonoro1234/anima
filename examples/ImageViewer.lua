@@ -12,15 +12,18 @@ local plugins_chain_dirty = false
 
 local plugins = {
 "LABfxW2",
+"LCHfx",
+"photofx",
 "StarkHistEq",
+"unsharp_mask",
 "gaussianblur2",
 "gaussianblur3",
 "liquid",
 "ColorKmeans",
 "extrudecolor",
-"photofx",
 "watercolor4",
-"unsharp_mask",
+"morphology",
+"skybox2"
 }
 
 local plugins_chain_p = {}
@@ -229,6 +232,7 @@ local butnum = {}
 local size = ffi.new("float[1]",90)
 local corut_load
 local texture
+local anima_fbo_tex
 local curr_tex_name = ""
 local curr_image_num
 local hist
@@ -241,7 +245,7 @@ local function load_texture(filename, GL)
 	if ok then 
 		curr_tex_name = filename
 		GL:set_WH(texture.width, texture.height)
-
+		anima_fbo_tex = GL:Texture(GL.W, GL.H, glc.GL_RGB)
 		chain_fbo = MakeChainFBO(GL,#plugins_chain_p)
 	end
 	print("=========== end load texture ================")
@@ -438,8 +442,13 @@ ig.GetIO().IniFilename = nil
 	GL:DirtyWrap()--mask_plugin)
 	chain_fbo = MakeChainFBO(GL,0)
 	texture = GL:Texture()
+	anima_fbo_tex = GL:Texture(GL.W, GL.H, glc.GL_RGB)
+	
+	-- AddImage(GL, [[C:\LuaGL\media\_MG_2305.jpg]])
+	-- AddImage(GL, [[C:\LuaGL\media\estanque8.jpg]])
 	-- preparedir(GL,inipath)
 	-- currdir = inipath
+
 end
 
 
@@ -520,6 +529,14 @@ local function Thumbnails()
 	ig.End()
 end
 
+-- gets RGB avoiding alpha
+local function get_anima_fbo(GL)
+	local oldreadfbo = GL.fbo:BindRead(0)
+	anima_fbo_tex:Bind()
+	gl.glCopyTexImage2D(glc.GL_TEXTURE_2D, 0, glc.GL_RGB, 0, 0, GL.W, GL.H, 0)
+	glext.glBindFramebuffer(glc.GL_READ_FRAMEBUFFER, oldreadfbo);
+	return anima_fbo_tex
+end
 function GL.imgui()
 	--ig.ShowDemoWindow()
 
@@ -540,7 +557,8 @@ function GL.imgui()
 	if ig.Begin"image" then
 		local canvas_pos = ig.GetCursorScreenPos();
 		local sz = ig.GetContentRegionAvail()
-		local tex = GL.fbo:tex() --texture
+		local tex = get_anima_fbo(GL) 
+		--local tex = GL.fbo:tex() --texture
 		local posx,posy,wi,hi = getAspectViewport(sz.x,sz.y,tex.width,tex.height)
 		local pos = ig.ImVec2(posx,posy)+ canvas_pos
 		local draw_list = ig.GetWindowDrawList();

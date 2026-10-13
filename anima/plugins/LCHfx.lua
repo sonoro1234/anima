@@ -3,9 +3,10 @@
 local vert_shad = [[
 in vec3 Position;
 in vec2 texcoords;
+out vec4 tcoordf;
 void main()
 {
-	gl_TexCoord[0] = vec4(texcoords,0,1);
+	tcoordf = vec4(texcoords,0,1);
 	gl_Position = vec4(Position,1);
 }
 ]]
@@ -26,15 +27,16 @@ float scale = (lutSize - 1.0) / lutSize;
 float offset = 1.0 / (2.0 * lutSize);
 
 const vec3 lchscale = vec3(100.0,131.0,2.0*pi);
-
+in vec4 tcoordf;
+out vec4 fcolor;
 void main()
 {
-	vec4 tcolor = texture2D(tex0,gl_TexCoord[0].st);
+	vec4 tcolor = texture2D(tex0,tcoordf.st);
 	
 	if (bypass){
 		if(usealpha)
 			tcolor.a = 1.0;
-		gl_FragColor = tcolor;
+		fcolor = tcolor;
 		return;
 	}
 	
@@ -48,10 +50,10 @@ void main()
 
 	collch = collch/lchscale;
 	
-	collch.x = texture1D(LUTx,collch.x*scale + offset).r;
-	collch.y = texture1D(LUTy,collch.y*scale + offset).r;
+	collch.x = texture(LUTx,collch.x*scale + offset).r;
+	collch.y = texture(LUTy,collch.y*scale + offset).r;
 	//collch.y *= texture1D(LUTy,collch.z*scale + offset).r;
-	collch.z = texture1D(LUTz,collch.z*scale + offset).r;
+	collch.z = texture(LUTz,collch.z*scale + offset).r;
 	
 	collch = collch*lchscale;
 
@@ -64,9 +66,9 @@ void main()
 	if(invert)
 		tcolor.a = 1.0 - tcolor.a;
 	if(usealpha)
-		gl_FragColor = mix(vec4(tcolor.rgb,1.0),vec4(color,1.0),tcolor.a);
+		fcolor = mix(vec4(tcolor.rgb,1.0),vec4(color,1.0),tcolor.a);
 	else
-		gl_FragColor = vec4(color,tcolor.a);
+		fcolor = vec4(color,tcolor.a);
 }
 ]]
 
@@ -270,7 +272,7 @@ M.make = M.photofx
 if not ... then
 ---[=[
 require"anima"
-local GL = GLcanvas{H=800,aspect=3/2}
+local GL = GLcanvas{H=800,aspect=3/2,profile="CORE"}
 local tex,slab,lch
 function GL.init()
 	tex = GL:Texture():Load[[c:\luagl\media\estanque3.jpg]]

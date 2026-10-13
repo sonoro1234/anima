@@ -8,6 +8,10 @@ uniform sampler2D tex0;
 uniform float nposbinsX;
 uniform float nposbinsY;
 uniform float posbins;
+float half_posbinw = 0.5/posbins;
+uniform float nbins;
+float binwidth = 1.0/nbins;
+float halfbw = binwidth*0.5;
 uniform int color_mode = 0;
 
 float measure(float col,float sz){
@@ -36,15 +40,22 @@ void main()
 	float squareszX = sz.s/nposbinsX;
 	float colsquare = clamp(floor(position.x/squareszX),0.0,nposbinsX - 1.0);
 	float xwidth = measure(colsquare,squareszX);
+	
 	float squareszY = sz.t/nposbinsY;
 	float rowsquare = clamp(floor(position.y/squareszY),0.0,nposbinsY - 1.0);
-
 	float ywidth = measure(rowsquare,squareszY);
+	
 	float posbin = rowsquare*nposbinsX + colsquare;
 
 	posbin = (posbin + 0.5)/(posbins);
-	gl_Position = vec4((lum -0.5)*2.0,(posbin - 0.5)*2.0,0.0,1.0);
-	color = vec4(1.0/(xwidth*ywidth),0.0,0.0,1.0);
+	posbin = clamp(posbin, half_posbinw,1.0-half_posbinw);
+
+	lum = clamp(lum, halfbw, 1.0-halfbw); //clamp to center of first and last bins
+	float posx = (lum -0.5)*2.0;
+	gl_Position = vec4(posx,(posbin - 0.5)*2.0,0.0,1.0);
+	
+	//color = vec4(1.0/(xwidth*ywidth),0.0,0.0,1.0);
+	color = vec4(1.0,0.0,0.0,1.0);
 }
 
 ]]
@@ -106,6 +117,18 @@ void main()
 }
 ]]
 
+local frag_cum = [[
+uniform sampler2D hist;
+out vec4 fcolor;
+void main()
+{
+	vec4 acum = vec4(0.0);
+	for(int i=0;i<=gl_FragCoord.s;i++)
+		acum += texelFetch(hist,ivec2(i,gl_FragCoord.t),0);
+	fcolor = acum;
+}
+
+]]
 
 --with alfa an beta from Starks
 local frag_cum2 = [[
@@ -178,6 +201,7 @@ uniform float mindev_smooth;
 uniform float nposbinsX;
 uniform float nposbinsY;
 
+uniform int nQ;
 
 vec3 lumin = vec3( 0.30, 0.59, 0.11);
 
@@ -204,6 +228,15 @@ float get_targ(float lum,float posbin,sampler2D cumhist){
 	float tar1 = texelFetch(cumhist, ivec2(floor(lum*(sz.s-1)),floor(posbin)),0).r;
 	float tar2 = texelFetch(cumhist, ivec2(min(floor(lum*(sz.s-1))+1,sz.s-1),floor(posbin)),0).r;
 	return mix(tar1,tar2,fract(lum*(sz.s-1)));
+}
+
+float targ_for_pos(float lum, vec2 Q1){
+
+	float posbin = dot(Q1,vec2(1.0,nposbinsX));
+	float fQ1 = get_targ(lum,posbin,cumhist);
+	vec4 stdevcol  = texelFetch(stdev, ivec2(0,floor(posbin)),0);
+	fQ1 = stdev_func(lum,fQ1,mindev,mindev_smooth,stdevcol);
+	return fQ1;
 }
 
 vec3 labscale = vec3(1.0/100.0,1.0/115.0,1.0/115.0);
@@ -250,6 +283,7 @@ void main()
 	vec2 Q3 = clamp(P + vec2(1.0, 1.0), vec2(0.0), limpos);
 	vec2 Q4 = clamp(P + vec2(1.0, 0.0), vec2(0.0), limpos);
 	
+	/*
 	float posbin;
 	vec4 stdevcol;
 	posbin = dot(Q1,vec2(1.0,nposbinsX));
@@ -271,8 +305,28 @@ void main()
 	float fQ4 = get_targ(lum,posbin,cumhist);
 	stdevcol  = texelFetch(stdev, ivec2(0,floor(posbin)),0);
 	fQ4 = stdev_func(lum,fQ4,mindev,mindev_smooth,stdevcol);
+	*/
+	
+	float fQ1 = targ_for_pos(lum, Q1);
+	float fQ2 = targ_for_pos(lum, Q2);
+	float fQ3 = targ_for_pos(lum, Q3);
+	float fQ4 = targ_for_pos(lum, Q4);
+	
 	
 	float targ_lum = mix(mix(fQ1,fQ4,b.x),mix(fQ2,fQ3,b.x),b.y);
+	
+	/*
+	if(nQ==0)
+		targ_lum = mix(mix(fQ1,fQ4,b.x),mix(fQ2,fQ3,b.x),b.y);
+	else if(nQ==1)
+		targ_lum = fQ1;
+	else if(nQ==2)
+		targ_lum = fQ2;
+	else if(nQ==3)
+		targ_lum = fQ3;
+	else if(nQ==4)
+		targ_lum = fQ4;
+	*/
 	
 	if(isnan(targ_lum))
 		targ_lum = 1.0;//lum;
@@ -286,6 +340,16 @@ void main()
 	}else if(color_mode == 2){
 		col = RGB2sRGB(XYZ2RGB(LAB2XYZ(vec3(targ_lum*100.0,colspace.g,colspace.b),D65)));
 	}
+	
+	/*
+	if(length(a)<=0.05)
+		col = vec3(1,0,0);
+	if(Porig == vec2(1.0))
+		col = vec3(1,0,0);
+	if(P == vec2(0,1))
+		col = vec3(1,0,0);
+	*/
+	
 	fcolor = vec4(col,1.0);
 
 }
@@ -355,8 +419,8 @@ local function SetSRGB(srgb)
 end
 
 local function Histogram(GL,nbins,maxposbins)
-	maxposbins = maxposbins or 4800 --+ 3000
-	nbins = nbins or 400
+	maxposbins = maxposbins or 4800*2 --+ 3000
+	nbins = nbins or 400 --1024
 
 	local plugin = require"anima.plugins.plugin"
 	local hist = plugin.new{res={GL.W,GL.H}}
@@ -367,6 +431,8 @@ local function Histogram(GL,nbins,maxposbins)
 local alfabetadirty = true
 local NMamp = GL:Dialog("StarkHistEq",
 {
+--{"stark",true,guitypes.toggle,function() alfabetadirty = true end},
+--{"nQ",0,guitypes.valint,{min=0,max=4}},
 {"mindev",0,guitypes.val,{min=0,max=0.5}},
 {"mindev_smooth",0,guitypes.val,{min=0,max=0.5}},
 {"mix_fac",1,guitypes.val,{min=0,max=1}},
@@ -387,7 +453,7 @@ end},
 	hist.load = function(self,vv) alfabetadirty= true;return NMamp:SetValues(vv) end
 	
 	local fbohist,fbohist0,fbocumhist,fbostdev, programfx,programhistoshow
-	local pr_cum,pr_stdev,pr_he
+	local pr_cum,pr_stdev,pr_he,pr_cum1
 	local quad_list
 	local textura = false
 	local inited = false
@@ -399,6 +465,7 @@ end},
 		if not programfx then
 		programfx = GLSL:new():compile(vert_shad,frag_shad)
 		programhistoshow = GLSL:new():compile(vert_histoshow,frag_histoshow)
+		pr_cum1 = GLSL:new():compile(vert_cum,frag_cum)
 		pr_cum = GLSL:new():compile(vert_cum,frag_cum2)
 		pr_finish = GLSL:new():compile(vert_cum,frag_finish)
 		pr_stdev = GLSL:new():compile(vert_cum,frag_stdev)
@@ -483,26 +550,31 @@ end},
 		local old_framebuffer = ffi.new("GLint[1]",0)
 		gl.glGetIntegerv(glc.GL_FRAMEBUFFER_BINDING, old_framebuffer)
 		
-		glext.glUseProgram(pr_cum.program);
-		glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, fbcum.fb[0]);
-		glext.glActiveTexture(glc.GL_TEXTURE0);
-		gl.glBindTexture(glc.GL_TEXTURE_2D, fb.color_tex[0])
+		local pr_cume = pr_cum --NMamp.stark and pr_cum or pr_cum1
+
+		pr_cume:use()
+		--glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, fbcum.fb[0]);
+		fbcum:Bind()
+		-- glext.glActiveTexture(glc.GL_TEXTURE0);
+		-- gl.glBindTexture(glc.GL_TEXTURE_2D, fb.color_tex[0])
+		fb:tex():Bind()
 		
 		gl.glViewport(0, 0, nbins, posbins)
 		
 		gl.glDisable(glc.GL_DEPTH_TEST);
 		
-		pr_cum.unif.MVP:set(mat.ortho(0.0, nbins, 0.0, posbins, -1, 1).gl)
-		pr_cum.unif.hist:set{0}
-		pr_cum.unif.alfa:set{args.alfa}
-		pr_cum.unif.beta:set{args.beta}
+		pr_cume.unif.MVP:set(mat.ortho(0.0, nbins, 0.0, posbins, -1, 1).gl)
+		pr_cume.unif.hist:set{0}
+		pr_cume.unif.alfa:set{args.alfa}
+		pr_cume.unif.beta:set{args.beta}
 		
 		gl.glClearColor(0.0, 0.0, 0.0, 0)
 		gl.glClear(bit.bor(glc.GL_COLOR_BUFFER_BIT,glc.GL_DEPTH_BUFFER_BIT))
 		
-		DoQuad(nbins,posbins,pr_cum)
+		DoQuad(nbins,posbins,pr_cume)
 
-		glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, old_framebuffer[0]);
+		-- glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, old_framebuffer[0]);
+		fbcum:UnBind()
 		alfabetadirty = false
 	end
 	function hist:calc_finish()
@@ -550,6 +622,7 @@ end},
 		programfx.unif.nposbinsY:set{nposbinsY}
 		programfx.unif.posbins:set{posbins}
 		programfx.unif.color_mode:set{NMamp.color_mode}
+		programfx.unif.nbins:set{nbins}
 		
 		gl.glViewport(0, 0, nbins, posbins)
 		
@@ -590,13 +663,17 @@ end},
 
 	function hist:HEq(srgb,args)
 		args = args or NMamp
-		if alfabetadirty then self:cum_calc(); end
+		if alfabetadirty then self:cum_calc();
+		self:stdev_calc() 
+		end
 		glext.glUseProgram(pr_he.program);
 		glext.glActiveTexture(glc.GL_TEXTURE1);
 		gl.glBindTexture(glc.GL_TEXTURE_2D, fbocumhist.color_tex[0]) --fbo.color_tex[0])
 		
 		glext.glActiveTexture(glc.GL_TEXTURE2);
 		gl.glBindTexture(glc.GL_TEXTURE_2D, fbostdev.color_tex[0])
+		
+		pr_he.unif.nQ:set{args.nQ}
 		
 		pr_he.unif.tex0:set{0}
 		pr_he.unif.cumhist:set{1}
@@ -640,6 +717,7 @@ require"anima"
 local he, textura
 local GL = GLcanvas{H=800,aspect=1,profile="CORE"}
 fileName = [[C:\LuaGL\media\estanque8.jpg]]
+fileName = [[C:\LuaGL\media\_MG_2305.jpg]]
 function GL.init()
 	textura = GL:Texture():Load(fileName)
 	GL:set_WH(textura.width, textura.height)
@@ -655,7 +733,7 @@ end
 --[=[
 if not ... then
 require"anima"
-local GL = GLcanvas{H=900,aspect=1.5,SDL=false, use_log=false}
+local GL = GLcanvas{H=900,aspect=1.5,profile="CORE",SDL=false, use_log=false}
 local pp = require"anima.plugins.texture_processor"(GL,0)
 local fbo 
 local he
@@ -663,7 +741,8 @@ function GL.init()
 	fbo = GL:initFBO({no_depth=true})
 	he = Histogram(GL)
 	pp:set_process[[vec4 process(vec2 pos){
-		return vec4(1.0-length(pos)/length(vec2(1.0)));
+		//return vec4(1.0-length(pos)/length(vec2(1.0)));
+		return vec4(1.0-length(pos));
 	}
 	]]
 end

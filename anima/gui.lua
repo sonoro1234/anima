@@ -231,11 +231,15 @@ function gui.FileBrowser(filename_p, args, funcOK)
 	
 	local lfs = require"lfs"
 	local function funcdir(path, patt)
-		for file in lfs.dir(path) do
+		for file,obj in lfs.dir(path) do
 			if file ~= "."  then --and file ~= ".." then
 					local f = pathut.chain(path,file) --path..pathut.sep..file
 					local attr = lfs.attributes (f)
-					assert (type(attr) == "table")
+					--assert (type(attr) == "table")
+                    if not (type(attr) == "table") then 
+                        --print(f,attr,obj,obj:attr());
+                        attr = obj:attr()
+                    end
 					if attr.mode == "directory" then
 						table.insert(curr_dir_dirs, {path=f,name=file,is_dir=true})
 					elseif (not patt) or file:match(patt) then
@@ -345,7 +349,7 @@ end
 function ToolBox(GL)
 	local toolbox = {}
 	local icons = GL.Ficons
-	GL.hist = gui.Histogram(GL,2^5)
+	GL.hist = gui.Histogram(GL,2^5)--2^5)
 	GL.showhist = ffi.new("bool[?]",1,false)
 	function toolbox:draw()
 		if ig.BeginPopup("toolbox") then 
@@ -1523,6 +1527,9 @@ function gui.Histogram(GL,bins)
 						end
 					else
 						Histogram1.fbohist:get_pixels(glc.GL_RED,glc.GL_FLOAT,0,histovalues)
+						-- local sum = 0
+						-- for i=0,bins-1 do sum = sum + histovalues[i];print(i,histovalues[i]) end
+						-- print("histosum",sum)
 					end
 				end
 				frame = 0
@@ -1530,15 +1537,13 @@ function gui.Histogram(GL,bins)
 			frame = frame + 1
 			if rgb[0] then
 				ig.Checkbox("automax",automaxval)
-				-- ig.SameLine()
-				-- ig.SetNextItemWidth(100)
-				-- ig.SliderFloat("max", maxval, 0, 0.1, "%0.4f");
 				ig.SameLine()
 				if ig.Checkbox("rgb",rgb) then frame = 11 end
 				if automaxval[0] then ig.ImPlot_SetNextAxesToFit() end
+				ig.ImPlot_SetNextAxisLinks(ig.lib.ImAxis_Y1, ffi.new("double[1]",0), nil);
 				local spec = ig.ImPlotSpec()
 				if ig.ImPlot_BeginPlot("histo", ig.ImVec2(-1,-1)) then
-					ig.ImPlot_SetupAxisLimitsConstraints(ig.lib.ImAxis_Y1,0, 1);
+					--ig.ImPlot_SetupAxisLimitsConstraints(ig.lib.ImAxis_Y1,0, 1);
 					spec.LineColor = ig.ImVec4(1,0,0,1)
 					ig.ImPlot_PlotLine("R",hr,bins,nil,nil,spec[0])
 					spec.LineColor = ig.ImVec4(0,1,0,1)
@@ -1551,18 +1556,16 @@ function gui.Histogram(GL,bins)
 				ig.Checkbox("automax",automaxval)
 				ig.SameLine()
 				if GL.SRGB then ig.Checkbox("showlinear",showlinear) end
-				-- ig.SameLine()
-				-- ig.SetNextItemWidth(100)
-				-- ig.SliderFloat("max", maxval, 0, 0.1, "%0.4f");
 				ig.SameLine()
 				if ig.Checkbox("rgb",rgb) then frame=11 end
 				
 				--ig.PlotLines("histo", histovalues, bins, 0, nil, 0,automaxval[0] and ig.FLT_MAX  or maxval[0], ig.ImVec2(-1,-1));
 				--print("histovalues",histovalues[0],histovalues[bins-1])
 				if automaxval[0] then ig.ImPlot_SetNextAxesToFit() end
+				ig.ImPlot_SetNextAxisLinks(ig.lib.ImAxis_Y1, ffi.new("double[1]",0), nil);
 				local spec = ig.ImPlotSpec()
 				if ig.ImPlot_BeginPlot("histo", ig.ImVec2(-1,-1)) then
-					ig.ImPlot_SetupAxisLimitsConstraints(ig.lib.ImAxis_Y1,0, 1);
+					--ig.ImPlot_SetupAxisLimitsConstraints(ig.lib.ImAxis_Y1,0, 1);
 					spec.LineColor = ig.ImVec4(1,1,1,1)
 					ig.ImPlot_PlotLine("L",histovalues,bins,nil,nil,spec[0])
 					ig.ImPlot_EndPlot();
