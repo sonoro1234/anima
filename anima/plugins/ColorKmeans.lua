@@ -163,20 +163,28 @@ void main()
 
 
 require"anima"
+
 local plugin = require"anima.plugins.plugin"
 local function ColorKmeans(GL,K)
-	local MaxK = 100
+	local MaxK = 50
 	K = K or MaxK
 	local M = {}
 	local NM = GL:Dialog("ColorKmeans",{
-{"K",K,guitypes.valint,{min=1,max=K}},--function(val) M:setK(val) end},
+{"K",K,guitypes.valint,{min=1,max=K,integer=true,olddrag=true}},--function(val) M:setK(val) end},
 {"th",3,guitypes.valint,{min=1,max=9}},
 --{"randominit",false,guitypes.toggle},
 {"maxiters",100,guitypes.valint,{min=50,max=200}},
 {"Lab",true,guitypes.toggle},
 {"Lfac",1,guitypes.val,{min=1e-3,max=20}},
 
-})
+},function() 
+	local gllib = require"gl"
+	ig.TextUnformatted(tostring(gllib.get_GPU_memory()))
+	if ig.SmallButton("gc") then
+		collectgarbage()
+		collectgarbage()
+	end
+end)
 	M = plugin:new(M,GL,NM)
 	M.NM = NM
 	--random init
@@ -313,6 +321,7 @@ local function ColorKmeans(GL,K)
 	local lossfbo
 	local ptolab,pfromlab
 	function M:init()
+		print"CKM init=========================================="
 		programfindcenters = GLSL:new():compile(vert_std,frag_findcenter)
 		mesh.quad():vao(programfindcenters)
 		
@@ -335,7 +344,7 @@ local function ColorKmeans(GL,K)
 		mesh.quad():vao(pfromlab)
 		self.inited = true
 	end
-	local fbo1,centersfbo,fbo
+	local fbo1,centersfbo,fbo, fboapp, labfboT, labfbor, labfbocenters
 	function M:check()
 		if not fbo1:is_framebuffer() then print"fbo1 not good" end
 		if not centersfbo:is_framebuffer() then print"centersfbo not good" end
@@ -347,9 +356,11 @@ local function ColorKmeans(GL,K)
 	function M:setK(K)
 		print("setK--------------------",K,NM.K)
 		if K and NM.K~=K then NM.vars.K[0] = K end
-		if centersfbo==nil or centersfbo.width ~= NM.K then
+		if centersfbo==nil or centersfbo.w ~= NM.K then
+			print("init fbo centers", centersfbo, centersfbo and centersfbo.w or "none")
 			if centersfbo then centersfbo:delete(true) end --keep tex centerstex
 			centersfbo = GL:initFBO({no_depth=true},NM.K,1)
+			labfbocenters = GL:initFBO({no_depth=true},NM.K,1)
 		end
 	end
 	function M:set_texture(texr)
@@ -366,8 +377,8 @@ local function ColorKmeans(GL,K)
 		self:setK()
 		self.texr = texr
 	end
-	function M:fromlab(tex)
-			local labfbo = tex:make_fbo()
+	function M:fromlab(tex,labfbo)
+			--local labfbo = tex:make_fbo()
 			labfbo:Bind()
 			pfromlab:use()
 			pfromlab.unif.tex:set{0}
@@ -378,11 +389,11 @@ local function ColorKmeans(GL,K)
 			pfromlab.vaos[1]:draw_elm()
 			labfbo:UnBind()
 			local tex2 = labfbo:tex()
-			labfbo:delete(true)
+			--labfbo:delete(true)
 			return tex2
 	end
-	function M:tolab(tex)
-			local labfbo = tex:make_fbo()
+	function M:tolab(tex, labfbo)
+			--local labfbo = tex:make_fbo()
 			labfbo:Bind()
 			ptolab:use()
 			ptolab.unif.tex:set{0}
@@ -393,7 +404,7 @@ local function ColorKmeans(GL,K)
 			ptolab.vaos[1]:draw_elm()
 			labfbo:UnBind()
 			local tex2 = labfbo:tex()
-			labfbo:delete(true)
+			--labfbo:delete(true)
 			return tex2
 	end
 	local function check(tex)
@@ -443,7 +454,7 @@ local function ColorKmeans(GL,K)
 		--print_colors_table(texr:colors_table())
 		gl.glDisable(glc.GL_BLEND)
 		if NM.Lab then
-			texr = self:tolab(texr)
+			texr = self:tolab(texr, labfbor)
 		end
 		
 		self:setK()
@@ -458,7 +469,7 @@ local function ColorKmeans(GL,K)
 			centers = colors_table
 			setcenters(centersfbo,centers)
 			if NM.Lab then
-				local centerslab = self:tolab(centersfbo:tex())
+				local centerslab = self:tolab(centersfbo:tex(),labfbocenters)
 				centersfbo:Bind()
 				centerslab:draw()
 				centersfbo:UnBind()
@@ -596,15 +607,15 @@ local function ColorKmeans(GL,K)
 		if not NM.Lab then
 			return fbo:tex()
 		else
-			return self:fromlab(fbo:tex())
+			return self:fromlab(fbo:tex(), labfbor)
 		end
 	end
 	function M:find_apply(tex)
 		if NM.Lab then
-			tex = self:tolab(tex)
+			tex = self:tolab(tex, labfboT)
 		end
 		gl.glDisable(glc.GL_BLEND)
-		local fboapp = tex:make_fbo()
+		--local fboapp = tex:make_fbo()
 		fboapp:Bind()
 		fboapp:viewport()
 		ut.Clear()
@@ -632,11 +643,11 @@ local function ColorKmeans(GL,K)
 		---
 		local tex2 = fboapp:tex()
 		--print("find apply tex",tex2.tex)
-		fboapp:delete(true)
+		--fboapp:delete(true)
 		if not NM.Lab then
 			return tex2
 		else
-			return self:fromlab(tex2)
+			return self:fromlab(tex2, labfboT)
 		end
 	end
 	local oldtexsignature
@@ -660,6 +671,11 @@ local function ColorKmeans(GL,K)
 			print("============= ColorKmeans process1 colors_table sorted==========================")
 			--prtable(M.colors_count)
 			self:set_texture(texr)
+			
+			fboapp = texture:make_fbo()
+			labfboT = texture:make_fbo()
+			labfbor = texr:make_fbo()
+			
 			print("============= ColorKmeans process1 end  colors_table ==========================")
 		end
 		self:kmeans(M.colors_table)
@@ -673,7 +689,7 @@ local function ColorKmeans(GL,K)
 	end
 	function M:getcenters()
 		if NM.Lab then
-			return self:fromlab(centersfbo:tex())
+			return self:fromlab(centersfbo:tex(), labfbocenters)
 		else
 			return centersfbo:tex()
 		end
@@ -698,13 +714,15 @@ local Dbox = GL:DialogBox()
 Dbox:add_dialog(NM)
 Dbox:add_dialog(ColorK.NM)
 local fileName = [[C:\LuaGL\frames_anima\edges_detection\flowers2.png]]
-fileName = [[C:\LuaGL\media\estanque8.jpg]]
+
 local fileName = [[C:\LuaGL\frames_anima\edges_detection\bici.png]]
 --local fileName = [[C:\LuaGL\frames_anima\vectorize\dummy_color.tif]]
 --local fileName = [[C:\LuaGL\frames_anima\vectorize\dummy.png]]
 --local fileName = [[C:\anima\examples\vectorize\letraO.png]]
-local fileName = [[C:\LuaGL\media\gradient.tif]]
-local fileName = [[C:\LuaGL\media\_MG_2305.jpg]]
+-- local fileName = [[C:\LuaGL\media\gradient.tif]]
+-- local fileName = [[C:\LuaGL\media\_MG_2305.jpg]]
+-- local fileName =  [[c:\luaGL\media\estanque-001.jpg]]
+fileName = [[C:\LuaGL\media\estanque8.jpg]]
 local fbo
 function GL.init()
 	--GLSL.default_version = "#version 330\n"

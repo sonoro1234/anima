@@ -158,14 +158,14 @@ local function BlurClipMaker(GL)
 	
 	function Clip:process(srctex,w,h)
 		if NM.bypass then
-		ut.Clear()
+			ut.Clear()
 			srctex:drawcenter()
 			return
 		end
 		local w,h = w or self.res[1],h or self.res[2] --srctex.width,srctex.height
 		local old_framebuffer = ffi.new("GLint[1]",0)
 		gl.glGetIntegerv(glc.GL_FRAMEBUFFER_BINDING, old_framebuffer)
-			
+
 			mixfbos[0]:Bind()
 			srctex:draw(0,w,h)
 			
@@ -180,6 +180,7 @@ local function BlurClipMaker(GL)
 			programH.unif.offset:set(offs,true)
 			programH.unif.weight:set(kernel,true)
 			
+			gl.glViewport(0,0,w,h)
 			gl.glClearColor(0.0, 0.0, 0.0, 0)
 			ut.Clear()
 			
@@ -187,7 +188,7 @@ local function BlurClipMaker(GL)
 			-- ut.DoQuad(w,h)
 			vao:draw_elm()
 			
-			
+			gl.glDisable(glc.GL_DEPTH_TEST);
 			programV:use()
 			--mixfbos[0]:Bind()
 			glext.glBindFramebuffer(glc.GL_DRAW_FRAMEBUFFER, old_framebuffer[0]);
@@ -199,13 +200,14 @@ local function BlurClipMaker(GL)
 			programV.unif.offset:set(offs,true)
 			programV.unif.weight:set(kernel,true)
 			
+			gl.glViewport(0,0,w,h)
 			gl.glClearColor(0.0, 0.0, 0.0, 0)
 			ut.Clear()
 			
 			-- ut.project(w,h)
 			-- ut.DoQuad(w,h)
 			vao:draw_elm()
-
+			gl.glEnable(glc.GL_DEPTH_TEST);
 	end
 	function Clip:draw(timebegin,w,h,args)
 		if not self.inited then self.init() end
@@ -276,19 +278,23 @@ end
 if not ... then
 ---[=[
 require"anima"
-local GL = GLcanvas{H=800,aspect=2/3,profile="CORE"}
+local GL = GLcanvas{H=800,aspect=2/3,profileNO="CORE"}
 local blur = BlurClipMaker(GL,{size=2})
 -- local blur = require"anima.plugins.gaussianblur"(GL)
 --local LM = require"anima.plugins.layermixer_blend"
 --local themixer = LM.layers_mixer(GL,true)
-local tex
+local tex,fbo
 function GL.init()
 	tex = GL:Texture():Load[[C:\luaGL\frames_anima\pelis\7thDoor\puertas\_MG_4250.tif]]
 	--cliplist = LM.layers_seq:new({{0,200,clip={blur,clip={tex}}}} )
+	fbo = GL:initFBO({no_depth= true})
 	GL:DirtyWrap()
 end
 function GL.draw(t,w,h)
-	blur:process(tex)
+	--blur:process(tex)
+	blur:process_fbo(fbo,tex)
+	ut.Clear()
+	fbo:tex():drawcenter()
 	-- blur:draw(t,w,h,{clip={tex}})
 	-- themixer:draw(t,w,h,{animclips=cliplist})
 end

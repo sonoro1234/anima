@@ -233,7 +233,7 @@ if not ... then
 ---[=[
 require"anima"
 
-GL = GLcanvas{H=800,aspect=1.5}
+GL = GLcanvas{H=800,aspect=1.5,profileNO="CORE"}
 local textura
 local emboss
 function GL.init()

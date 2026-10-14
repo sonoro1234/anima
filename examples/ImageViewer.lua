@@ -444,6 +444,7 @@ ig.GetIO().IniFilename = nil
 	texture = GL:Texture()
 	anima_fbo_tex = GL:Texture(GL.W, GL.H, glc.GL_RGB)
 	
+	-- AddImage(GL, [[c:\luaGL\media\estanque-001.jpg]])
 	-- AddImage(GL, [[C:\LuaGL\media\_MG_2305.jpg]])
 	-- AddImage(GL, [[C:\LuaGL\media\estanque8.jpg]])
 	-- preparedir(GL,inipath)

@@ -47,7 +47,7 @@ local t =
 local function set_table__gc(t, func)
 	local prox = newproxy(true)
 	getmetatable(prox).__gc = function()  
-						-- print("_gc fbo",t);
+						-- print("_gc fbo",t,t.w,t.h);
 						func(t) end
 	t.gcproxy = prox
 	return t --setmetatable(t, mt)

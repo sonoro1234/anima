@@ -3,7 +3,7 @@ local imffi = im.imffi
 local function set_table__gc(t, func)
 	local prox = newproxy(true)
 	getmetatable(prox).__gc = function() 
-								--print("_gc texture",t,t.width,t.height,t.filename);
+								-- print("_gc texture",t,t.width,t.height,t.filename);
 								func(t) end
 	t.gcproxy = prox
 	return t --setmetatable(t, mt)

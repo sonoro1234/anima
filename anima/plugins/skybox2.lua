@@ -86,8 +86,9 @@ function SK:init(args)
 	args = args or {}
 	local slices = 30
 	self.fbo = GL:initFBO()
-	self.camera = args.camera or newCamera(GL,"tps")
-	self.camera.NMC.vars.distfac[0] = 1
+	--self.camera = args.camera or newCamera(GL,"tps")
+	self.camera = args.camera or Camera(GL,{type="tps",gizmo=true})
+	--self.camera.NMC.vars.distfac[0] = 1
 	self.camera.NMC.vars.focal[0] = 50
 	DBox:add_dialog(self.camera.NMC)
 	local mesh1 = par_shapes.create.plane(slices,slices)

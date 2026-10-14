@@ -102,6 +102,7 @@ local function make(GL)
 	local vicim = require"anima.vicimag"
 	local fbos = {}
 	function M:init()
+			print"Pissoninitt============================================================================="
 		if not program then
 			program = GLSL:new():compile(ut.vert_std,frag_sh)
 			
@@ -112,6 +113,7 @@ local function make(GL)
 			
 			-- texsamp = Texture():Load(here..[[/samples64_quad.png]])
 			texsamp = vicim.vicimag2tex(here..[[/poisson.dat]],GL)
+			texsamp:gen_mipmap(1)
 		end
 
 	end
@@ -183,12 +185,12 @@ require"anima"
 path = require"anima.path"
 vicim = require"anima.vicimag"
 print(path.this_script_path())
-GL = GLcanvas{H=1080,aspect=3/2}
+GL = GLcanvas{H=1080,aspect=3/2,profileNO="CORE"}
 
 local textura,bilat
 local argspeli
 function GL.init()
-	
+	print"GLinit============================================================================="
 	--textura = Texture():Load(path.this_script_path().."/canvas.png",false,true)
 	textura = GL:Texture():Load([[c:\luaGL\media\estanque-001.jpg]],false,true)
 	--textura = Texture():Load(path.this_script_path()..[[\tex03.jpg]])
@@ -200,8 +202,8 @@ function GL.init()
 	--textura = Texture():Load([[G:\VICTOR\pelis\pelipino\master1080\arbolenflordos\frame-0001.tif]])
 	--textura = Texture():Load[[c:/luagl/media\frame-0001.tif]]
 	--textura = Texture():Load[[G:\VICTOR\pelis\hadas\master1080\leslie_giro1\frame-0001.tif]]
-	--textura = Texture():Load[[c:/luagl/media\amsterdam.jpg]]
-	--textura = textura:resample_fac(0.25)
+	--textura = GL:Texture():Load[[c:/luagl/media\amsterdam.jpg]]
+	textura = textura:resample_fac(0.25)
 	
 	
 	

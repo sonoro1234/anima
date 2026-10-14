@@ -65,7 +65,7 @@ end
 end
 
 if not ... then
---[=[
+---[=[
 GL = GLcanvas{H=1080,aspect=1.5}
 local tex,edge
 
