@@ -90,10 +90,24 @@ local function SetPluginsChain(GL)
 	print("========= end SetPluginsChain ===========================")
 end
 
+--thousand puntuation
+local floor = math.floor
+local format = string.format
+local function thousands(n)
+	n = tonumber(n) -- in case uint64_t
+	local a = floor(n/1000)
+	local b = n - a*1000
+	if a==0 then return tostring(b) end
+	return thousands(a).."."..format("%03d",b)
+end
+
+
+
 local anchor = {}
 local global_mask = ffi.new("bool[?]",1,false)
 local mask_plugin
 local chain_active = ffi.new("bool[?]",1,true)
+local gllib = require"gl"
 local function Open_plugins_chain(GL)
 
 	local child_flags = ig.lib.ImGuiChildFlags_FrameStyle
@@ -176,7 +190,9 @@ local function Open_plugins_chain(GL)
 	end
 	gui.ToggleButton("chain active", chain_active)
 	ig.SameLine()
-	ig.Text("plugins_chain:"..tonumber(#plugins_chain))
+	-- ig.Text("plugins_chain:"..tonumber(#plugins_chain))
+	-- ig.SameLine()
+	ig.TextUnformatted("VRAM:"..thousands(gllib.get_GPU_memory()))
 	ig.End()
 
 	SetPluginsChain(GL)
@@ -235,18 +251,21 @@ local texture
 local anima_fbo_tex
 local curr_tex_name = ""
 local curr_image_num
-local hist
 
 
 local function load_texture(filename, GL)
 	print("=========== load texture ================")
-	texture = GL:Texture()
-	local ok = pcall(texture.Load, texture, filename, nil, true)
-	if ok then 
-		curr_tex_name = filename
-		GL:set_WH(texture.width, texture.height)
-		anima_fbo_tex = GL:Texture(GL.W, GL.H, glc.GL_RGB)
-		chain_fbo = MakeChainFBO(GL,#plugins_chain_p)
+	if curr_tex_name ~= filename then
+		texture = GL:Texture()
+		local ok = pcall(texture.Load, texture, filename, nil, true)
+		if ok then 
+			curr_tex_name = filename
+			if GL.W~=texture.width or GL.H~=texture.height then
+				GL:set_WH(texture.width, texture.height)
+				anima_fbo_tex = GL:Texture(GL.W, GL.H, glc.GL_RGB)
+				chain_fbo = MakeChainFBO(GL,#plugins_chain_p)
+			end
+		end
 	end
 	print("=========== end load texture ================")
 end
@@ -424,7 +443,7 @@ inipath = [[C:\LuaGL\frames_anima\pelis\humanoides_peli\NEVERA\ninos_master1080]
 --inipath = lfs.win_utf8_to_acp(inipath)
 --inipath = path.chain(path.this_script_path(),
 --inipath = [[C:\LuaGL\gitsources\anima\examples\LuaJIT-IPOL\opticflow\exports\peli1]]
-print(inipath)
+
 
 
 function GL.init()
@@ -551,24 +570,24 @@ function GL.imgui()
 	if view_dock[0] then
 		renderMenuFile(GL)
 		GL.Dock()
-	Open_plugins_chain(GL)
-	if view_thumbs[0] then
-		Thumbnails()
-	end 
-	if ig.Begin"image" then
-		local canvas_pos = ig.GetCursorScreenPos();
-		local sz = ig.GetContentRegionAvail()
-		local tex = get_anima_fbo(GL) 
-		--local tex = GL.fbo:tex() --texture
-		local posx,posy,wi,hi = getAspectViewport(sz.x,sz.y,tex.width,tex.height)
-		local pos = ig.ImVec2(posx,posy)+ canvas_pos
-		local draw_list = ig.GetWindowDrawList();
-		draw_list:AddImage( ig.ImTextureRef(tex.tex)[0],pos, pos+ig.ImVec2(wi,hi),ig.ImVec2(0,1),ig.ImVec2(1,0));
-		if ig.InvisibleButton("current_image", sz, ig.lib.ImGuiButtonFlags_EnableNav) then
-			view_dock[0] = false
+		Open_plugins_chain(GL)
+		if view_thumbs[0] then
+			Thumbnails()
+		end 
+		if ig.Begin"image" then
+			local canvas_pos = ig.GetCursorScreenPos();
+			local sz = ig.GetContentRegionAvail()
+			local tex = get_anima_fbo(GL) 
+			--local tex = GL.fbo:tex() --texture
+			local posx,posy,wi,hi = getAspectViewport(sz.x,sz.y,tex.width,tex.height)
+			local pos = ig.ImVec2(posx,posy)+ canvas_pos
+			local draw_list = ig.GetWindowDrawList();
+			draw_list:AddImage( ig.ImTextureRef(tex.tex)[0],pos, pos+ig.ImVec2(wi,hi),ig.ImVec2(0,1),ig.ImVec2(1,0));
+			if ig.InvisibleButton("current_image", sz, ig.lib.ImGuiButtonFlags_EnableNav) then
+				view_dock[0] = false
+			end
 		end
-	end
-	ig.End()
+		ig.End()
 	end
 	if corut_load and coroutine.status(corut_load)~="dead" then
 		local ret,err = coroutine.resume(corut_load)
