@@ -264,6 +264,8 @@ local function load_texture(filename, GL)
 				GL:set_WH(texture.width, texture.height)
 				anima_fbo_tex = GL:Texture(GL.W, GL.H, glc.GL_RGB)
 				chain_fbo = MakeChainFBO(GL,#plugins_chain_p)
+			else
+				chain_fbo[0]:tex():inc_signature()
 			end
 		end
 	end

@@ -168,7 +168,7 @@ local plugin = require"anima.plugins.plugin"
 local function ColorKmeans(GL,K)
 	local MaxK = 50
 	K = K or MaxK
-	local M = {}
+	local M --= {}
 	local NM = GL:Dialog("ColorKmeans",{
 {"K",K,guitypes.valint,{min=1,max=K,integer=true,olddrag=true}},--function(val) M:setK(val) end},
 {"th",3,guitypes.valint,{min=1,max=9}},
@@ -178,12 +178,7 @@ local function ColorKmeans(GL,K)
 {"Lfac",1,guitypes.val,{min=1e-3,max=20}},
 
 },function() 
-	local gllib = require"gl"
-	ig.TextUnformatted(tostring(gllib.get_GPU_memory()))
-	if ig.SmallButton("gc") then
-		collectgarbage()
-		collectgarbage()
-	end
+	ig.TextUnformatted("redux colors:"..tostring(#M.colors_table))
 end)
 	M = plugin:new(M,GL,NM)
 	M.NM = NM
@@ -700,7 +695,7 @@ end
 
 if not ... then
 ---[=[
-GL = GLcanvas{fps=25,H=700,aspect = 1.5,DEBUG=true,fbo_nearest=true,SDL=false,profile="CORE"}
+GL = GLcanvas{fps=25,H=700,aspect = 1.5,DEBUG=false,fbo_nearest=true,SDL=false,profile="CORE"}
 
 local textura
 local ColorK = ColorKmeans(GL)
