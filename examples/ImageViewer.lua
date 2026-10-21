@@ -290,8 +290,9 @@ local function AddImage(GL,filename, name)
 
 end
 
+local currdir
 local function preparedir(GL,pathdir)
-	
+	currdir = pathdir
 	local imagesN = {}
 	local imagesFile = {}
 	path.funcdir(pathdir,function(f,file)
@@ -313,11 +314,10 @@ end
 ------------- GLcanvas -------------------------------------
 local GL = GLcanvas{H=800,aspect=16/9,SDL=false,use_log=false,profile="CORE"}
 
-local currdir
+
 local fB = gui.FileBrowser(nil,{curr_dir=inipath,choose_dir=true},
 	function(f,dir) 
 		preparedir(GL,dir)
-		currdir = dir
 	end)
 
 function GL.drop_file_cb(file)
@@ -342,7 +342,7 @@ local showhelp = false
 local show_chain = false
 local view_thumbs = ffi.new("bool[?]",1,true)
 local view_dock = ffi.new("bool[?]",1,true)
-local dock_id_right_bottom = ffi.new("ImGuiID[?]",1,0);
+
 
 local function renderMenuFile(win)
 	local openfilepopup = false
@@ -469,14 +469,12 @@ ig.GetIO().IniFilename = nil
 	-- AddImage(GL, [[C:\LuaGL\media\_MG_2305.jpg]])
 	-- AddImage(GL, [[C:\LuaGL\media\estanque8.jpg]])
 	-- preparedir(GL,inipath)
-	-- currdir = inipath
 
 end
 
 
-function GL.Dock()
+local function Dock(dockspace_id)
 
-	local dockspace_id = ig.GetID("dockspace_id")
 	local viewport = ig.GetMainViewport();
 	
 	if (ig.DockBuilderGetNode(dockspace_id) == nil) then
@@ -488,7 +486,7 @@ function GL.Dock()
 	local dock_id_left_bottom = ffi.new("ImGuiID[?]",1,0);
 	local dock_id_right = ffi.new("ImGuiID[?]",1,0);
 	local dock_id_right_up = ffi.new("ImGuiID[?]",1,0);
-
+	local dock_id_right_bottom = ffi.new("ImGuiID[?]",1,0);
 	
 	ig.DockBuilderSplitNode(dock_id_main[0], ig.lib.ImGuiDir_Left, 0.80, dock_id_left, dock_id_right);
 	ig.DockBuilderSplitNode(dock_id_right[0], ig.lib.ImGuiDir_Up, 0.50, dock_id_right_up, dock_id_right_bottom);
@@ -503,14 +501,15 @@ function GL.Dock()
 	
 	ig.DockSpaceOverViewport(dockspace_id, viewport, ig.lib.ImGuiDockNodeFlags_PassthruCentralNode + ig.lib.ImGuiDockNodeFlags_NoTabBar);
 
-	return dock_id_right_bottom[0]
 end
-local anchor1 ={}
 
-local thumbs_window_flags = bit.bor( ig.lib.ImGuiWindowFlags_NoTitleBar , ig.lib.ImGuiWindowFlags_NoCollapse, ig.lib.ImGuiWindowFlags_NoResize ,
-    --ig.lib.ImGuiWindowFlags_NoMove , 
-    ig.lib.ImGuiWindowFlags_NoBringToFrontOnFocus)--, ig.lib.ImGuiWindowFlags_NoDocking)--, --ig.lib.ImGuiWindowFlags_NoNavFocus,
-    --ig.lib.ImGuiWindowFlags_MenuBar)
+local function UnDock(dockspace_id)
+	ig.DockBuilderRemoveNode(dockspace_id)
+end
+
+
+local thumbs_window_flags = bit.bor( ig.lib.ImGuiWindowFlags_NoTitleBar , ig.lib.ImGuiWindowFlags_NoCollapse, ig.lib.ImGuiWindowFlags_NoResize , ig.lib.ImGuiWindowFlags_NoBringToFrontOnFocus)
+
 local function Thumbnails()
 	if ig.Begin("thumbnails", nil, thumbs_window_flags) then
 
@@ -529,8 +528,8 @@ local function Thumbnails()
 		if ig.IsItemHovered() then ig.SetTooltip(images[imnum].name) end
 
         if ig.BeginDragDropSource(ig.lib.ImGuiDragDropFlags_SourceAllowNullID) then
-            anchor1.data = ffi.new("int[1]",i)
-            ig.SetDragDropPayload("ITEMN",anchor1.data, ffi.sizeof"int")--, C.ImGuiCond_Once);
+            anchor.data3 = ffi.new("int[1]",i)
+            ig.SetDragDropPayload("ITEMN",anchor.data3, ffi.sizeof"int")--, C.ImGuiCond_Once);
 			ImageFrame(images[imnum],size[0],"drag")
             ig.EndDragDropSource();
         end
@@ -559,19 +558,22 @@ local function get_anima_fbo(GL)
 	glext.glBindFramebuffer(glc.GL_READ_FRAMEBUFFER, oldreadfbo);
 	return anima_fbo_tex
 end
-function GL.imgui()
-	--ig.ShowDemoWindow()
 
+function GL.imgui()
+
+	local dockspace_id = ig.GetID("dockspace_id")
+	
     if ig.IsKeyPressed(ig.lib.ImGuiKey_F3,false) then
 		view_dock[0] = not view_dock[0]
-		if view_dock[0] then
-			ig.DockBuilderDockWindow("params", dock_id_right_bottom[0]);
-		end
     end
+	
+	if not view_dock[0] then
+		UnDock(dockspace_id)
+	end
 
 	if view_dock[0] then
 		renderMenuFile(GL)
-		GL.Dock()
+		Dock(dockspace_id)
 		Open_plugins_chain(GL)
 		if view_thumbs[0] then
 			Thumbnails()
