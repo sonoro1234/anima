@@ -65,9 +65,11 @@ padNM = GL:Dialog("padding",
 {"padding",30,guitypes.drag,{min=1,max=200}}})
 
 local DBox = GL:DialogBox("Criminisi",true)
-local fname = [[golf.png]]--[[edificio.png]]--[[golf.png]]
+--local fname = [[C:\LuaGL\media\estanque8.jpg]]
+local fname = [[golf.png]]--[[edificio.png]]
 function GL.init()
 	tex = GL:Texture():Load(fname):Info()
+	--tex = tex:resample_fac(0.25)
 	GL:set_WH(tex.width,tex.height)
 	crimi = require"anima.graphics.criminisi"(GL,tex,make_mask1)
 
@@ -77,9 +79,7 @@ function GL.init()
 	DBox:add_dialog(spline.NM)
 	DBox:add_dialog(padNM)
 	
-	local plugin = require"anima.plugins.plugin"
-	local seri = plugin.serializer(spline)
-	seri.load"golf.spline"
+	spline.seri.load"golf.spline"
 	GL:DirtyWrap()
 end
 

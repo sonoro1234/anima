@@ -75,7 +75,7 @@ local function Editor(GL,updatefunc1)
 		local mpos = igio.MousePos
 		local dl = ig.GetBackgroundDrawList(ig.GetMainViewport())
 		local keepflags = dl.Flags
-		dl.Flags = bit.band(dl.Flags,bit.bnot(ig.lib.ImDrawListFlags_AntiAliasedLines))
+		dl.Flags = bit.band(dl.Flags,bit.bnot(ig.lib.ImDrawFlags_AALines))
 		--AddedLines
 		if NM.add_lines and SPT.AddedLines then
 		for i,line in ipairs(SPT.AddedLines) do

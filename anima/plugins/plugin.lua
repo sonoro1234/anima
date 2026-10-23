@@ -53,6 +53,7 @@ function plugin.serializer(M,args)
 				end
 		end
 	end
+	M.seri = fb
 	return fb
 end
 function plugin.presets(M)

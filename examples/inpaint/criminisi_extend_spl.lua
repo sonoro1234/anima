@@ -38,8 +38,10 @@ GL = GLcanvas{H=900 ,aspect=1,profile="CORE",vsync=true,fbo_nearest=false,fps=25
 
 local DBox = GL:DialogBox("Criminisi",true)
 local fname = [[golf.png]]--[[edificio.png]]--[[golf.png]]
+--local fname = [[C:\LuaGL\media\estanque8.jpg]]
 function GL.init()
 	tex = GL:Texture():Load(fname):Info()
+	--tex = tex:resample_fac(0.25)
 	GL:set_WH(tex.width,tex.height)
 	crimi = require"anima.graphics.criminisi"(GL,tex,make_mask1)
 
@@ -48,9 +50,9 @@ function GL.init()
 	DBox:add_dialog(crimi.NM)
 	DBox:add_dialog(spline.NM)
 	
-	local plugin = require"anima.plugins.plugin"
-	local seri = plugin.serializer(spline)
-	seri.load"golf_ext.spline"
+	-- local plugin = require"anima.plugins.plugin"
+	-- local seri = plugin.serializer(spline)
+	spline.seri.load"golf_ext.spline"
 	GL:DirtyWrap()
 end
 

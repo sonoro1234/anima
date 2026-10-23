@@ -482,7 +482,7 @@ local function PlanesPicker(GL,camera,updatefunc,MakersG)
 		local mpos = igio.MousePos
 		local dl = ig.GetBackgroundDrawList(ig.GetMainViewport())
 		local keepflags = dl.Flags
-		dl.Flags = bit.band(dl.Flags,bit.bnot(ig.lib.ImDrawListFlags_AntiAliasedLines))
+		dl.Flags = bit.band(dl.Flags,bit.bnot(ig.lib.ImDrawFlags_AALines))
 		
 		for j,quad in ipairs(quads) do
 			local pointsI = ffi.new("ImVec2[?]",#quad)

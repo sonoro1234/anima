@@ -16,7 +16,7 @@ vec2 sphere_point_to_texcoords(vec3 pos)
 
 ]]
 local vert_sh = [[
-#version 330
+
 const float PI = 3.141592653589793;
 //from (-0.5 to 0.5)
 vec3 sphere(vec2 coor)
@@ -56,16 +56,17 @@ void main()
 ]]
 
 
-
 local frag_sh = [[
-#version 330
+
 uniform sampler2D tex;
 in vec4 TexCoord;
+out vec4 fcolor;
 void main()
 { 
-	gl_FragColor = texture2D(tex,TexCoord.st);
+	fcolor = texture2D(tex,TexCoord.st);
 }
 ]]
+
 local function make(GL,name)
 	name = name or "skybox"
 	local plugin = require"anima.plugins.plugin"

@@ -114,7 +114,7 @@ local function Editor(GL,updatefunc1,args)
 		local mpos = igio.MousePos
 		local dl = ig.GetBackgroundDrawList(ig.GetMainViewport())
 		local keepflags = dl.Flags
-		dl.Flags = bit.band(dl.Flags,bit.bnot(ig.lib.ImDrawListFlags_AntiAliasedLines))
+		dl.Flags = bit.band(dl.Flags,bit.bnot(ig.lib.ImDrawFlags_AALines))
 		-- triangulations
 		if M.triangulation then
 			if M.triangulation[NM.curr_spline] then 
@@ -448,7 +448,7 @@ local contours_loader = gui.FileBrowser(nil,{filename="phfx",key="importcont",pa
 	end
 	
 	function M:init()
-			plugin.serializer(M)
+		M.ser = plugin.serializer(M)
 		if not maskprog then
 			maskprog = GLSL:new():compile(vert_sh,frag_sh)
 			maskprog_pad = GLSL:new():compile(vert_pad_sh,frag_pad_sh)

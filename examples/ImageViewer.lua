@@ -369,6 +369,7 @@ local function renderMenuFile(win)
             end
 			if ig.BeginMenu("thumbs") then
 				gui.ToggleButton("view_dock",view_dock)
+				gui.ToggleButton("histogram",win.showhist)
 				gui.ToggleButton("thumbnails",view_thumbs)
 				if ig.MenuItem"select all" then
 					for i,im in ipairs(images) do
@@ -529,7 +530,7 @@ local function Thumbnails()
 
         if ig.BeginDragDropSource(ig.lib.ImGuiDragDropFlags_SourceAllowNullID) then
             anchor.data3 = ffi.new("int[1]",i)
-            ig.SetDragDropPayload("ITEMN",anchor.data3, ffi.sizeof"int")--, C.ImGuiCond_Once);
+            ig.SetDragDropPayload("ITEMN",anchor.data3, ffi.sizeof"int")
 			ImageFrame(images[imnum],size[0],"drag")
             ig.EndDragDropSource();
         end
