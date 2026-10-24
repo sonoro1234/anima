@@ -1,8 +1,10 @@
 require"anima"
 local lfs = require"lfs_ffi"
---print("setlocale",
-assert(os.setlocale(".UTF8"))
-if jit.os=="Windows" then os.execute("chcp 65001");assert(lfs.unicode) end
+
+if jit.os=="Windows" then 
+	assert(os.setlocale(".UTF8"))
+	os.execute("chcp 65001");assert(lfs.unicode) 
+end
 local C = ffi.C
 
 ------------- plugins ---------------------------------
@@ -509,7 +511,11 @@ local function UnDock(dockspace_id)
 end
 
 
-local thumbs_window_flags = bit.bor( ig.lib.ImGuiWindowFlags_NoTitleBar , ig.lib.ImGuiWindowFlags_NoCollapse, ig.lib.ImGuiWindowFlags_NoResize , ig.lib.ImGuiWindowFlags_NoBringToFrontOnFocus)
+local thumbs_window_flags1 = bit.bor( ig.lib.ImGuiWindowFlags_NoTitleBar , ig.lib.ImGuiWindowFlags_NoCollapse, ig.lib.ImGuiWindowFlags_NoResize , ig.lib.ImGuiWindowFlags_NoBringToFrontOnFocus)
+
+local thumbs_window_flags = ig.lib.ImGuiWindowFlags_NoTitleBar | ig.lib.ImGuiWindowFlags_NoCollapse | ig.lib.ImGuiWindowFlags_NoResize | ig.lib.ImGuiWindowFlags_NoBringToFrontOnFocus
+
+assert(thumbs_window_flags1 == thumbs_window_flags)
 
 local function Thumbnails()
 	if ig.Begin("thumbnails", nil, thumbs_window_flags) then
