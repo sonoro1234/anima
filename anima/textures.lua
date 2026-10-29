@@ -1,3 +1,5 @@
+local ffi = require"ffi"
+local im = require"imffi"
 local imffi = im.imffi
 
 local function set_table__gc(t, func)

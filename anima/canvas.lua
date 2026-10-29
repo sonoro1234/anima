@@ -1079,6 +1079,7 @@ function GLcanvas(GL)
 				elseif event.type == sdl.DROPFILE then
 					--print("SDL drop file",ffi.string(event.drop.file))
 					if self.drop_file_cb then self.drop_file_cb(ffi.string(event.drop.file)) end
+					sdl.free(event.drop.file);
 				end
 			end
 			
